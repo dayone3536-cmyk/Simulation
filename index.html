@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Forest Village</title>
 <style>
   html, body { margin: 0; height: 100%; overflow: hidden; background: #143310; touch-action: none; }
@@ -10,6 +10,8 @@
   canvas.drag { cursor: grabbing; }
   #vignette { position: fixed; inset: 0; pointer-events: none;
     background: radial-gradient(ellipse at center, rgba(0,0,0,0) 66%, rgba(10,50,0,.28) 100%); }
+  #info { display: none; position: fixed; left: 50%; bottom: 12px; transform: translateX(-50%); padding: 7px 14px; border-radius: 999px;
+    background: rgba(0,0,0,.5); color: #fff; font: 600 13px system-ui, sans-serif; pointer-events: none; white-space: nowrap; }
   #hint { position: fixed; left: 14px; bottom: 12px; font: 13px system-ui, sans-serif; color: #fff;
     text-shadow: 0 1px 3px rgba(0,0,0,.7); pointer-events: none; transition: opacity .6s; }
   /* Phone held upright (or rotation locked): the whole game turns 90 degrees, so it always plays sideways */
@@ -22,6 +24,7 @@
 <body>
 <canvas id="c"></canvas>
 <div id="vignette"></div>
+<div id="info"></div>
 <button id="flip">Flip screen</button>
 <div id="hint">Drag to look around, pinch to zoom</div>
 
@@ -31,7 +34,6 @@
   const HALF_W = 640;           // half the width of the clearing (world units, clearing is 1280 wide)
   const HALF_H = 400;           // half the height of the clearing (800 tall)
   const BAND = 1200;            // how deep the forest is around the clearing
-  const MARGIN = 520;           // how far past the clearing edge the camera may look
   const VOID = '#143310';        // what lies past the edge of the map
   // --------------------
   const CELL = 80;              // one checker square = one future build tile
@@ -96,31 +98,55 @@
     }
     return false;
   }
-  // Trees stand on the blocks: one tree per chosen square, planted at the square's centre, so the
-  // forest lines up with the checker and with the grid you will build on. No random offsets.
-  const TREE_EVERY = 2;                 // a tree on every 2nd square in each direction (1 = every square, 3 = sparser)
+  // Everything lives in slots. `occ` maps "col,row" to whatever stands on that square (a tree for now;
+  // buildings, farms and so on go in the same map later). Trees fill most squares, one tree per slot.
+  const occ = new Map();
+  const slot = (c, r) => c + ',' + r;
+  const EMPTY_CHANCE = .22;             // fraction of forest squares left empty: 0 = solid wall of trees, .5 = open woodland
   function growForest() {
     const cols = WORLD_W / CELL, rows = WORLD_H / CELL;
-    for (let r = 0; r < rows; r += TREE_EVERY) {
-      const shift = (r / TREE_EVERY) & 1 ? TREE_EVERY / 2 : 0;       // alternate rows shift half a step: staggered, not columns
-      for (let c = shift; c < cols; c += TREE_EVERY) {
-        if (rng() < .08) continue;                                   // ~1 in 12 squares stays empty
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        if (rng() < EMPTY_CHANCE) continue;
         const x = (c + .5) * CELL, y = (r + .5) * CELL;
         if (inClearing(x, y, R[0][2] * .7, R[0][3], 0)) continue;     // keep the clearing open
-        trees.push({ x, y, c, r, s: 1.1, flip: ((c + r) >> 1) & 1 ? -1 : 1, ph: rr(0, 6.28) });
+        const t = { type: 'tree', x, y, c, r, s: 1.0, flip: rng() < .5 ? -1 : 1, ph: rr(0, 6.28) };
+        trees.push(t); occ.set(slot(c, r), t);
       }
     }
-    trees.sort((a, b) => (a.x + a.y) - (b.x + b.y));       // far to near in the diamond view
+    trees.sort((a, b) => (a.x + a.y) - (b.x + b.y) || a.x - b.x);   // far to near in the diamond view
   }
+
+  // ---------- selection: tap a slot to highlight it ----------
+  let sel = null;                                  // { c, r } or null
+  const infoEl = document.getElementById('info');
+  function select(sx, sy) {
+    const u = cpx + (sx - cw / 2) / zoom, v = cpy + (sy - ch / 2) / zoom;
+    const c = Math.floor(unprojX(u, v) / CELL), r = Math.floor(unprojY(u, v) / CELL);
+    if (c < 0 || r < 0 || c >= WORLD_W / CELL || r >= WORLD_H / CELL) { sel = null; infoEl.style.display = 'none'; return; }
+    sel = { c, r };
+    const thing = occ.get(slot(c, r));
+    infoEl.textContent = (thing ? 'Tree' : 'Grass') + '  \u00b7  slot ' + c + ', ' + r;
+    infoEl.style.display = 'block';
+  }
+  function tilePath(c, r) {
+    ctx.beginPath();
+    ctx.moveTo(projX(c * CELL, r * CELL), projY(c * CELL, r * CELL));
+    ctx.lineTo(projX((c + 1) * CELL, r * CELL), projY((c + 1) * CELL, r * CELL));
+    ctx.lineTo(projX((c + 1) * CELL, (r + 1) * CELL), projY((c + 1) * CELL, (r + 1) * CELL));
+    ctx.lineTo(projX(c * CELL, (r + 1) * CELL), projY(c * CELL, (r + 1) * CELL));
+    ctx.closePath();
+  }
+  function mapTransform() { ctx.setTransform(zoom * dpr, 0, 0, zoom * dpr, (cw / 2 - cpx * zoom) * dpr, (ch / 2 - cpy * zoom) * dpr); }
 
   // ---------- camera (cpx, cpy = view centre in projected space) ----------
   let dpr = 1, cw = 0, ch = 0, zoom = 1, cpx = 0, cpy = 0;
-  const MIN_ZOOM = .4, MAX_ZOOM = 1.6;
+  const MIN_ZOOM = .2, MAX_ZOOM = 1.6;
   function clampCam() {
     zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom));
     let wx = unprojX(cpx, cpy), wy = unprojY(cpx, cpy);
-    wx = Math.max(clearing.x0 - MARGIN, Math.min(clearing.x1 + MARGIN, wx));
-    wy = Math.max(clearing.y0 - MARGIN, Math.min(clearing.y1 + MARGIN, wy));
+    wx = Math.max(CELL * 2, Math.min(WORLD_W - CELL * 2, wx));      // the camera may roam the whole map
+    wy = Math.max(CELL * 2, Math.min(WORLD_H - CELL * 2, wy));
     cpx = projX(wx, wy); cpy = projY(wx, wy);
   }
   const flipBtn = document.getElementById('flip');
@@ -143,16 +169,19 @@
   window.addEventListener('resize', resize);
 
   // pointer: drag + pinch (screen movement is already in projected space)
-  const ptrs = new Map(); let pinchD = 0;
+  const ptrs = new Map(); let pinchD = 0, tap = null;
   canvas.addEventListener('pointerdown', e => {
     canvas.setPointerCapture(e.pointerId);
     ptrs.set(e.pointerId, pt(e));
     canvas.classList.add('drag'); hint.style.opacity = 0;
+    const p0 = ptrs.get(e.pointerId);
+    tap = ptrs.size === 1 ? { x: p0.x, y: p0.y, t: performance.now(), ok: true } : null;   // a tap = short press, barely moved
     if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinchD = Math.hypot(a.x - b.x, a.y - b.y); }
   });
   canvas.addEventListener('pointermove', e => {
     const p = ptrs.get(e.pointerId); if (!p) return;
     const q = pt(e);
+    if (tap && (ptrs.size > 1 || Math.hypot(q.x - tap.x, q.y - tap.y) > 9)) tap.ok = false;
     if (ptrs.size === 1) { cpx -= (q.x - p.x) / zoom; cpy -= (q.y - p.y) / zoom; }
     p.x = q.x; p.y = q.y;
     if (ptrs.size === 2) {
@@ -161,7 +190,12 @@
     }
     clampCam();
   });
-  const up = e => { ptrs.delete(e.pointerId); if (!ptrs.size) canvas.classList.remove('drag'); };
+  const up = e => {
+    const wasTap = e.type === 'pointerup' && tap && tap.ok && ptrs.size === 1 && performance.now() - tap.t < 500;
+    const at = wasTap ? pt(e) : null;
+    ptrs.delete(e.pointerId); if (!ptrs.size) { canvas.classList.remove('drag'); tap = null; }
+    if (at) select(at.x, at.y);
+  };
   canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
   function zoomAt(sx, sy, z) {
     const u = cpx + (sx - cw / 2) / zoom, v = cpy + (sy - ch / 2) / zoom;   // projected point under the cursor
@@ -210,6 +244,10 @@
   function frame(ms) {
     const time = ms / 1000;
     drawGround();
+    if (sel) {                                           // glowing tile under everything
+      mapTransform(); tilePath(sel.c, sel.r);
+      ctx.fillStyle = 'rgba(255,255,255,' + (.30 + .12 * Math.sin(time * 5)).toFixed(3) + ')'; ctx.fill();
+    }
 
     // project every tree to the screen once, keep the visible ones (already sorted far to near)
     const vis = [];
@@ -235,6 +273,12 @@
       ctx.setTransform(t.flip * zoom * dpr, 0, sway * zoom * dpr, zoom * dpr, sx * dpr, sy * dpr);
       ctx.drawImage(atlas, ax, ay, aw, ah, -w / 2, -h + 3 * t.s, w, h);
     }
+    if (sel) {                                           // crisp outline on top, so a tree can never hide it
+      mapTransform(); tilePath(sel.c, sel.r);
+      ctx.lineJoin = 'round'; ctx.lineWidth = 3.5 / zoom;
+      ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.stroke();
+      ctx.lineWidth = 2.2 / zoom; ctx.strokeStyle = '#ffffff'; ctx.stroke();
+    }
     requestAnimationFrame(frame);
   }
 
@@ -248,7 +292,7 @@
     zoom = Math.min(cw / dw, ch / dh);
     cpx = projX(spawn.x, spawn.y); cpy = projY(spawn.x, spawn.y); clampCam();
     requestAnimationFrame(frame);
-    window.game = { cam: () => ({ cpx, cpy, zoom }), spawn, clearing, trees, WORLD_W, WORLD_H, CELL, projX, projY, unprojX, unprojY };   // hooks for the next step
+    window.game = { occ, slot, cam: () => ({ cpx, cpy, zoom }), spawn, clearing, trees, WORLD_W, WORLD_H, CELL, projX, projY, unprojX, unprojY };   // hooks for the next step
   };
   atlas.onload = ready; groundImg.onload = ready;
   const missing = name => () => { hint.textContent = name + ' not found. Put it in the same folder as index.html'; hint.style.opacity = 1; };
