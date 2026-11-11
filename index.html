@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Forest Village</title>
 <style>
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #8cc83c; touch-action: none; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #8fc43a; touch-action: none; }
   canvas { display: block; width: 100%; height: 100%; cursor: grab; }
   canvas.drag { cursor: grabbing; }
   #vignette { position: fixed; inset: 0; pointer-events: none;
@@ -24,10 +24,10 @@
   // ---- tune these ----
   const HALF_W = 640;           // half the width of the clearing (world units, clearing is 1280 wide)
   const HALF_H = 400;           // half the height of the clearing (800 tall)
-  const BAND = 880;             // how deep the forest is around the clearing
+  const BAND = 2000;            // how deep the forest is around the clearing
   const MARGIN = 260;           // how far past the clearing edge the camera may look
   const COL = 150, ROW = 120;    // tree spacing: bigger numbers = fewer trees
-  const LIGHT = '#acdf50', DARK = '#84c238';   // the two checker greens
+  const BG = '#8fc43a';          // shows only if ground.png fails to load
   // --------------------
   const CELL = 80;              // one checker square = one future build tile
   const WORLD_W = 2 * (HALF_W + BAND), WORLD_H = 2 * (HALF_H + BAND);
@@ -57,6 +57,7 @@
   // ---------- tree atlas ----------
   const R = [[0, 0, 77, 93]];   // the oak: layered lime broadleaf (the only tree)
   const atlas = new Image();
+  const groundImg = new Image();   // ground.png: dark tile at x=0, light tile at x=32 (32x16 top faces from the hernandack pack)
 
   // ---------- world ----------
   const spawn = { x: WORLD_W / 2, y: WORLD_H / 2 };   // player spawn: centre of the clearing, on the checker
@@ -146,12 +147,11 @@
   // ---------- render ----------
   let started = false;
 
-  // The checker covers everything you can see, forest included. One light fill, then the dark
-  // squares in a single path; the iso transform turns each square into a diamond.
+  // Every square is a real tile sprite from your grass pack. Dark and light tiles alternate
+  // across the whole map, forest included. Sprites are pixel art, so smoothing stays off.
   function drawGround() {
-    const s = zoom * dpr;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = LIGHT; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = BG; ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // which world squares are on screen: unproject the four screen corners
     let minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
@@ -161,15 +161,20 @@
       minX = Math.min(minX, wx); maxX = Math.max(maxX, wx);
       minY = Math.min(minY, wy); maxY = Math.max(maxY, wy);
     }
-    ctx.setTransform(s * IX, s * IY, -s * IX, s * IY, (cw / 2) * dpr - projX(0, 0) * s - cpx * s, (ch / 2) * dpr - cpy * s);
-    ctx.fillStyle = DARK;
-    ctx.beginPath();
+    const Wd = 2 * CELL * IX, Hd = 2 * CELL * IY;
+    const hx = cw / 2 / zoom + Wd, hy = ch / 2 / zoom + Hd;     // half the view in projected units, plus a tile
+    ctx.imageSmoothingEnabled = false;
+    ctx.setTransform(zoom * dpr, 0, 0, zoom * dpr, (cw / 2 - cpx * zoom) * dpr, (ch / 2 - cpy * zoom) * dpr);
     const c0 = Math.floor(minX / CELL) - 1, c1 = Math.ceil(maxX / CELL) + 1;
     const r0 = Math.floor(minY / CELL) - 1, r1 = Math.ceil(maxY / CELL) + 1;
-    for (let r = r0; r < r1; r++)
-      for (let c = c0; c < c1; c++)
-        if ((r + c) & 1) ctx.rect(c * CELL, r * CELL, CELL, CELL);
-    ctx.fill();
+    for (let r = r0; r < r1; r++) {
+      for (let c = c0; c < c1; c++) {
+        const x = projX(c * CELL, (r + 1) * CELL), y = projY(c * CELL, r * CELL);
+        if (x < cpx - hx || x > cpx + hx || y < cpy - hy || y > cpy + hy) continue;
+        ctx.drawImage(groundImg, ((r + c) & 1) ? 32 : 0, 0, 32, 16, x - .5, y - .5, Wd + 1, Hd + 1);
+      }
+    }
+    ctx.imageSmoothingEnabled = true;
   }
 
   function frame(ms) {
@@ -203,8 +208,9 @@
     requestAnimationFrame(frame);
   }
 
-  atlas.onload = () => {
-    if (started) return; started = true;
+  let loaded = 0;
+  const ready = () => {
+    if (++loaded < 2 || started) return; started = true;
     growForest();
     resize();
     // whole clearing diamond fits on screen
@@ -214,8 +220,10 @@
     requestAnimationFrame(frame);
     window.game = { spawn, clearing, trees, WORLD_W, WORLD_H, CELL, projX, projY, unprojX, unprojY };   // hooks for the next step
   };
-  atlas.onerror = () => { hint.textContent = 'trees.png not found. Put it in the same folder as index.html'; hint.style.opacity = 1; };
-  atlas.src = 'trees.png';
+  atlas.onload = ready; groundImg.onload = ready;
+  const missing = name => () => { hint.textContent = name + ' not found. Put it in the same folder as index.html'; hint.style.opacity = 1; };
+  atlas.onerror = missing('trees.png'); groundImg.onerror = missing('ground.png');
+  atlas.src = 'trees.png'; groundImg.src = 'ground.png';
 })();
 </script>
 </body>
