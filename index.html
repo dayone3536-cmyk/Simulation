@@ -32,7 +32,6 @@
   const HALF_H = 400;           // half the height of the clearing (800 tall)
   const BAND = 1200;            // how deep the forest is around the clearing
   const MARGIN = 520;           // how far past the clearing edge the camera may look
-  const COL = 150, ROW = 120;    // tree spacing: bigger numbers = fewer trees
   const VOID = '#143310';        // what lies past the edge of the map
   // --------------------
   const CELL = 80;              // one checker square = one future build tile
@@ -97,21 +96,18 @@
     }
     return false;
   }
-  function add(x, y, s) {
-    if (x < 0 || y < 0 || x > WORLD_W || y > WORLD_H) return;
-    const shrink = rng() < .45 ? rr(0, 60) : 0;
-    if (inClearing(x, y, R[0][2] * s * .7, R[0][3] * s, shrink)) return;
-    trees.push({ x, y, s, flip: rng() < .5 ? -1 : 1, ph: rr(0, 6.28) });
-  }
+  // Trees stand on the blocks: one tree per chosen square, planted at the square's centre, so the
+  // forest lines up with the checker and with the grid you will build on. No random offsets.
+  const TREE_EVERY = 2;                 // a tree on every 2nd square in each direction (1 = every square, 3 = sparser)
   function growForest() {
-    const rMax = Math.ceil(WORLD_H / ROW) + 1, cMax = Math.ceil(WORLD_W / COL) + 1;
-    for (let r = -1; r <= rMax; r++) {
-      const rowY = r * ROW;
-      const wobble = Math.sin(r * 1.7) * 12 + rr(-6, 6);
-      for (let c = -1; c <= cMax; c++) {
-        const x = (c + (r & 1 ? .5 : 0)) * COL + wobble;
-        const y = rowY + Math.sin(c * .9 + r) * 6;
-        if (rng() > .08) add(x + rr(-18, 18), y + rr(-14, 14), rr(.88, 1.18));
+    const cols = WORLD_W / CELL, rows = WORLD_H / CELL;
+    for (let r = 0; r < rows; r += TREE_EVERY) {
+      const shift = (r / TREE_EVERY) & 1 ? TREE_EVERY / 2 : 0;       // alternate rows shift half a step: staggered, not columns
+      for (let c = shift; c < cols; c += TREE_EVERY) {
+        if (rng() < .08) continue;                                   // ~1 in 12 squares stays empty
+        const x = (c + .5) * CELL, y = (r + .5) * CELL;
+        if (inClearing(x, y, R[0][2] * .7, R[0][3], 0)) continue;     // keep the clearing open
+        trees.push({ x, y, c, r, s: 1.1, flip: ((c + r) >> 1) & 1 ? -1 : 1, ph: rr(0, 6.28) });
       }
     }
     trees.sort((a, b) => (a.x + a.y) - (b.x + b.y));       // far to near in the diamond view
