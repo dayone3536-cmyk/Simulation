@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Forest Village</title>
 <style>
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #2f5a1a; touch-action: none; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #8cc83c; touch-action: none; }
   canvas { display: block; width: 100%; height: 100%; cursor: grab; }
   canvas.drag { cursor: grabbing; }
   #vignette { position: fixed; inset: 0; pointer-events: none;
-    background: radial-gradient(ellipse at center, rgba(0,0,0,0) 62%, rgba(0,28,0,.38) 100%); }
+    background: radial-gradient(ellipse at center, rgba(0,0,0,0) 66%, rgba(10,50,0,.28) 100%); }
   #hint { position: fixed; left: 14px; bottom: 12px; font: 13px system-ui, sans-serif; color: #fff;
     text-shadow: 0 1px 3px rgba(0,0,0,.7); pointer-events: none; transition: opacity .6s; }
 </style>
@@ -22,16 +22,23 @@
 <script>
 (() => {
   // ---- tune these ----
-  const HALF_W = 640;           // half the width of the clearing (clearing is 1280 wide)
+  const HALF_W = 640;           // half the width of the clearing (world units, clearing is 1280 wide)
   const HALF_H = 400;           // half the height of the clearing (800 tall)
-  const BAND = 600;             // how deep the forest is around the clearing
+  const BAND = 880;             // how deep the forest is around the clearing
   const MARGIN = 260;           // how far past the clearing edge the camera may look
-  const COL = 108, ROW = 84;     // tree spacing: bigger numbers = fewer trees
+  const COL = 150, ROW = 120;    // tree spacing: bigger numbers = fewer trees
+  const LIGHT = '#acdf50', DARK = '#84c238';   // the two checker greens
   // --------------------
-  const CELL = 40;              // size of one checker square (the clearing is 32 x 20 squares; also the future build grid)
-  const TILE = 512;             // grass detail tile
-  const MACRO = 1024;           // large soft light/dark blotches (hides tiling)
+  const CELL = 80;              // one checker square = one future build tile
   const WORLD_W = 2 * (HALF_W + BAND), WORLD_H = 2 * (HALF_H + BAND);
+
+  // Clash-style view: the flat world is rotated 45 degrees and squashed 2:1, so every
+  // square becomes a diamond. World coordinates stay plain (x, y); only drawing changes.
+  const IX = Math.SQRT1_2, IY = Math.SQRT1_2 / 2;
+  const projX = (x, y) => (x - y) * IX;
+  const projY = (x, y) => (x + y) * IY;
+  const unprojX = (u, v) => (u / IX + v / IY) / 2;
+  const unprojY = (u, v) => (v / IY - u / IX) / 2;
 
   const canvas = document.getElementById('c');
   const ctx = canvas.getContext('2d');
@@ -47,185 +54,56 @@
   }
   const rr = (a, b) => a + rng() * (b - a);
 
-  // ---------- tileable value noise ----------
-  function makeNoise(cells) {
-    const g = new Float32Array(cells * cells);
-    for (let i = 0; i < g.length; i++) g[i] = rng();
-    return (u, v) => {
-      const x = u * cells, y = v * cells;
-      const x0 = Math.floor(x), y0 = Math.floor(y);
-      const fx = x - x0, fy = y - y0;
-      const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
-      const xa = x0 % cells, xb = (x0 + 1) % cells, ya = y0 % cells, yb = (y0 + 1) % cells;
-      const a = g[ya * cells + xa], b = g[ya * cells + xb], c = g[yb * cells + xa], d = g[yb * cells + xb];
-      return a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy;
-    };
-  }
-
-  // ---------- procedural grass (the Clash of Clans look: saturated, mottled, tufted) ----------
-  function makeGrass() {
-    const c = document.createElement('canvas');
-    c.width = c.height = TILE;
-    const g = c.getContext('2d');
-
-    // 1) mottled base from layered noise mapped onto a dark -> light green ramp
-    const img = g.createImageData(TILE, TILE), d = img.data;
-    const n = [makeNoise(4), makeNoise(8), makeNoise(16), makeNoise(48)];
-    const ramp = [[26, 70, 16], [34, 86, 20], [44, 100, 24], [58, 116, 30]];   // dark forest floor
-    for (let y = 0; y < TILE; y++) {
-      for (let x = 0; x < TILE; x++) {
-        const u = x / TILE, v = y / TILE;
-        let t = .40 * n[0](u, v) + .28 * n[1](u, v) + .20 * n[2](u, v) + .12 * n[3](u, v);
-        t = Math.max(0, Math.min(.999, (t - .5) * .9 + .5)) * 3;
-        const i = t | 0, f = t - i, a = ramp[i], b = ramp[i + 1];
-        const o = (y * TILE + x) * 4;
-        d[o] = a[0] + (b[0] - a[0]) * f;
-        d[o + 1] = a[1] + (b[1] - a[1]) * f;
-        d[o + 2] = a[2] + (b[2] - a[2]) * f;
-        d[o + 3] = 255;
-      }
-    }
-    g.putImageData(img, 0, 0);
-
-    // draw something so it wraps across tile edges (keeps the tile seamless)
-    function wrapped(x, y, fn) {
-      const xs = [x], ys = [y], m = 24;
-      if (x < m) xs.push(x + TILE); else if (x > TILE - m) xs.push(x - TILE);
-      if (y < m) ys.push(y + TILE); else if (y > TILE - m) ys.push(y - TILE);
-      for (const px of xs) for (const py of ys) fn(px, py);
-    }
-
-    // 2) grass tufts: little fans of blades, dark base stroke then lighter tip stroke
-    g.lineCap = 'round';
-    for (let i = 0; i < 500; i++) {
-      const x = rr(0, TILE), y = rr(0, TILE), len = rr(5, 11), lit = rng();
-      wrapped(x, y, (px, py) => {
-        for (const lean of [-.45, 0, .45]) {
-          const bx = px + lean * 3, tx = bx + lean * len * .7 + rr(-1, 1), ty = py - len * (lean === 0 ? 1 : .75);
-          g.strokeStyle = 'rgba(30,84,20,.55)'; g.lineWidth = 1.8;
-          g.beginPath(); g.moveTo(bx, py + 1); g.lineTo(tx, ty + 1); g.stroke();
-          g.strokeStyle = lit > .55 ? 'rgba(96,160,48,.55)' : 'rgba(70,134,38,.55)'; g.lineWidth = 1.2;
-          g.beginPath(); g.moveTo(bx, py); g.lineTo(tx, ty); g.stroke();
-        }
-      });
-    }
-
-    return c;
-  }
-
-
-  // sparse tufts + clover for the lawn; transparent, and exactly 12 squares wide so it never fights the checker
-  const DETAIL = CELL * 12;
-  function makeDetail() {
-    const c = document.createElement('canvas');
-    c.width = c.height = DETAIL;
-    const g = c.getContext('2d');
-    g.lineCap = 'round';
-    function wrapped(x, y, fn) {
-      const xs = [x], ys = [y], m = 16;
-      if (x < m) xs.push(x + DETAIL); else if (x > DETAIL - m) xs.push(x - DETAIL);
-      if (y < m) ys.push(y + DETAIL); else if (y > DETAIL - m) ys.push(y - DETAIL);
-      for (const px of xs) for (const py of ys) fn(px, py);
-    }
-    for (let i = 0; i < 260; i++) {
-      const x = rr(0, DETAIL), y = rr(0, DETAIL), len = rr(4, 8), lit = rng() > .5;
-      wrapped(x, y, (px, py) => {
-        for (const lean of [-.5, 0, .5]) {
-          const tx = px + lean * len * .8, ty = py - len * (lean === 0 ? 1 : .72);
-          g.strokeStyle = lit ? 'rgba(40,110,20,.30)' : 'rgba(30,96,16,.34)'; g.lineWidth = 1.5;
-          g.beginPath(); g.moveTo(px, py + 1); g.lineTo(tx, ty + 1); g.stroke();
-          g.strokeStyle = lit ? 'rgba(200,244,120,.55)' : 'rgba(150,214,70,.50)'; g.lineWidth = 1;
-          g.beginPath(); g.moveTo(px, py); g.lineTo(tx, ty); g.stroke();
-        }
-      });
-    }
-    const flowers = ['#fff6d8', '#ffe45c', '#ffffff'];
-    for (let i = 0; i < 14; i++) {
-      const x = rr(4, DETAIL - 4), y = rr(4, DETAIL - 4);
-      g.fillStyle = 'rgba(30,84,20,.35)'; g.beginPath(); g.arc(x, y + 1, 1.7, 0, 7); g.fill();
-      g.fillStyle = flowers[(rng() * flowers.length) | 0]; g.beginPath(); g.arc(x, y, 1.3, 0, 7); g.fill();
-    }
-    return c;
-  }
-
-  // soft light/dark blotches at a different tile size than the detail tile
-  function makeMacro() {
-    const c = document.createElement('canvas');
-    c.width = c.height = MACRO;
-    const g = c.getContext('2d');
-    const img = g.createImageData(MACRO, MACRO), d = img.data;
-    const n = [makeNoise(3), makeNoise(6), makeNoise(12)];
-    for (let y = 0; y < MACRO; y++) {
-      for (let x = 0; x < MACRO; x++) {
-        const u = x / MACRO, v = y / MACRO;
-        const t = .55 * n[0](u, v) + .30 * n[1](u, v) + .15 * n[2](u, v);
-        const o = (y * MACRO + x) * 4;
-        if (t < .5) { d[o] = 14; d[o + 1] = 62; d[o + 2] = 10; d[o + 3] = Math.min(255, (.5 - t) * 2 * 255 * .9); }
-        else { d[o] = 210; d[o + 1] = 244; d[o + 2] = 110; d[o + 3] = Math.min(255, (t - .5) * 2 * 255 * .6); }
-      }
-    }
-    g.putImageData(img, 0, 0);
-    return c;
-  }
-
-  // ---------- tree atlas (sliced from your sprite sheet) ----------
-  // [x, y, w, h] of each green tree inside trees.png
-  const R = [
-    [0, 0, 77, 93]      // 0 the oak: layered lime broadleaf (the only tree)
-  ];
+  // ---------- tree atlas ----------
+  const R = [[0, 0, 77, 93]];   // the oak: layered lime broadleaf (the only tree)
   const atlas = new Image();
 
   // ---------- world ----------
-  const spawn = { x: WORLD_W / 2, y: WORLD_H / 2 };          // your base, centre of the clearing
+  const spawn = { x: WORLD_W / 2, y: WORLD_H / 2 };   // player spawn: centre of the clearing, on the checker
   const clearing = { x0: spawn.x - HALF_W, y0: spawn.y - HALF_H, x1: spawn.x + HALF_W, y1: spawn.y + HALF_H };
   const trees = [];
 
+  // Keep the clearing open. Trees are upright sprites, so on screen a tree's canopy rises
+  // above its base; in world terms that is back toward smaller x and y. Check the base and
+  // two points up the canopy. `shrink` lets some trees creep in so the edge is ragged.
   function inClearing(x, y, r, h, shrink) {
-    // base must be outside the rectangle, and canopies of trees standing just
-    // below the bottom edge must not reach up into it. `shrink` lets a tree
-    // creep a little way inside, which makes the edge ragged instead of a ruler line
-    return x > clearing.x0 - r + shrink && x < clearing.x1 + r - shrink &&
-           y > clearing.y0 - r + shrink && y < clearing.y1 + h * .55 - shrink;
+    const d = h * .8;
+    for (const t of [0, .5, 1]) {
+      const px = x - t * d, py = y - t * d;
+      if (px > clearing.x0 - r + shrink && px < clearing.x1 + r - shrink &&
+          py > clearing.y0 - r + shrink && py < clearing.y1 + r - shrink) return true;
+    }
+    return false;
   }
-  function add(x, y, k, s) {
-    const shrink = rng() < .45 ? rr(0, 80) : 0;
-    if (inClearing(x, y, R[k][2] * s * .36, R[k][3] * s, shrink)) return;
-    trees.push({ x, y, k, s, flip: rng() < .5 ? -1 : 1, ph: rr(0, 6.28) });
+  function add(x, y, s) {
+    if (x < 0 || y < 0 || x > WORLD_W || y > WORLD_H) return;
+    const shrink = rng() < .45 ? rr(0, 60) : 0;
+    if (inClearing(x, y, R[0][2] * s * .7, R[0][3] * s, shrink)) return;
+    trees.push({ x, y, s, flip: rng() < .5 ? -1 : 1, ph: rr(0, 6.28) });
   }
-  // loose rows: a rough grid that wanders, with gaps and size changes
   function growForest() {
-    const rMin = -Math.ceil(spawn.y / ROW) - 1, rMax = Math.ceil((WORLD_H + 100 - spawn.y) / ROW);
-    const cMin = -Math.ceil(spawn.x / COL) - 1, cMax = Math.ceil((WORLD_W - spawn.x) / COL) + 1;
-    for (let r = rMin; r <= rMax; r++) {
-      const rowY = spawn.y + r * ROW;
-      if (rowY < 30) continue;                                 // rows above the map edge are never seen
-      const wobble = Math.sin(r * 1.7) * 12 + rr(-6, 6);       // each row drifts sideways a bit
-      for (let c = cMin; c <= cMax; c++) {
-        const x = spawn.x + (c + (r & 1 ? .5 : 0)) * COL + wobble;
+    const rMax = Math.ceil(WORLD_H / ROW) + 1, cMax = Math.ceil(WORLD_W / COL) + 1;
+    for (let r = -1; r <= rMax; r++) {
+      const rowY = r * ROW;
+      const wobble = Math.sin(r * 1.7) * 12 + rr(-6, 6);
+      for (let c = -1; c <= cMax; c++) {
+        const x = (c + (r & 1 ? .5 : 0)) * COL + wobble;
         const y = rowY + Math.sin(c * .9 + r) * 6;
-        if (rng() > .08) {                                     // ~1 in 12 spots stays empty
-          add(x + rr(-18, 18), y + rr(-14, 14), 0, rr(.88, 1.18));
-        }
+        if (rng() > .08) add(x + rr(-18, 18), y + rr(-14, 14), rr(.88, 1.18));
       }
     }
-    trees.sort((a, b) => a.y - b.y);
+    trees.sort((a, b) => (a.x + a.y) - (b.x + b.y));       // far to near in the diamond view
   }
 
-  // ---------- camera ----------
-  let dpr = 1, cw = 0, ch = 0;
-  let zoom = 1, camX = 0, camY = 0;
-  const minZoom = () => Math.min(1.6, Math.max(.25, cw / WORLD_W, ch / WORLD_H));
+  // ---------- camera (cpx, cpy = view centre in projected space) ----------
+  let dpr = 1, cw = 0, ch = 0, zoom = 1, cpx = 0, cpy = 0;
+  const MIN_ZOOM = .4, MAX_ZOOM = 1.6;
   function clampCam() {
-    zoom = Math.max(minZoom(), Math.min(1.6, zoom));
-    const vw = cw / zoom, vh = ch / zoom;
-    // the view may reach MARGIN px past the clearing, no further; if the screen is
-    // bigger than that area (zoomed out) it simply stays centred on the base
-    const ax0 = clearing.x0 - MARGIN, ax1 = clearing.x1 + MARGIN;
-    const ay0 = clearing.y0 - MARGIN, ay1 = clearing.y1 + MARGIN;
-    camX = vw >= ax1 - ax0 ? spawn.x - vw / 2 : Math.max(ax0, Math.min(ax1 - vw, camX));
-    camY = vh >= ay1 - ay0 ? spawn.y - vh / 2 : Math.max(ay0, Math.min(ay1 - vh, camY));
-    camX = Math.max(0, Math.min(WORLD_W - vw, camX));
-    camY = Math.max(0, Math.min(WORLD_H - vh, camY));
+    zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom));
+    let wx = unprojX(cpx, cpy), wy = unprojY(cpx, cpy);
+    wx = Math.max(clearing.x0 - MARGIN, Math.min(clearing.x1 + MARGIN, wx));
+    wy = Math.max(clearing.y0 - MARGIN, Math.min(clearing.y1 + MARGIN, wy));
+    cpx = projX(wx, wy); cpy = projY(wx, wy);
   }
   function resize() {
     dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -235,7 +113,7 @@
   }
   window.addEventListener('resize', resize);
 
-  // pointer: drag + pinch
+  // pointer: drag + pinch (screen movement is already in projected space)
   const ptrs = new Map(); let pinchD = 0;
   canvas.addEventListener('pointerdown', e => {
     canvas.setPointerCapture(e.pointerId);
@@ -245,9 +123,7 @@
   });
   canvas.addEventListener('pointermove', e => {
     const p = ptrs.get(e.pointerId); if (!p) return;
-    if (ptrs.size === 1) {
-      camX -= (e.clientX - p.x) / zoom; camY -= (e.clientY - p.y) / zoom;
-    }
+    if (ptrs.size === 1) { cpx -= (e.clientX - p.x) / zoom; cpy -= (e.clientY - p.y) / zoom; }
     p.x = e.clientX; p.y = e.clientY;
     if (ptrs.size === 2) {
       const [a, b] = [...ptrs.values()], dist = Math.hypot(a.x - b.x, a.y - b.y);
@@ -258,9 +134,9 @@
   const up = e => { ptrs.delete(e.pointerId); if (!ptrs.size) canvas.classList.remove('drag'); };
   canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
   function zoomAt(sx, sy, z) {
-    const wx = camX + sx / zoom, wy = camY + sy / zoom;
-    zoom = Math.max(minZoom(), Math.min(1.6, z));
-    camX = wx - sx / zoom; camY = wy - sy / zoom;
+    const u = cpx + (sx - cw / 2) / zoom, v = cpy + (sy - ch / 2) / zoom;   // projected point under the cursor
+    zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z));
+    cpx = u - (sx - cw / 2) / zoom; cpy = v - (sy - ch / 2) / zoom;
   }
   canvas.addEventListener('wheel', e => {
     e.preventDefault(); hint.style.opacity = 0;
@@ -268,108 +144,75 @@
   }, { passive: false });
 
   // ---------- render ----------
-  let grassTile, macroTile, detailTile, grassPat, macroPat, detailPat, started = false;
-  function fillPattern(pat, alpha) {
-    // a pattern lives in the canvas's current coordinate space, so drawing it
-    // under the camera transform tiles it in world space with no seams
+  let started = false;
+
+  // The checker covers everything you can see, forest included. One light fill, then the dark
+  // squares in a single path; the iso transform turns each square into a diamond.
+  function drawGround() {
     const s = zoom * dpr;
-    ctx.setTransform(s, 0, 0, s, -camX * s, -camY * s);
-    ctx.globalAlpha = alpha; ctx.fillStyle = pat;
-    ctx.fillRect(camX, camY, cw / zoom + 1, ch / zoom + 1);
-    ctx.globalAlpha = 1;
-  }
-  // Clash-style lawn: a clean two-tone checker, only inside the clearing. The forest floor
-  // around it stays dark, so the lawn reads as a cut, tended square.
-  const LIGHT = '#acdf50', DARK = '#84c238';
-  function drawClearing() {
-    const s = zoom * dpr, vw = cw / zoom, vh = ch / zoom;
-    const { x0, y0, x1, y1 } = clearing, w = x1 - x0, h = y1 - y0;
-    ctx.setTransform(s, 0, 0, s, -camX * s, -camY * s);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = LIGHT; ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // dim the forest floor and let the lawn cast a soft shadow onto it
-    ctx.fillStyle = 'rgba(4,28,3,.30)'; ctx.fillRect(camX, camY, vw + 1, vh + 1);
-    ctx.save();
-    ctx.shadowColor = 'rgba(0,18,0,.55)'; ctx.shadowBlur = 30 * s;
-    ctx.fillStyle = LIGHT; ctx.fillRect(x0, y0, w, h);
-    ctx.restore();
-
-    ctx.save();
-    ctx.beginPath(); ctx.rect(x0, y0, w, h); ctx.clip();
-    // light base, then only the dark squares on top (no seams between squares)
-    ctx.fillStyle = LIGHT; ctx.fillRect(x0, y0, w, h);
+    // which world squares are on screen: unproject the four screen corners
+    let minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
+    for (const [sx, sy] of [[0, 0], [cw, 0], [0, ch], [cw, ch]]) {
+      const u = cpx + (sx - cw / 2) / zoom, v = cpy + (sy - ch / 2) / zoom;
+      const wx = unprojX(u, v), wy = unprojY(u, v);
+      minX = Math.min(minX, wx); maxX = Math.max(maxX, wx);
+      minY = Math.min(minY, wy); maxY = Math.max(maxY, wy);
+    }
+    ctx.setTransform(s * IX, s * IY, -s * IX, s * IY, (cw / 2) * dpr - projX(0, 0) * s - cpx * s, (ch / 2) * dpr - cpy * s);
     ctx.fillStyle = DARK;
-    const c0 = Math.max(Math.floor(x0 / CELL), Math.floor(camX / CELL)), c1 = Math.min(Math.ceil(x1 / CELL), Math.ceil((camX + vw) / CELL));
-    const r0 = Math.max(Math.floor(y0 / CELL), Math.floor(camY / CELL)), r1 = Math.min(Math.ceil(y1 / CELL), Math.ceil((camY + vh) / CELL));
+    ctx.beginPath();
+    const c0 = Math.floor(minX / CELL) - 1, c1 = Math.ceil(maxX / CELL) + 1;
+    const r0 = Math.floor(minY / CELL) - 1, r1 = Math.ceil(maxY / CELL) + 1;
     for (let r = r0; r < r1; r++)
       for (let c = c0; c < c1; c++)
-        if ((r + c) & 1) ctx.fillRect(c * CELL, r * CELL, CELL, CELL);
-    // faint large-scale light variation so it is not flat vector, then grass tufts
-    ctx.globalAlpha = .06; ctx.fillStyle = macroPat; ctx.fillRect(x0, y0, w, h);
-    ctx.globalAlpha = 1; ctx.fillStyle = detailPat; ctx.fillRect(x0, y0, w, h);
-    // soft inner edge where the lawn meets the trees
-    const E = 46;
-    for (const [gx0, gy0, gx1, gy1, rx, ry, rw, rh] of [
-      [x0, 0, x0 + E, 0, x0, y0, E, h], [x1, 0, x1 - E, 0, x1 - E, y0, E, h],
-      [0, y0, 0, y0 + E, x0, y0, w, E], [0, y1, 0, y1 - E, x0, y1 - E, w, E]]) {
-      const g = ctx.createLinearGradient(gx0, gy0, gx1, gy1);
-      g.addColorStop(0, 'rgba(18,70,10,.34)'); g.addColorStop(1, 'rgba(18,70,10,0)');
-      ctx.fillStyle = g; ctx.fillRect(rx, ry, rw, rh);
-    }
-    ctx.restore();
-    ctx.strokeStyle = 'rgba(40,96,18,.75)'; ctx.lineWidth = 3; ctx.strokeRect(x0, y0, w, h);
-  }
-  function firstIndexBelow(y) {            // first tree whose base y >= y
-    let lo = 0, hi = trees.length;
-    while (lo < hi) { const m = (lo + hi) >> 1; if (trees[m].y < y) lo = m + 1; else hi = m; }
-    return lo;
+        if ((r + c) & 1) ctx.rect(c * CELL, r * CELL, CELL, CELL);
+    ctx.fill();
   }
 
   function frame(ms) {
-    const time = ms / 1000, s = zoom * dpr;
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    fillPattern(grassPat, 1);
-    fillPattern(macroPat, .12);
-    drawClearing();                          // light / dark checker lawn inside the clearing
+    const time = ms / 1000;
+    drawGround();
 
-    const vw = cw / zoom, vh = ch / zoom;
-    const x0 = camX - 140, x1 = camX + vw + 140;
-    const i0 = firstIndexBelow(camY - 4), i1 = firstIndexBelow(camY + vh + 160);
-
-    ctx.setTransform(s, 0, 0, s, -camX * s, -camY * s);
-
-    // shadows first, so every canopy sits above every shadow
-    for (let i = i0; i < i1; i++) {
-      const t = trees[i]; if (t.x < x0 || t.x > x1) continue;
-      const w = R[t.k][2] * t.s;
-      const g = ctx.createRadialGradient(t.x, t.y - 2, 1, t.x, t.y - 2, w * .5);
-      g.addColorStop(0, 'rgba(8,36,6,.50)'); g.addColorStop(1, 'rgba(8,36,6,0)');
-      ctx.save(); ctx.translate(t.x, t.y - 2); ctx.scale(1, .42); ctx.translate(-t.x, -(t.y - 2));
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(t.x, t.y - 2, w * .5, 0, 7); ctx.fill(); ctx.restore();
+    // project every tree to the screen once, keep the visible ones (already sorted far to near)
+    const vis = [];
+    for (const t of trees) {
+      const sx = (projX(t.x, t.y) - cpx) * zoom + cw / 2, sy = (projY(t.x, t.y) - cpy) * zoom + ch / 2;
+      if (sx < -120 * zoom || sx > cw + 120 * zoom || sy < -40 * zoom || sy > ch + 160 * zoom) continue;
+      vis.push([t, sx, sy]);
     }
 
-    // trees, back to front, each with a slight wind sway
-    for (let i = i0; i < i1; i++) {
-      const t = trees[i]; if (t.x < x0 || t.x > x1) continue;
-      const [sx, sy, sw, sh] = R[t.k], w = sw * t.s, h = sh * t.s;
+    // shadows first, so every canopy sits above every shadow
+    for (const [t, sx, sy] of vis) {
+      const w = R[0][2] * t.s;
+      ctx.setTransform(zoom * dpr, 0, 0, zoom * dpr * .42, sx * dpr, (sy - 2 * zoom) * dpr);
+      const g = ctx.createRadialGradient(0, 0, 1, 0, 0, w * .5);
+      g.addColorStop(0, 'rgba(20,70,6,.42)'); g.addColorStop(1, 'rgba(20,70,6,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, w * .5, 0, 7); ctx.fill();
+    }
+
+    // trees stay upright (no rotation), drawn at their projected base, with a slight wind sway
+    for (const [t, sx, sy] of vis) {
+      const [ax, ay, aw, ah] = R[0], w = aw * t.s, h = ah * t.s;
       const sway = Math.sin(time * 1.1 + t.ph) * .02;
-      ctx.setTransform(t.flip * s, 0, sway * s, s, (t.x - camX) * s, (t.y - camY) * s);
-      ctx.drawImage(atlas, sx, sy, sw, sh, -w / 2, -h + 3 * t.s, w, h);
+      ctx.setTransform(t.flip * zoom * dpr, 0, sway * zoom * dpr, zoom * dpr, sx * dpr, sy * dpr);
+      ctx.drawImage(atlas, ax, ay, aw, ah, -w / 2, -h + 3 * t.s, w, h);
     }
     requestAnimationFrame(frame);
   }
 
   atlas.onload = () => {
     if (started) return; started = true;
-    grassTile = makeGrass(); macroTile = makeMacro();
-    grassPat = ctx.createPattern(grassTile, 'repeat');
-    macroPat = ctx.createPattern(macroTile, 'repeat');
-    detailTile = makeDetail(); detailPat = ctx.createPattern(detailTile, 'repeat');
     growForest();
     resize();
-    zoom = Math.min(cw / (HALF_W * 2 + 120), ch / (HALF_H * 2 + 120));   // whole clearing fits on screen
-    camX = spawn.x - cw / zoom / 2; camY = spawn.y - ch / zoom / 2; clampCam();
+    // whole clearing diamond fits on screen
+    const dw = (HALF_W * 2 + HALF_H * 2) * IX + 160, dh = (HALF_W * 2 + HALF_H * 2) * IY + 200;
+    zoom = Math.min(cw / dw, ch / dh);
+    cpx = projX(spawn.x, spawn.y); cpy = projY(spawn.x, spawn.y); clampCam();
     requestAnimationFrame(frame);
-    window.game = { spawn, clearing, trees, WORLD_W, WORLD_H, CELL };   // hooks for the next step (cutting trees, farms, houses)
+    window.game = { spawn, clearing, trees, WORLD_W, WORLD_H, CELL, projX, projY, unprojX, unprojY };   // hooks for the next step
   };
   atlas.onerror = () => { hint.textContent = 'trees.png not found. Put it in the same folder as index.html'; hint.style.opacity = 1; };
   atlas.src = 'trees.png';
