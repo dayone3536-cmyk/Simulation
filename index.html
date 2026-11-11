@@ -5,18 +5,30 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Forest Village</title>
 <style>
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #8fc43a; touch-action: none; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #143310; touch-action: none; }
   canvas { display: block; width: 100%; height: 100%; cursor: grab; }
   canvas.drag { cursor: grabbing; }
   #vignette { position: fixed; inset: 0; pointer-events: none;
     background: radial-gradient(ellipse at center, rgba(0,0,0,0) 66%, rgba(10,50,0,.28) 100%); }
   #hint { position: fixed; left: 14px; bottom: 12px; font: 13px system-ui, sans-serif; color: #fff;
     text-shadow: 0 1px 3px rgba(0,0,0,.7); pointer-events: none; transition: opacity .6s; }
+  /* phones must be in landscape: portrait shows this cover until the phone is turned */
+  #rotate { display: none; position: fixed; inset: 0; z-index: 10; background: #143310; color: #fff;
+    flex-direction: column; align-items: center; justify-content: center; gap: 22px;
+    font: 600 18px system-ui, sans-serif; text-align: center; padding: 24px; }
+  #rotate .phone { width: 56px; height: 96px; border: 4px solid #fff; border-radius: 12px; position: relative;
+    animation: turn 2.4s ease-in-out infinite; }
+  #rotate .phone::after { content: ''; position: absolute; left: 50%; bottom: 6px; width: 14px; height: 4px; margin-left: -7px;
+    background: #fff; border-radius: 2px; }
+  @keyframes turn { 0%, 25% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
+  @media (orientation: portrait) and (pointer: coarse) { #rotate { display: flex; } }
+  @media (prefers-reduced-motion: reduce) { #rotate .phone { animation: none; } }
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
 <div id="vignette"></div>
+<div id="rotate"><div class="phone"></div><div>Turn your phone sideways to play</div></div>
 <div id="hint">Drag to look around, scroll or pinch to zoom</div>
 
 <script>
@@ -24,10 +36,10 @@
   // ---- tune these ----
   const HALF_W = 640;           // half the width of the clearing (world units, clearing is 1280 wide)
   const HALF_H = 400;           // half the height of the clearing (800 tall)
-  const BAND = 2000;            // how deep the forest is around the clearing
-  const MARGIN = 260;           // how far past the clearing edge the camera may look
+  const BAND = 1200;            // how deep the forest is around the clearing
+  const MARGIN = 520;           // how far past the clearing edge the camera may look
   const COL = 150, ROW = 120;    // tree spacing: bigger numbers = fewer trees
-  const BG = '#8fc43a';          // shows only if ground.png fails to load
+  const VOID = '#143310';        // what lies past the edge of the map
   // --------------------
   const CELL = 80;              // one checker square = one future build tile
   const WORLD_W = 2 * (HALF_W + BAND), WORLD_H = 2 * (HALF_H + BAND);
@@ -39,6 +51,18 @@
   const projY = (x, y) => (x + y) * IY;
   const unprojX = (u, v) => (u / IX + v / IY) / 2;
   const unprojY = (u, v) => (v / IY - u / IX) / 2;
+
+  // On a phone, the first touch asks for fullscreen and locks to landscape. Android Chrome allows
+  // the lock; iPhones do not, so the "turn your phone" cover above does the job there.
+  function goLandscape() {
+    if (!matchMedia('(pointer: coarse)').matches) return;
+    const el = document.documentElement;
+    Promise.resolve(el.requestFullscreen && el.requestFullscreen({ navigationUI: 'hide' }))
+      .then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape'))
+      .catch(() => {});
+  }
+  window.addEventListener('pointerdown', goLandscape, { once: true });
+  window.addEventListener('orientationchange', () => setTimeout(() => window.dispatchEvent(new Event('resize')), 250));
 
   const canvas = document.getElementById('c');
   const ctx = canvas.getContext('2d');
@@ -151,7 +175,7 @@
   // across the whole map, forest included. Sprites are pixel art, so smoothing stays off.
   function drawGround() {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = BG; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = VOID; ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // which world squares are on screen: unproject the four screen corners
     let minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
@@ -165,8 +189,9 @@
     const hx = cw / 2 / zoom + Wd, hy = ch / 2 / zoom + Hd;     // half the view in projected units, plus a tile
     ctx.imageSmoothingEnabled = false;
     ctx.setTransform(zoom * dpr, 0, 0, zoom * dpr, (cw / 2 - cpx * zoom) * dpr, (ch / 2 - cpy * zoom) * dpr);
-    const c0 = Math.floor(minX / CELL) - 1, c1 = Math.ceil(maxX / CELL) + 1;
-    const r0 = Math.floor(minY / CELL) - 1, r1 = Math.ceil(maxY / CELL) + 1;
+    // tiles exist only inside the map
+    const c0 = Math.max(0, Math.floor(minX / CELL) - 1), c1 = Math.min(WORLD_W / CELL, Math.ceil(maxX / CELL) + 1);
+    const r0 = Math.max(0, Math.floor(minY / CELL) - 1), r1 = Math.min(WORLD_H / CELL, Math.ceil(maxY / CELL) + 1);
     for (let r = r0; r < r1; r++) {
       for (let c = c0; c < c1; c++) {
         const x = projX(c * CELL, (r + 1) * CELL), y = projY(c * CELL, r * CELL);
