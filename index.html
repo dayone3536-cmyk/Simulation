@@ -12,24 +12,18 @@
     background: radial-gradient(ellipse at center, rgba(0,0,0,0) 66%, rgba(10,50,0,.28) 100%); }
   #hint { position: fixed; left: 14px; bottom: 12px; font: 13px system-ui, sans-serif; color: #fff;
     text-shadow: 0 1px 3px rgba(0,0,0,.7); pointer-events: none; transition: opacity .6s; }
-  /* phones must be in landscape: portrait shows this cover until the phone is turned */
-  #rotate { display: none; position: fixed; inset: 0; z-index: 10; background: #143310; color: #fff;
-    flex-direction: column; align-items: center; justify-content: center; gap: 22px;
-    font: 600 18px system-ui, sans-serif; text-align: center; padding: 24px; }
-  #rotate .phone { width: 56px; height: 96px; border: 4px solid #fff; border-radius: 12px; position: relative;
-    animation: turn 2.4s ease-in-out infinite; }
-  #rotate .phone::after { content: ''; position: absolute; left: 50%; bottom: 6px; width: 14px; height: 4px; margin-left: -7px;
-    background: #fff; border-radius: 2px; }
-  @keyframes turn { 0%, 25% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
-  @media (orientation: portrait) and (pointer: coarse) { #rotate { display: flex; } }
-  @media (prefers-reduced-motion: reduce) { #rotate .phone { animation: none; } }
+  /* Phone held upright (or rotation locked): the whole game turns 90 degrees, so it always plays sideways */
+  canvas.rot { position: fixed; left: 0; top: 0; transform-origin: 0 0; transform: rotate(90deg) translateY(-100%); }
+  canvas.rot.flip { transform: rotate(-90deg) translateX(-100%); }
+  #flip { display: none; position: fixed; left: 12px; top: 12px; z-index: 5; padding: 8px 12px; border: 0; border-radius: 10px;
+    background: rgba(0,0,0,.45); color: #fff; font: 600 13px system-ui, sans-serif; }
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
 <div id="vignette"></div>
-<div id="rotate"><div class="phone"></div><div>Turn your phone sideways to play</div></div>
-<div id="hint">Drag to look around, scroll or pinch to zoom</div>
+<button id="flip">Flip screen</button>
+<div id="hint">Drag to look around, pinch to zoom</div>
 
 <script>
 (() => {
@@ -52,16 +46,19 @@
   const unprojX = (u, v) => (u / IX + v / IY) / 2;
   const unprojY = (u, v) => (v / IY - u / IX) / 2;
 
-  // On a phone, the first touch asks for fullscreen and locks to landscape. Android Chrome allows
-  // the lock; iPhones do not, so the "turn your phone" cover above does the job there.
+  // Phones: a tap asks Chrome for fullscreen + landscape lock (touch only counts as a "real" tap on release).
+  // If the lock is refused, or auto-rotate is off, the game rotates itself instead, see resize().
+  const coarse = matchMedia('(pointer: coarse)').matches;
+  let locked = false, tries = 0, forced = false, flipped = false;
   function goLandscape() {
-    if (!matchMedia('(pointer: coarse)').matches) return;
+    if (!coarse || locked || tries++ > 4) return;
     const el = document.documentElement;
     Promise.resolve(el.requestFullscreen && el.requestFullscreen({ navigationUI: 'hide' }))
-      .then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape'))
+      .then(() => screen.orientation.lock('landscape'))
+      .then(() => { locked = true; })
       .catch(() => {});
   }
-  window.addEventListener('pointerdown', goLandscape, { once: true });
+  window.addEventListener('pointerup', goLandscape);
   window.addEventListener('orientationchange', () => setTimeout(() => window.dispatchEvent(new Event('resize')), 250));
 
   const canvas = document.getElementById('c');
@@ -130,11 +127,22 @@
     wy = Math.max(clearing.y0 - MARGIN, Math.min(clearing.y1 + MARGIN, wy));
     cpx = projX(wx, wy); cpy = projY(wx, wy);
   }
+  const flipBtn = document.getElementById('flip');
   function resize() {
     dpr = Math.min(window.devicePixelRatio || 1, 2);
-    cw = window.innerWidth; ch = window.innerHeight;
+    forced = coarse && window.innerHeight > window.innerWidth;      // upright phone: turn the game sideways
+    canvas.classList.toggle('rot', forced); canvas.classList.toggle('flip', forced && flipped);
+    flipBtn.style.display = forced ? 'block' : 'none';
+    if (forced) { cw = window.innerHeight; ch = window.innerWidth; canvas.style.width = cw + 'px'; canvas.style.height = ch + 'px'; }
+    else { cw = window.innerWidth; ch = window.innerHeight; canvas.style.width = ''; canvas.style.height = ''; }
     canvas.width = Math.round(cw * dpr); canvas.height = Math.round(ch * dpr);
     clampCam();
+  }
+  flipBtn.addEventListener('click', () => { flipped = !flipped; resize(); });
+  // screen touch point -> point on the (possibly rotated) canvas
+  function pt(e) {
+    if (!forced) return { x: e.clientX, y: e.clientY };
+    return flipped ? { x: cw - e.clientY, y: e.clientX } : { x: e.clientY, y: ch - e.clientX };
   }
   window.addEventListener('resize', resize);
 
@@ -142,14 +150,15 @@
   const ptrs = new Map(); let pinchD = 0;
   canvas.addEventListener('pointerdown', e => {
     canvas.setPointerCapture(e.pointerId);
-    ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    ptrs.set(e.pointerId, pt(e));
     canvas.classList.add('drag'); hint.style.opacity = 0;
     if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinchD = Math.hypot(a.x - b.x, a.y - b.y); }
   });
   canvas.addEventListener('pointermove', e => {
     const p = ptrs.get(e.pointerId); if (!p) return;
-    if (ptrs.size === 1) { cpx -= (e.clientX - p.x) / zoom; cpy -= (e.clientY - p.y) / zoom; }
-    p.x = e.clientX; p.y = e.clientY;
+    const q = pt(e);
+    if (ptrs.size === 1) { cpx -= (q.x - p.x) / zoom; cpy -= (q.y - p.y) / zoom; }
+    p.x = q.x; p.y = q.y;
     if (ptrs.size === 2) {
       const [a, b] = [...ptrs.values()], dist = Math.hypot(a.x - b.x, a.y - b.y);
       zoomAt((a.x + b.x) / 2, (a.y + b.y) / 2, zoom * dist / pinchD); pinchD = dist;
@@ -165,7 +174,7 @@
   }
   canvas.addEventListener('wheel', e => {
     e.preventDefault(); hint.style.opacity = 0;
-    zoomAt(e.clientX, e.clientY, zoom * Math.exp(-e.deltaY * .0012)); clampCam();
+    const q = pt(e); zoomAt(q.x, q.y, zoom * Math.exp(-e.deltaY * .0012)); clampCam();
   }, { passive: false });
 
   // ---------- render ----------
@@ -243,7 +252,7 @@
     zoom = Math.min(cw / dw, ch / dh);
     cpx = projX(spawn.x, spawn.y); cpy = projY(spawn.x, spawn.y); clampCam();
     requestAnimationFrame(frame);
-    window.game = { spawn, clearing, trees, WORLD_W, WORLD_H, CELL, projX, projY, unprojX, unprojY };   // hooks for the next step
+    window.game = { cam: () => ({ cpx, cpy, zoom }), spawn, clearing, trees, WORLD_W, WORLD_H, CELL, projX, projY, unprojX, unprojY };   // hooks for the next step
   };
   atlas.onload = ready; groundImg.onload = ready;
   const missing = name => () => { hint.textContent = name + ' not found. Put it in the same folder as index.html'; hint.style.opacity = 1; };
