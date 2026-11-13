@@ -26,6 +26,7 @@
   #movebar .ok { background: linear-gradient(#7be25a, #2fa12b); box-shadow: 0 4px 0 #1b6a1a; }
   #movebar .no { background: linear-gradient(#ff8a7a, #d23a2c); box-shadow: 0 4px 0 #8c1f16; }
   #movebar button:active { transform: translateY(3px); box-shadow: none; }
+  #movebar button svg { width: 32px; height: 32px; }
   #movebar.bad .ok { background: linear-gradient(#8a8a8a, #5f5f5f); box-shadow: 0 4px 0 #3a3a3a; opacity: .6; }
   #movebar #mvMsg { min-width: 150px; text-align: center; line-height: 1.25; }
   #movebar #mvMsg small { display: block; font-weight: 500; font-size: 11px; opacity: .75; }
@@ -49,8 +50,9 @@
     min-width: 96px; padding: 4px 14px 4px 4px; border-radius: 999px; background: linear-gradient(#3b2a18, #261a0e); border: 2px solid #c99a4b;
     box-shadow: 0 4px 12px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,235,180,.35); color: #f4efe2; font: 800 17px system-ui, sans-serif; }
   /* flat coin: no shiny gradient. To use a real sprite later, set background: url(coin.png) center/contain no-repeat and drop the border */
-  #goldbar .coin { width: 26px; height: 26px; border-radius: 50%; box-sizing: border-box; background: #e8e2d2; border: 3px solid #a89f88; position: relative; }
-  #goldbar .coin::after { content: ''; position: absolute; inset: 4px; border-radius: 50%; border: 2px solid #a89f88; }
+  #goldbar .coin { width: 32px; height: 32px; flex: none; margin: -3px -2px -3px 0; filter: drop-shadow(0 2px 2px rgba(0,0,0,.45)); }
+  [data-ic] svg { width: 100%; height: 100%; display: block; }
+  #wheatpill .ico { width: 34px; height: 34px; flex: none; margin: -6px 0 -6px -6px; filter: drop-shadow(0 2px 2px rgba(0,0,0,.45)); }
   #moreBtn { pointer-events: auto; width: 38px; height: 38px; padding: 0; border-radius: 50%; cursor: pointer; border: 2px solid #c99a4b; background: linear-gradient(#3b2a18, #261a0e);
     box-shadow: 0 4px 12px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,235,180,.35); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
   #moreBtn i { width: 5px; height: 5px; border-radius: 50%; background: #f4efe2; }
@@ -60,7 +62,7 @@
     color: #ffe9c0; font: 700 15px system-ui, sans-serif; }
   #stats h4 { margin: 2px 0 6px; font: 800 12px system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #c99a4b; }
   #stats .row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-top: 1px solid rgba(201,154,75,.25); }
-  #stats .row .ic { width: 22px; text-align: center; font-size: 17px; }
+  #stats .row .ic { width: 28px; height: 28px; flex: none; }
   #stats .row .lb { flex: 1; }
   #stats .row .vl { font-variant-numeric: tabular-nums; color: #ffe27a; }
   #goldnum { flex: 1; text-align: right; font-variant-numeric: tabular-nums; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
@@ -73,17 +75,14 @@
     padding: 14px 16px; border-radius: 16px; background: linear-gradient(#3b2a18, #261a0e); border: 2px solid #c99a4b; box-shadow: 0 6px 18px rgba(0,0,0,.55);
     color: #fff3d6; font: 600 14px system-ui, sans-serif; animation: pop2 .18s ease-out; }
   #buildpanel small { display: block; font-weight: 500; font-size: 11px; opacity: .7; margin-top: 2px; }
-  .pill { pointer-events: none; display: none; align-items: center; gap: 6px; padding: 4px 12px; height: 34px; box-sizing: border-box; border-radius: 999px; background: linear-gradient(#3b2a18, #261a0e); border: 2px solid #c99a4b;
+  .pill { pointer-events: none; display: none; align-items: center; gap: 6px; padding: 4px 12px; height: 38px; box-sizing: border-box; border-radius: 999px; background: linear-gradient(#3b2a18, #261a0e); border: 2px solid #c99a4b;
     box-shadow: 0 4px 12px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,235,180,.35); color: #f4efe2; font: 800 15px system-ui, sans-serif; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  #farmpill { pointer-events: auto; cursor: pointer; }
-  #farmpill.ready { background: linear-gradient(#7be25a, #2fa12b); border-color: #1b6a1a; color: #fff; animation: pulse 1s ease-in-out infinite; }
-  @keyframes pulse { 50% { transform: scale(1.07); } }
   #toast { position: absolute; left: 50%; top: calc(62px + env(safe-area-inset-top)); transform: translateX(-50%); padding: 9px 16px; border-radius: 14px; background: rgba(20,14,8,.88); border: 1.5px solid #c99a4b;
     color: #fff3d6; font: 700 14px system-ui, sans-serif; white-space: nowrap; opacity: 0; transition: opacity .25s; pointer-events: none; }
   #toast.on { opacity: 1; }
   #buildpanel .bt { font: 800 12px system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #c99a4b; margin-bottom: 10px; }
   #buildpanel .bcard { display: flex; align-items: center; gap: 12px; }
-  #buildpanel .bi { font-size: 36px; line-height: 1; }
+  #buildpanel .bi { width: 52px; height: 52px; flex: none; filter: drop-shadow(0 2px 2px rgba(0,0,0,.5)); }
   #buildpanel .bm b { font-size: 15px; }
   #farmBuy { border: 0; border-radius: 10px; padding: 11px 14px; min-width: 96px; font: 800 14px system-ui, sans-serif; color: #2a1a05; background: linear-gradient(#ffe27a, #f0a92b); box-shadow: 0 2px 0 #9a6410; cursor: pointer; }
   #farmBuy:active { transform: translateY(2px); box-shadow: none; }
@@ -97,12 +96,12 @@
 <div id="info"></div>
 <button id="flip">Flip screen</button>
 <div id="hud">
-  <div id="topright"><div id="farmpill" class="pill"></div><div id="wheatpill" class="pill">🌾 <span id="wheatnum">0</span></div><div id="goldbar"><div class="coin"></div><div id="goldnum">...</div></div><button id="moreBtn" aria-label="Village details"><i></i><i></i><i></i></button></div>
+  <div id="topright"><div id="wheatpill" class="pill"><span class="ico" data-ic="wheat"></span><span id="wheatnum">0</span></div><div id="goldbar"><div class="coin" data-ic="coin"></div><div id="goldnum">...</div></div><button id="moreBtn" aria-label="Village details"><i></i><i></i><i></i></button></div>
   <div id="stats"><h4>Village</h4></div>
   <div id="toast"></div>
-  <div id="buildpanel"><div class="bt">Build</div><div class="bcard"><span class="bi">🌾</span><div class="bm"><b>Wheat Farm</b><small id="farmInfo"></small></div><button id="farmBuy"></button></div></div>
+  <div id="buildpanel"><div class="bt">Build</div><div class="bcard"><span class="bi" data-ic="wheat"></span><div class="bm"><b>Wheat Farm</b><small id="farmInfo"></small></div><button id="farmBuy"></button></div></div>
   <button id="buildbtn" aria-label="Build"><svg viewBox="0 0 59.214 59.214" aria-hidden="true"><path fill="#010002" d="M28.693,25.135l-4.187-3.881c-1.003,2.072-2.365,3.81-4.543,4.672l3.361,3.626 c0.445-0.214,0.938-0.341,1.46-0.36L28.693,25.135z M19.131,24.136c0.004-0.023,0.003-0.045,0.008-0.069c0.098-0.464,0.36-0.954,0.776-1.371 l1.428-1.428c0.426-0.426,0.929-0.687,1.403-0.78c0.007-0.001,0.014-0.001,0.021-0.002l3.3-12.259L13.865,1.374L8.299,6.662 l8.717,5.491l-1.46,4.777l-4.777,1.46L5.288,9.673L0,15.239l6.853,12.202L19.131,24.136z M27.914,31.69l-0.277-0.275c-0.798-0.798-1.759-1.237-2.707-1.237c-0.715,0-1.373,0.263-1.85,0.74 L1.817,49.845c-0.541,0.542-0.892,1.422-0.919,2.335c-0.03,1.008,0.33,1.939,1.015,2.624l2.609,2.609 c0.707,0.707,1.731,1.112,2.812,1.112c0.95,0,1.833-0.315,2.361-0.844l18.89-21.219C29.705,35.342,29.388,33.167,27.914,31.69z M55.336,49.835L34.083,30.131l-3.857,4.004c0.11,0.863-0.024,1.702-0.433,2.393l18.689,20.16 c0.104,0.104,0.257,0.148,0.445,0.148c0.91,0,2.634-1.057,3.353-1.775l1.429-1.428C54.575,52.766,55.934,50.434,55.336,49.835z M49.207,53.448c-1.341,0-2.428-1.086-2.428-2.427s1.087-2.427,2.428-2.427c1.34,0,2.426,1.086,2.426,2.427 S50.546,53.448,49.207,53.448z M58.705,18.012c-0.68-0.68-1.781-0.68-2.461,0l-0.684,0.684c-0.566-0.782-1.505-2.111-1.391-2.551 c0.502-1.924-3.426-6.484-3.426-6.484c-9.76-9.76-16.283-9.54-19.384-8.472c-1.245,0.429-1.019,0.699,0.278,0.928 c9.406,1.642,10.58,7.194,8.984,9.338c-0.615,0.827-0.795,1.45-0.686,2.01c0.064,0.33,0.229,0.639,0.468,0.954L26.028,29.341 c0.831,0.224,1.629,0.679,2.315,1.366l0.277,0.276c0.606,0.607,1.031,1.306,1.304,2.023l14.214-14.751 c0.271,0.22,0.552,0.415,0.842,0.567c0.774,0.41,1.616,0.53,2.548,0.064c1.054-0.527,4.167,2.019,5.112,2.699 c0.007,0.005,0.013,0.007,0.02,0.012l-0.518,0.517c-0.68,0.68-0.68,1.781,0,2.461s1.781,0.68,2.461,0l4.102-4.102 C59.384,19.793,59.384,18.692,58.705,18.012z"/></svg>Build</button>
-  <div id="movebar"><button class="no" id="mvNo" aria-label="Cancel move">✕</button><div id="mvMsg"></div><button class="ok" id="mvOk" aria-label="Place cabin">✓</button></div>
+  <div id="movebar"><button class="no" id="mvNo" aria-label="Cancel move" data-ic="cross"></button><div id="mvMsg"></div><button class="ok" id="mvOk" aria-label="Place cabin" data-ic="check"></button></div>
 </div>
 <div id="hint">Drag to look around, pinch to zoom, tap your cabin to move it</div>
 
@@ -144,6 +143,12 @@
   const ctx = canvas.getContext('2d');
   const hint = document.getElementById('hint');
 
+  // ---------- icons: hand-built SVG, no emoji. Drop-in replace any of these strings with an SVG from game-icons.net / Kenney / SVG Repo ----------
+  const ICON = {"wheat": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\" width=\"64\" height=\"64\"><defs><linearGradient id=\"wg\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#fff39a\"/><stop offset=\".55\" stop-color=\"#f5bf36\"/><stop offset=\"1\" stop-color=\"#d88f17\"/></linearGradient></defs><g fill=\"none\" stroke-linejoin=\"round\"><path d=\"M32 57L14.92 18.63\" stroke=\"#6e4311\" stroke-width=\"4.2\" stroke-linecap=\"round\"/><path d=\"M32 57L14.92 18.63\" stroke=\"#e2b441\" stroke-width=\"2\" stroke-linecap=\"round\"/><ellipse cx=\"20.44\" cy=\"39.16\" rx=\"3.1\" ry=\"5.4\" transform=\"rotate(-54 20.44 39.16)\" fill=\"url(#wg)\" stroke=\"#6e4311\" stroke-width=\"1.3\"/><ellipse cx=\"26.47\" cy=\"36.47\" rx=\"3.1\" ry=\"5.4\" transform=\"rotate(6 26.47 36.47)\" fill=\"url(#wg)\" stroke=\"#6e4311\" stroke-width=\"1.3\"/><ellipse cx=\"18\" cy=\"33.68\" rx=\"3.1\" ry=\"5.4\" transform=\"rotate(-54 18 33.68)\" fill=\"url(#wg)\" stroke=\"#6e4311\" stroke-width=\"1.3\"/><ellipse cx=\"24.03\" cy=\"30.99\" rx=\"3.1\" ry=\"5.4\" transform=\"rotate(6 24.03 30.99)\" fill=\"url(#wg)\" stroke=\"#6e4311\" stroke-width=\"1.3\"/><ellipse cx=\"15.56\" cy=\"28.2\" rx=\"3.1\" ry=\"5.4\" transform=\"rotate(-54 15.56 28.2)\" fill=\"url(#wg)\" stroke=\"#6e4311\" stroke-width=\"1.3\"/><ellipse cx=\"21.59\" cy=\"25.51\" rx=\"3.1\" ry=\"5.4\" transform=\"rotate(6 21.59 25.51)\" fill=\"url(#wg)\" stroke=\"#6e4311\" stroke-width=\"1.3\"/><ellipse cx=\"13.12\" cy=\"22.71\" rx=\"3.1\" ry=\"5.4\" transform=\"rotate(-54 13.12 22.71)\" fill=\"url(#wg)\" stroke=\"#6e4311\" stroke-width=\"1.3\"/><ellipse cx=\"19.15\" cy=\"20.03\" rx=\"3.1\" ry=\"5.4\" transform=\"rotate(6 19.15 20.03)\" fill=\"url(#wg)\" stroke=\"#6e4311\" stroke-width=\"1.3\"/><ellipse cx=\"13.29\" cy=\"14.98\" rx=\"2.9\" ry=\"5.6\" transform=\"rotate(-24 13.29 14.98)\" fill=\"url(#wg)\" stroke=\"#6e4311\" stroke-width=\"1.3\"/><path d=\"M32 57L49.08 18.63\" stroke=\"#6e4311\" stroke-width=\"4.2\" stroke-linecap=\"round\"/><path d=\"M32 57L49.08 18.63\" stroke=\"#e2b441\" stroke-width=\"2\" stroke-linecap=\"round\"/><ellipse cx=\"37.53\" cy=\"36.47\" rx=\"3.1\" ry=\"5.4\" transform=\"rotate(-6 37.53 36.47)\" fill=\"url(#wg)\" stroke=\"#6e4311\" stroke-width=\"1.3\"/><ellipse cx=\"43.56\" cy=\"39.16\" rx=\"3.1\" ry=\"5.4\" transform=\"rotate(54 43.56 39.16)\" fill=\"url(#wg)\" stroke=\"#6e4311\" stroke-width=\"1.3\"/><ellipse cx=\"39.97\" cy=\"30.99\" rx=\"3.1\" ry=\"5.4\" transform=\"rotate(-6 39.97 30.99)\" fill=\"url(#wg)\" stroke=\"#6e4311\" stroke-width=\"1.3\"/><ellipse cx=\"46\" cy=\"33.68\" rx=\"3.1\" ry=\"5.4\" transform=\"rotate(54 46 33.68)\" fill=\"url(#wg)\" stroke=\"#6e4311\" stroke-width=\"1.3\"/><ellipse cx=\"42.41\" cy=\"25.51\" rx=\"3.1\" ry=\"5.4\" transform=\"rotate(-6 42.41 25.51)\" fill=\"url(#wg)\" stroke=\"#6e4311\" stroke-width=\"1.3\"/><ellipse cx=\"48.44\" cy=\"28.2\" rx=\"3.1\" ry=\"5.4\" transform=\"rotate(54 48.44 28.2)\" fill=\"url(#wg)\" stroke=\"#6e4311\" stroke-width=\"1.3\"/><ellipse cx=\"44.85\" cy=\"20.03\" rx=\"3.1\" ry=\"5.4\" transform=\"rotate(-6 44.85 20.03)\" fill=\"url(#wg)\" stroke=\"#6e4311\" stroke-width=\"1.3\"/><ellipse cx=\"50.88\" cy=\"22.71\" rx=\"3.1\" ry=\"5.4\" transform=\"rotate(54 50.88 22.71)\" fill=\"url(#wg)\" stroke=\"#6e4311\" stroke-width=\"1.3\"/><ellipse cx=\"50.71\" cy=\"14.98\" rx=\"2.9\" ry=\"5.6\" transform=\"rotate(24 50.71 14.98)\" fill=\"url(#wg)\" stroke=\"#6e4311\" stroke-width=\"1.3\"/><path d=\"M32 57L32 10\" stroke=\"#6e4311\" stroke-width=\"4.2\" stroke-linecap=\"round\"/><path d=\"M32 57L32 10\" stroke=\"#e2b441\" stroke-width=\"2\" stroke-linecap=\"round\"/><ellipse cx=\"28.7\" cy=\"36\" rx=\"3.1\" ry=\"5.4\" transform=\"rotate(-30 28.7 36)\" fill=\"url(#wg)\" stroke=\"#6e4311\" stroke-width=\"1.3\"/><ellipse cx=\"35.3\" cy=\"36\" rx=\"3.1\" ry=\"5.4\" transform=\"rotate(30 35.3 36)\" fill=\"url(#wg)\" stroke=\"#6e4311\" stroke-width=\"1.3\"/><ellipse cx=\"28.7\" cy=\"30\" rx=\"3.1\" ry=\"5.4\" transform=\"rotate(-30 28.7 30)\" fill=\"url(#wg)\" stroke=\"#6e4311\" stroke-width=\"1.3\"/><ellipse cx=\"35.3\" cy=\"30\" rx=\"3.1\" ry=\"5.4\" transform=\"rotate(30 35.3 30)\" fill=\"url(#wg)\" stroke=\"#6e4311\" stroke-width=\"1.3\"/><ellipse cx=\"28.7\" cy=\"24\" rx=\"3.1\" ry=\"5.4\" transform=\"rotate(-30 28.7 24)\" fill=\"url(#wg)\" stroke=\"#6e4311\" stroke-width=\"1.3\"/><ellipse cx=\"35.3\" cy=\"24\" rx=\"3.1\" ry=\"5.4\" transform=\"rotate(30 35.3 24)\" fill=\"url(#wg)\" stroke=\"#6e4311\" stroke-width=\"1.3\"/><ellipse cx=\"28.7\" cy=\"18\" rx=\"3.1\" ry=\"5.4\" transform=\"rotate(-30 28.7 18)\" fill=\"url(#wg)\" stroke=\"#6e4311\" stroke-width=\"1.3\"/><ellipse cx=\"35.3\" cy=\"18\" rx=\"3.1\" ry=\"5.4\" transform=\"rotate(30 35.3 18)\" fill=\"url(#wg)\" stroke=\"#6e4311\" stroke-width=\"1.3\"/><ellipse cx=\"32\" cy=\"11\" rx=\"2.9\" ry=\"5.6\" transform=\"rotate(0 32 11)\" fill=\"url(#wg)\" stroke=\"#6e4311\" stroke-width=\"1.3\"/></g><path d=\"M25 51.5Q32 54 39 51.5L40 58Q32 60.5 24 58Z\" fill=\"#c8553d\" stroke=\"#5e2216\" stroke-width=\"1.4\" stroke-linejoin=\"round\"/><path d=\"M26 53Q32 55 38 53\" stroke=\"#ef8f78\" stroke-width=\"1.2\" fill=\"none\" stroke-linecap=\"round\"/></svg>", "coin": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\" width=\"64\" height=\"64\"><defs><linearGradient id=\"cg\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\"><stop offset=\"0\" stop-color=\"#fff1a0\"/><stop offset=\".5\" stop-color=\"#f7c534\"/><stop offset=\"1\" stop-color=\"#d48a12\"/></linearGradient><linearGradient id=\"cg2\" x1=\"1\" y1=\"1\" x2=\"0\" y2=\"0\"><stop offset=\"0\" stop-color=\"#fbe073\"/><stop offset=\"1\" stop-color=\"#e9a521\"/></linearGradient></defs><circle cx=\"32\" cy=\"33\" r=\"28\" fill=\"#b36d0c\"/><circle cx=\"32\" cy=\"32\" r=\"28\" fill=\"url(#cg)\" stroke=\"#6e4311\" stroke-width=\"3\"/><circle cx=\"32\" cy=\"32\" r=\"21\" fill=\"url(#cg2)\" stroke=\"#b9780f\" stroke-width=\"2.4\"/><polygon points=\"32,21 34.7,28.28 42.46,28.6 36.37,33.42 38.47,40.9 32,36.6 25.53,40.9 27.63,33.42 21.54,28.6 29.3,28.28\" fill=\"#c98512\" stroke=\"#9a620b\" stroke-width=\"1.2\" stroke-linejoin=\"round\"/><path d=\"M13 24A21 21 0 0 1 27 12\" stroke=\"#fff\" stroke-opacity=\".7\" stroke-width=\"3\" stroke-linecap=\"round\" fill=\"none\"/></svg>", "villager": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\" width=\"64\" height=\"64\"><defs><linearGradient id=\"vt\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#5b9bd0\"/><stop offset=\"1\" stop-color=\"#2f6592\"/></linearGradient></defs><g stroke-linejoin=\"round\" stroke-linecap=\"round\"><path d=\"M8 60C8 45 18 38.5 32 38.5S56 45 56 60Z\" fill=\"url(#vt)\" stroke=\"#1d3d5c\" stroke-width=\"2.6\"/><path d=\"M26 39.5Q32 45 38 39.5\" fill=\"none\" stroke=\"#1d3d5c\" stroke-width=\"2.2\"/><circle cx=\"32\" cy=\"25\" r=\"12\" fill=\"#f6d2b0\" stroke=\"#5a3a1a\" stroke-width=\"2.6\"/><circle cx=\"27.6\" cy=\"26\" r=\"1.7\" fill=\"#2a1a10\" stroke=\"none\"/><circle cx=\"36.4\" cy=\"26\" r=\"1.7\" fill=\"#2a1a10\" stroke=\"none\"/><path d=\"M27.8 30.8Q32 34 36.2 30.8\" fill=\"none\" stroke=\"#7a3b2a\" stroke-width=\"1.8\"/><path d=\"M21 19.5Q23 7 32 7Q41 7 43 19.5Z\" fill=\"#e8c262\" stroke=\"#7a5418\" stroke-width=\"2.4\"/><ellipse cx=\"32\" cy=\"19.5\" rx=\"17.5\" ry=\"4.2\" fill=\"#f0cf74\" stroke=\"#7a5418\" stroke-width=\"2.4\"/><path d=\"M22.5 16.8Q32 14 41.5 16.8\" fill=\"none\" stroke=\"#b5651d\" stroke-width=\"2.2\"/></g></svg>", "check": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\" width=\"64\" height=\"64\" fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M14 33L27 46L50 18\" stroke=\"rgba(0,0,0,.35)\" stroke-width=\"12\" transform=\"translate(0 2.5)\"/><path d=\"M14 33L27 46L50 18\" stroke=\"#fff\" stroke-width=\"9\"/></svg>", "cross": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\" width=\"64\" height=\"64\" fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M18 18L46 46M46 18L18 46\" stroke=\"rgba(0,0,0,.35)\" stroke-width=\"12\" transform=\"translate(0 2.5)\"/><path d=\"M18 18L46 46M46 18L18 46\" stroke=\"#fff\" stroke-width=\"9\"/></svg>"};
+  document.querySelectorAll("[data-ic]").forEach(e => { e.innerHTML = ICON[e.dataset.ic]; });
+  const svgImg = k => { const im = new Image(); im.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(ICON[k]); return im; };
+  const wheatImg = svgImg("wheat");
+
   // ---------- HUD + gold (saved in Supabase) ----------
   const SUPABASE_URL = 'https://illuyxprrvgdxdpnwcqc.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_nYxpvEA0gp5udUktTXcwYw_stN5h7gA';   // publishable key only. NEVER put the secret key in this file.
@@ -151,18 +156,18 @@
   const buildBtn = document.getElementById('buildbtn'), buildPanel = document.getElementById('buildpanel');
   buildBtn.addEventListener('click', () => { const o = buildPanel.style.display !== 'block'; buildPanel.style.display = o ? 'block' : 'none'; buildBtn.classList.toggle('open', o); buildBtn.classList.remove('hint'); });
   const statsEl = document.getElementById('stats'), moreBtn = document.getElementById('moreBtn'), statRows = {};
-  // one row per stat in the three-dots panel. Add more any time: setStat('wood', '\u{1FAB5}', 'Wood', 120)
+  // one row per stat in the three-dots panel. Add more any time: setStat('wood', ICON.wood, 'Wood', 120)
   function setStat(key, icon, label, value) {
     let r = statRows[key];
-    if (!r) { r = statRows[key] = document.createElement('div'); r.className = 'row'; r.innerHTML = '<span class="ic"></span><span class="lb"></span><b class="vl"></b>'; statsEl.appendChild(r); r.children[0].textContent = icon; r.children[1].textContent = label; }
+    if (!r) { r = statRows[key] = document.createElement('div'); r.className = 'row'; r.innerHTML = '<span class="ic"></span><span class="lb"></span><b class="vl"></b>'; statsEl.appendChild(r); r.children[0].innerHTML = icon; r.children[1].textContent = label; }
     r.children[2].textContent = value;
   }
   moreBtn.addEventListener('click', () => { const o = statsEl.style.display !== 'block'; statsEl.style.display = o ? 'block' : 'none'; moreBtn.classList.toggle('open', o); });
   window.addEventListener('pointerdown', e => { if (statsEl.style.display === 'block' && !statsEl.contains(e.target) && !moreBtn.contains(e.target)) { statsEl.style.display = 'none'; moreBtn.classList.remove('open'); } }, true);
-  setStat('gold', '\u{1FA99}', 'Gold', '...'); setStat('pop', '\u{1F9D1}\u200D\u{1F33E}', 'Population', '10');
+  setStat('gold', ICON.coin, 'Gold', '...'); setStat('pop', ICON.villager, 'Population', '10');
   let gold = 0, sb = null, goldPending = 0;   // goldPending = gold spent that the server does not know about yet
   try { goldPending = parseInt(localStorage.getItem('goldPending'), 10) || 0; } catch (e) {}
-  const setGold = n => { gold = n; goldEl.textContent = Number(n).toLocaleString(); setStat('gold', '\u{1FA99}', 'Gold', Number(n).toLocaleString()); };
+  const setGold = n => { gold = n; goldEl.textContent = Number(n).toLocaleString(); setStat('gold', ICON.coin, 'Gold', Number(n).toLocaleString()); };
   async function initGold() {
     const ok = window.supabase && !SUPABASE_URL.startsWith('PASTE') && !SUPABASE_KEY.startsWith('PASTE');
     if (!ok) { setGold(50); return; }                          // not connected yet: just show the starting 50
@@ -548,7 +553,7 @@
     while (villagers.length < population) villagers.push(mkVillager(villagers.length, villagers.length % 5 === 4));
     villagers.length = population;
     villagers.forEach((v, i) => { v.job = i < WORKERS; v.wi = i; });     // the first few villagers are the farm hands
-    setStat('pop', '\u{1F9D1}\u200D\u{1F33E}', 'Population', population);
+    setStat('pop', ICON.villager, 'Population', population);
   }
   function setPopulation(n) { population = Math.max(0, Math.min(200, n | 0)); try { localStorage.setItem('population', population); } catch (e) {} syncVillagers(); }
   function go(v, tx, ty, dt) {                       // walk toward a point: turn first, speed up, slow down, stride = distance walked
@@ -823,14 +828,12 @@
   }
   const toastEl = document.getElementById('toast'); let toastT = 0;
   function toast(msg) { toastEl.textContent = msg; toastEl.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => toastEl.classList.remove('on'), 2400); }
-  const farmPill = document.getElementById('farmpill'), wheatPill = document.getElementById('wheatpill'), wheatNum = document.getElementById('wheatnum');
+  const wheatPill = document.getElementById('wheatpill'), wheatNum = document.getElementById('wheatnum');
   let uiKey = '';
   function updateFarmUI() {
-    const st = farmState(), left = farm ? Math.max(0, Math.ceil(GROW_SEC - (Date.now() - farm.t0) / 1000)) : 0;
-    const key = st + left + '|' + wheatCount; if (key === uiKey) return; uiKey = key;
-    farmPill.style.display = farm ? 'flex' : 'none'; wheatPill.style.display = (farm || wheatCount) ? 'flex' : 'none';
-    farmPill.classList.toggle('ready', st === 'ready');
-    farmPill.textContent = st === 'ready' ? '\u{1F33E} Collect!' : '\u23F3 ' + Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0');
+    const st = farmState();
+    const key = st + '|' + wheatCount + '|' + !!farm; if (key === uiKey) return; uiKey = key;
+    wheatPill.style.display = (farm || wheatCount) ? 'flex' : 'none';
     wheatNum.textContent = wheatCount;
   }
   function focusFarm() {
@@ -840,16 +843,15 @@
   function collectFarm() {
     if (farmState() !== 'ready') return;
     wheatCount += WHEAT_PER_HARVEST; farm.t0 = Date.now(); saveFarm();      // harvest, then the field is replanted
-    setStat('wheat', '\u{1F33E}', 'Wheat', wheatCount); updateFarmUI();
+    setStat('wheat', ICON.wheat, 'Wheat', wheatCount); updateFarmUI();
     floaters.push({ t0: performance.now(), txt: '+' + WHEAT_PER_HARVEST + ' wheat' });
     toast('Collected ' + WHEAT_PER_HARVEST + ' wheat');
   }
-  farmPill.addEventListener('click', () => { if (farmState() === 'ready') collectFarm(); else focusFarm(); });
   function tapFarm(sx, sy) {                                                  // tap the ripe field (or its bubble) to collect
     if (farmState() !== 'ready') return false;
     for (const q of [slotAt(sx, sy), slotAt(sx, sy + 24 * zoom)]) if (q && q.c >= farm.c && q.c < farm.c + FARM_W && q.r >= farm.r && q.r < farm.r + FARM_H) { collectFarm(); return true; }
     const [bx, by] = toScr((FARM_X0 + FARM_X1) / 2, (FARM_Y0 + FARM_Y1) / 2);
-    if (Math.hypot(sx - bx, sy - (by - 78 * zoom)) < 30 * zoom) { collectFarm(); return true; }
+    if (Math.hypot(sx - bx, sy - (by - 80 * zoom)) < 34 * zoom) { collectFarm(); return true; }
     return false;
   }
 
@@ -857,7 +859,7 @@
   function renderBuild() {
     const btn = document.getElementById('farmBuy'), info = document.getElementById('farmInfo');
     info.textContent = 'Ready in ' + GROW_SEC + 's \u00B7 ' + WHEAT_PER_HARVEST + ' wheat each time';
-    if (farm) { btn.textContent = 'Built \u2713'; btn.disabled = true; }
+    if (farm) { btn.textContent = 'Built'; btn.disabled = true; }
     else if (gold < FARM_COST) { btn.textContent = 'Need ' + FARM_COST + ' gold'; btn.disabled = true; }
     else { btn.textContent = 'Build \u00B7 ' + FARM_COST + ' gold'; btn.disabled = false; }
   }
@@ -869,10 +871,10 @@
     spendGold(FARM_COST);
     farm = { c: spot.c, r: spot.r, t0: Date.now() }; saveFarm(); setFarmGeom(); claimFarm();
     buildPanel.style.display = 'none'; buildBtn.classList.remove('open');
-    focusFarm(); setStat('wheat', '\u{1F33E}', 'Wheat', wheatCount); updateFarmUI(); renderBuild();
+    focusFarm(); setStat('wheat', ICON.wheat, 'Wheat', wheatCount); updateFarmUI(); renderBuild();
     toast('Farm built! Your villagers are heading out to plant');
   });
-  if (farm || wheatCount) setStat('wheat', '\u{1F33E}', 'Wheat', wheatCount);
+  if (farm || wheatCount) setStat('wheat', ICON.wheat, 'Wheat', wheatCount);
 
   // ---- drawing ----
   const wave = (x, y, t) => Math.sin(t * 1.8 - (x + y) * .008) * .55 + Math.sin(t * .7 - x * .004 + y * .003) * .45;   // wind rolling across the field
@@ -922,11 +924,26 @@
     while (wi < wl.length) { drawVillager(wl[wi++], time); screenT(); ctx.lineCap = 'round'; ctx.lineJoin = 'round'; }
     const [cx, cy] = toScr((FARM_X0 + FARM_X1) / 2, (FARM_Y0 + FARM_Y1) / 2);
     if (st === 'ready') {                                                      // bobbing wheat bubble: tap it to collect
-      const by = cy - 78 * z + Math.sin(time * 3) * 4 * z, r = 20 * z;
-      ctx.fillStyle = 'rgba(255,250,225,.96)'; ctx.strokeStyle = '#6b4519'; ctx.lineWidth = 2.5 * z;
+      const by = cy - 80 * z + Math.sin(time * 3) * 4 * z, r = 25 * z;
+      ctx.fillStyle = 'rgba(255,250,225,.97)'; ctx.strokeStyle = '#6b4519'; ctx.lineWidth = 2.5 * z;
       ctx.beginPath(); ctx.arc(cx, by, r, 0, 7); ctx.fill(); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(cx - 6 * z, by + r - 1 * z); ctx.lineTo(cx, by + r + 8 * z); ctx.lineTo(cx + 6 * z, by + r - 1 * z); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.font = Math.round(24 * z) + 'px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#000'; ctx.fillText('\u{1F33E}', cx, by + 1 * z);
+      ctx.beginPath(); ctx.moveTo(cx - 7 * z, by + r - 1 * z); ctx.lineTo(cx, by + r + 9 * z); ctx.lineTo(cx + 7 * z, by + r - 1 * z); ctx.closePath(); ctx.fill(); ctx.stroke();
+      if (wheatImg.complete && wheatImg.naturalWidth) ctx.drawImage(wheatImg, cx - 20 * z, by - 21 * z, 40 * z, 40 * z);
+    } else {                                                                   // Clash-style progress bar over the field: green fill + time left
+      const bw = 118 * z, bh = 20 * z, bx = cx - bw / 2, bt = cy - 72 * z, left = Math.max(0, Math.ceil(GROW_SEC * (1 - p)));
+      ctx.fillStyle = 'rgba(0,0,0,.25)'; rrect(bx - 2 * z, bt + 1 * z, bw + 4 * z, bh + 6 * z, 10 * z); ctx.fill();
+      rrect(bx - 3 * z, bt - 3 * z, bw + 6 * z, bh + 6 * z, 10 * z); ctx.fillStyle = '#2a1a0c'; ctx.fill(); ctx.lineWidth = 2 * z; ctx.strokeStyle = '#c99a4b'; ctx.stroke();
+      ctx.save(); rrect(bx, bt, bw, bh, 7 * z); ctx.clip();
+      ctx.fillStyle = '#4a321a'; ctx.fillRect(bx, bt, bw, bh);
+      if (p > 0) {
+        const g = ctx.createLinearGradient(0, bt, 0, bt + bh); g.addColorStop(0, '#a6f46b'); g.addColorStop(.5, '#4ec23a'); g.addColorStop(1, '#2a8a25');
+        ctx.fillStyle = g; ctx.fillRect(bx, bt, bw * p, bh);
+        ctx.fillStyle = 'rgba(255,255,255,.28)'; ctx.fillRect(bx, bt + 2 * z, bw * p, 3 * z);
+      }
+      ctx.restore();
+      ctx.font = '800 ' + Math.round(13 * z) + 'px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+      const tt = Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0');
+      ctx.lineWidth = 3.5 * z; ctx.strokeStyle = 'rgba(30,15,5,.9)'; ctx.strokeText(tt, cx, bt + bh / 2 + .5 * z); ctx.fillStyle = '#fff'; ctx.fillText(tt, cx, bt + bh / 2 + .5 * z);
     }
     const now = performance.now();
     for (let i = floaters.length - 1; i >= 0; i--) {                            // "+10 wheat" floating up
