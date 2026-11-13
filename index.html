@@ -73,6 +73,21 @@
     padding: 14px 16px; border-radius: 16px; background: linear-gradient(#3b2a18, #261a0e); border: 2px solid #c99a4b; box-shadow: 0 6px 18px rgba(0,0,0,.55);
     color: #fff3d6; font: 600 14px system-ui, sans-serif; animation: pop2 .18s ease-out; }
   #buildpanel small { display: block; font-weight: 500; font-size: 11px; opacity: .7; margin-top: 2px; }
+  .pill { pointer-events: none; display: none; align-items: center; gap: 6px; padding: 4px 12px; height: 34px; box-sizing: border-box; border-radius: 999px; background: linear-gradient(#3b2a18, #261a0e); border: 2px solid #c99a4b;
+    box-shadow: 0 4px 12px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,235,180,.35); color: #f4efe2; font: 800 15px system-ui, sans-serif; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  #farmpill { pointer-events: auto; cursor: pointer; }
+  #farmpill.ready { background: linear-gradient(#7be25a, #2fa12b); border-color: #1b6a1a; color: #fff; animation: pulse 1s ease-in-out infinite; }
+  @keyframes pulse { 50% { transform: scale(1.07); } }
+  #toast { position: absolute; left: 50%; top: calc(62px + env(safe-area-inset-top)); transform: translateX(-50%); padding: 9px 16px; border-radius: 14px; background: rgba(20,14,8,.88); border: 1.5px solid #c99a4b;
+    color: #fff3d6; font: 700 14px system-ui, sans-serif; white-space: nowrap; opacity: 0; transition: opacity .25s; pointer-events: none; }
+  #toast.on { opacity: 1; }
+  #buildpanel .bt { font: 800 12px system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #c99a4b; margin-bottom: 10px; }
+  #buildpanel .bcard { display: flex; align-items: center; gap: 12px; }
+  #buildpanel .bi { font-size: 36px; line-height: 1; }
+  #buildpanel .bm b { font-size: 15px; }
+  #farmBuy { border: 0; border-radius: 10px; padding: 11px 14px; min-width: 96px; font: 800 14px system-ui, sans-serif; color: #2a1a05; background: linear-gradient(#ffe27a, #f0a92b); box-shadow: 0 2px 0 #9a6410; cursor: pointer; }
+  #farmBuy:active { transform: translateY(2px); box-shadow: none; }
+  #farmBuy:disabled { filter: grayscale(1); opacity: .5; cursor: default; }
   @keyframes pop2 { from { transform: translateY(14px) scale(.94); opacity: 0; } }
 </style>
 </head>
@@ -82,9 +97,10 @@
 <div id="info"></div>
 <button id="flip">Flip screen</button>
 <div id="hud">
-  <div id="topright"><div id="goldbar"><div class="coin"></div><div id="goldnum">...</div></div><button id="moreBtn" aria-label="Village details"><i></i><i></i><i></i></button></div>
+  <div id="topright"><div id="farmpill" class="pill"></div><div id="wheatpill" class="pill">🌾 <span id="wheatnum">0</span></div><div id="goldbar"><div class="coin"></div><div id="goldnum">...</div></div><button id="moreBtn" aria-label="Village details"><i></i><i></i><i></i></button></div>
   <div id="stats"><h4>Village</h4></div>
-  <div id="buildpanel"><div>Build<small>Buildings are coming soon</small></div></div>
+  <div id="toast"></div>
+  <div id="buildpanel"><div class="bt">Build</div><div class="bcard"><span class="bi">🌾</span><div class="bm"><b>Wheat Farm</b><small id="farmInfo"></small></div><button id="farmBuy"></button></div></div>
   <button id="buildbtn" aria-label="Build"><svg viewBox="0 0 59.214 59.214" aria-hidden="true"><path fill="#010002" d="M28.693,25.135l-4.187-3.881c-1.003,2.072-2.365,3.81-4.543,4.672l3.361,3.626 c0.445-0.214,0.938-0.341,1.46-0.36L28.693,25.135z M19.131,24.136c0.004-0.023,0.003-0.045,0.008-0.069c0.098-0.464,0.36-0.954,0.776-1.371 l1.428-1.428c0.426-0.426,0.929-0.687,1.403-0.78c0.007-0.001,0.014-0.001,0.021-0.002l3.3-12.259L13.865,1.374L8.299,6.662 l8.717,5.491l-1.46,4.777l-4.777,1.46L5.288,9.673L0,15.239l6.853,12.202L19.131,24.136z M27.914,31.69l-0.277-0.275c-0.798-0.798-1.759-1.237-2.707-1.237c-0.715,0-1.373,0.263-1.85,0.74 L1.817,49.845c-0.541,0.542-0.892,1.422-0.919,2.335c-0.03,1.008,0.33,1.939,1.015,2.624l2.609,2.609 c0.707,0.707,1.731,1.112,2.812,1.112c0.95,0,1.833-0.315,2.361-0.844l18.89-21.219C29.705,35.342,29.388,33.167,27.914,31.69z M55.336,49.835L34.083,30.131l-3.857,4.004c0.11,0.863-0.024,1.702-0.433,2.393l18.689,20.16 c0.104,0.104,0.257,0.148,0.445,0.148c0.91,0,2.634-1.057,3.353-1.775l1.429-1.428C54.575,52.766,55.934,50.434,55.336,49.835z M49.207,53.448c-1.341,0-2.428-1.086-2.428-2.427s1.087-2.427,2.428-2.427c1.34,0,2.426,1.086,2.426,2.427 S50.546,53.448,49.207,53.448z M58.705,18.012c-0.68-0.68-1.781-0.68-2.461,0l-0.684,0.684c-0.566-0.782-1.505-2.111-1.391-2.551 c0.502-1.924-3.426-6.484-3.426-6.484c-9.76-9.76-16.283-9.54-19.384-8.472c-1.245,0.429-1.019,0.699,0.278,0.928 c9.406,1.642,10.58,7.194,8.984,9.338c-0.615,0.827-0.795,1.45-0.686,2.01c0.064,0.33,0.229,0.639,0.468,0.954L26.028,29.341 c0.831,0.224,1.629,0.679,2.315,1.366l0.277,0.276c0.606,0.607,1.031,1.306,1.304,2.023l14.214-14.751 c0.271,0.22,0.552,0.415,0.842,0.567c0.774,0.41,1.616,0.53,2.548,0.064c1.054-0.527,4.167,2.019,5.112,2.699 c0.007,0.005,0.013,0.007,0.02,0.012l-0.518,0.517c-0.68,0.68-0.68,1.781,0,2.461s1.781,0.68,2.461,0l4.102-4.102 C59.384,19.793,59.384,18.692,58.705,18.012z"/></svg>Build</button>
   <div id="movebar"><button class="no" id="mvNo" aria-label="Cancel move">✕</button><div id="mvMsg"></div><button class="ok" id="mvOk" aria-label="Place cabin">✓</button></div>
 </div>
@@ -144,7 +160,8 @@
   moreBtn.addEventListener('click', () => { const o = statsEl.style.display !== 'block'; statsEl.style.display = o ? 'block' : 'none'; moreBtn.classList.toggle('open', o); });
   window.addEventListener('pointerdown', e => { if (statsEl.style.display === 'block' && !statsEl.contains(e.target) && !moreBtn.contains(e.target)) { statsEl.style.display = 'none'; moreBtn.classList.remove('open'); } }, true);
   setStat('gold', '\u{1FA99}', 'Gold', '...'); setStat('pop', '\u{1F9D1}\u200D\u{1F33E}', 'Population', '10');
-  let gold = 0, sb = null;
+  let gold = 0, sb = null, goldPending = 0;   // goldPending = gold spent that the server does not know about yet
+  try { goldPending = parseInt(localStorage.getItem('goldPending'), 10) || 0; } catch (e) {}
   const setGold = n => { gold = n; goldEl.textContent = Number(n).toLocaleString(); setStat('gold', '\u{1FA99}', 'Gold', Number(n).toLocaleString()); };
   async function initGold() {
     const ok = window.supabase && !SUPABASE_URL.startsWith('PASTE') && !SUPABASE_KEY.startsWith('PASTE');
@@ -155,7 +172,7 @@
       if (!session) { const r = await sb.auth.signInAnonymously(); if (r.error) throw r.error; }   // same browser = same player
       const { data, error } = await sb.rpc('get_player');      // creates the player with 50 gold the first time
       if (error) throw error;
-      setGold(data); try { localStorage.setItem('goldCache', data); } catch (e2) {}
+      setGold(data - goldPending); try { localStorage.setItem('goldCache', data - goldPending); } catch (e2) {}
     } catch (e) {
       console.error('Gold load failed', e);                       // happens inside Claude's preview: it blocks outside servers. On your real site it works.
       let c = 50; try { const v = parseInt(localStorage.getItem('goldCache'), 10); if (v >= 0) c = v; } catch (e2) {}
@@ -223,7 +240,7 @@
     const claim = (c, r, o) => { const old = occ.get(slot(c, r)); if (old) { const k = trees.indexOf(old); if (k >= 0) trees.splice(k, 1); } occ.set(slot(c, r), o); };
     try { const s = JSON.parse(localStorage.getItem('homePos') || 'null'); if (s && Number.isInteger(s.c) && Number.isInteger(s.r) && homeOK(s.c, s.r, true)) home = { c: s.c, r: s.r }; } catch (e) {}
     for (let j = 0; j < HOME_N; j++) for (let i = 0; i < HOME_N; i++) claim(home.c + i, home.r + j, { type: 'home', c: home.c + i, r: home.r + j });
-    for (let j = 0; j <= FARM.h; j++) for (let i = 0; i < FARM.w; i++) claim(FARM.c + i, FARM.r + j, { type: 'farm', c: FARM.c + i, r: FARM.r + j });   // wheat rows + the water row
+    if (farm) claimFarm();
     trees.sort((a, b) => (a.x + a.y) - (b.x + b.y) || a.x - b.x);   // far to near in the diamond view
   }
 
@@ -236,7 +253,7 @@
     return (c < 0 || r < 0 || c >= WORLD_W / CELL || r >= WORLD_H / CELL) ? null : { c, r };
   }
   function card() { infoEl.style.display = 'none'; }   // no slot pop-up: building lives behind the Build button
-  function select(sx, sy) { sel = slotAt(sx, sy); selT = performance.now(); card(); }
+  function select(sx, sy) { if (typeof tapFarm === 'function' && tapFarm(sx, sy)) return; sel = slotAt(sx, sy); selT = performance.now(); card(); }
   infoEl.addEventListener('click', e => {
     const a = e.target.dataset.a; if (!a) return;
     if (a === 'close') sel = null;
@@ -483,7 +500,7 @@
     updateVillagers(time);
     moveTick();
     const hx1 = (home.c + HOME_N) * CELL, hy1 = (home.r + HOME_N) * CELL, bk = [], fr = [];
-    for (const v of villagers) (v.x > hx1 || v.y > hy1 || v.st === 'enter' || v.st === 'exit' || v.st === 'toDoor' ? fr : bk).push(v);   // in front of the cabin, or tucked behind it
+    for (const v of villagers) if (!v.inF) (v.x > hx1 || v.y > hy1 || v.st === 'enter' || v.st === 'exit' || v.st === 'toDoor' ? fr : bk).push(v);   // in front of the cabin, or tucked behind it
     drawVillagers(bk, time);
     const pos = drag || home;
     const foot = (k) => {
@@ -513,7 +530,7 @@
   const villagers = []; let vLast = 0;
   const TUNIC = ['#c8553d', '#3f7cac', '#6a994e', '#e0a030', '#8e5ea2', '#d98880', '#2a9d8f', '#e76f51', '#4f6fb3', '#b5651d'];
   const SKIN = ['#f6d2b0', '#ecbf92', '#c98f63', '#8d5a3b'], HAIR = ['#3b2415', '#7a4a21', '#d9a441', '#1f1f1f', '#a63d2a'];
-  const outside = (x, y, m) => { if (x > FARM_X0 - m && x < FARM_X1 + m && y > FARM_Y0 - m && y < FARM_Y1 + 90 + m) return false; const x0 = home.c * CELL - m, y0 = home.r * CELL - m, x1 = (home.c + HOME_N) * CELL + m, y1 = (home.r + HOME_N) * CELL + m; return !(x > x0 && x < x1 && y > y0 && y < y1); };
+  const outside = (x, y, m) => { if (farm && x > FARM_X0 - m && x < FARM_X1 + m && y > FARM_Y0 - m && y < FARM_Y1 + m) return false; const x0 = home.c * CELL - m, y0 = home.r * CELL - m, x1 = (home.c + HOME_N) * CELL + m, y1 = (home.r + HOME_N) * CELL + m; return !(x > x0 && x < x1 && y > y0 && y < y1); };
   function pickSpot() {                              // somewhere in the clearing around the cabin, never inside it
     const cx = (home.c + HOME_N / 2) * CELL, cy = (home.r + HOME_N / 2) * CELL;
     for (let k = 0; k < 30; k++) {
@@ -530,6 +547,7 @@
   function syncVillagers() {
     while (villagers.length < population) villagers.push(mkVillager(villagers.length, villagers.length % 5 === 4));
     villagers.length = population;
+    villagers.forEach((v, i) => { v.job = i < WORKERS; v.wi = i; });     // the first few villagers are the farm hands
     setStat('pop', '\u{1F9D1}\u200D\u{1F33E}', 'Population', population);
   }
   function setPopulation(n) { population = Math.max(0, Math.min(200, n | 0)); try { localStorage.setItem('population', population); } catch (e) {} syncVillagers(); }
@@ -550,6 +568,12 @@
     const doorX = (home.c + 1.4) * CELL, doorY = (home.r + HOME_N - .55) * CELL, stepY = (home.r + HOME_N + .55) * CELL, span = stepY - doorY;
     for (const v of villagers) {
       v.walking = false;
+      if (v.job && farm) {                                           // farm hands: out of the cabin, over to the field, work until the wheat is ripe
+        if (farmState() === 'growing') {
+          if (v.st === 'inside') v.ti = 0;
+          else if (v.st === 'idle' || v.st === 'walk' || v.st === 'toDoor') { workSpot(v, false); v.st = 'toFarm'; }
+        } else if (v.st === 'toFarm' || v.st === 'work') { v.st = 'idle'; v.wait = rr(.5, 2.5); }
+      }
       if (v.st === 'idle') {
         v.wait -= dt; v.wave = Math.max(0, v.wave - dt);
         if (v.wait <= 0) { if (rng() < .3) v.st = 'toDoor'; else { [v.tx, v.ty] = pickSpot(); v.st = 'walk'; } }
@@ -570,8 +594,14 @@
         const arrived = go(v, doorX, stepY, dt);
         v.a = Math.max(0, Math.min(1, 1 - Math.hypot(v.x - doorX, v.y - stepY) / span));
         if (arrived) { v.st = 'idle'; v.a = 1; v.wait = rr(.5, 2.5); }
+      } else if (v.st === 'toFarm') {
+        if (go(v, v.tx, v.ty, dt)) { v.st = 'work'; v.ti = rr(3.5, 7); v.tyaw = 3 * Math.PI / 4 + rr(-.6, .6); }
+      } else if (v.st === 'work') {
+        v.ti -= dt; v.yaw += wrapA(v.tyaw - v.yaw) * Math.min(1, dt * 4);
+        if (v.ti <= 0) { workSpot(v, true); v.st = 'toFarm'; }          // shuffle along the row to the next patch
       }
       v.mv += ((v.walking ? 1 : 0) - v.mv) * Math.min(1, dt * 9); if (!v.walking) v.spd = 0;
+      v.wk = (v.wk || 0) + ((v.st === 'work' ? 1 : 0) - (v.wk || 0)) * Math.min(1, dt * 6);
       v.lk += (v.look - v.lk) * Math.min(1, dt * 5);
       if ((v.lookT -= dt) <= 0) { v.look = v.walking ? rr(-.3, .3) : rr(-1.1, 1.1); v.lookT = rr(1.2, 4); }
       if (!v.walking && v.st === 'idle') { if (v.tyaw === undefined || rng() < dt * .12) v.tyaw = v.yaw + rr(-1.6, 1.6); v.yaw += wrapA(v.tyaw - v.yaw) * Math.min(1, dt * 3); }
@@ -634,7 +664,7 @@
     if (v.a <= .02) return;
     const px = (projX(v.x, v.y) - cpx) * zoom + cw / 2, py = (projY(v.x, v.y) - cpy) * zoom + ch / 2;
     if (px < -90 || px > cw + 90 || py < -120 || py > ch + 60) return;
-    const H = v.sz * 100 * v.bld, w = v.mv, p = v.gp, br = Math.sin(time * 1.9 + v.ph), fem = v.fem;
+    const H = v.sz * 100 * v.bld, w = v.mv, wk = v.wk || 0, p = v.gp, br = Math.sin(time * 1.9 + v.ph), fem = v.fem;
     const fx = Math.cos(v.yaw), fy = Math.sin(v.yaw), rx = -fy, ry = fx, OUT = 'rgba(30,15,5,.5)';      // forward / right on the ground, (x right, y toward camera)
     const J = (f, s, z) => [(fx * f + rx * s) * H, ((fy * f + ry * s) * LAT - z * LAC) * H];
     const skin = v.skin, sk2 = shd(skin, .8), tun = v.tun, boot = '#4a2f1b';
@@ -647,7 +677,7 @@
       const q = p + (s > 0 ? Math.PI : 0), ha = .5 * w * Math.sin(q) + .02, kn = .85 * w * Math.pow(Math.max(0, Math.cos(q + .35)), 1.4) + .1 * w * Math.max(0, -Math.sin(q)) + .03;
       const sa = ha - kn; L.push({ s, ha, sa, kf: LT * Math.sin(ha), kz: -LT * Math.cos(ha), af: LT * Math.sin(ha) + LT * Math.sin(sa), az: -LT * Math.cos(ha) - LT * Math.cos(sa) });
     }
-    const hL = L[0].ha, hR = L[1].ha, pz = Math.max(-L[0].az, -L[1].az) + .04, ps = .014 * w * Math.sin(p), lean = .06 * w + .015;
+    const hL = L[0].ha, hR = L[1].ha, pz = Math.max(-L[0].az, -L[1].az) + .04, ps = .014 * w * Math.sin(p), lean = .06 * w + .015 + wk * (.17 + .04 * Math.sin(time * 5 + v.ph));
     L.sort((a, b) => (fy * a.af + ry * a.s * .055) - (fy * b.af + ry * b.s * .055));
     for (const l of L) {
       const sd = ps + l.s * .055, hp = J(0, sd, pz), kp = J(l.kf, sd, pz + l.kz), ap = J(l.af, sd, pz + l.az), pt = Math.max(-.5, Math.min(.6, l.sa * .7));
@@ -661,8 +691,8 @@
       ctx.fillStyle = shd(tun, .82); ctx.fill(); ctx.strokeStyle = OUT; ctx.lineWidth = .8; ctx.stroke(); }
     // ---- arms (counter-swing to the legs, one waves, one may carry a basket) ----
     const arm = s => {
-      const sd = ps + s * (fem ? .105 : .125), z0 = pz + .285, wv = s > 0 && v.wave > 0 ? Math.min(1, v.wave * 3) : 0, cr = s > 0 && v.carry && !wv;
-      const al = s * .55 * w * Math.sin(p) * (cr ? .2 : 1) + .03, a2 = al + .2 + .5 * Math.max(0, al), mx = (a, b) => a + (b - a) * wv, wg = Math.sin(time * 13), lf = lean * .3;
+      const sd = ps + s * (fem ? .105 : .125), z0 = pz + .285, wv = s > 0 && v.wave > 0 ? Math.min(1, v.wave * 3) : 0, cr = s > 0 && v.carry && !wv && !wk;
+      const al = s * .55 * w * Math.sin(p) * (cr ? .2 : 1) + .03 + wk * (.85 + .35 * Math.sin(time * 5 + v.ph + s * 1.3)), a2 = al + .2 + .5 * Math.max(0, al), mx = (a, b) => a + (b - a) * wv, wg = Math.sin(time * 13), lf = lean * .3;
       const S = J(lf, ps + s * (fem ? .095 : .115), z0);
       let E = J(mx(lf + .165 * Math.sin(al), lf + .03), mx(sd, ps + s * .15), mx(z0 - .165 * Math.cos(al), z0 - .045));
       let Hd = J(mx(lf + .165 * Math.sin(al) + .15 * Math.sin(a2), lf + .06 + .02 * wg), mx(sd, ps + s * .19 + .03 * wg), mx(z0 - .165 * Math.cos(al) - .15 * Math.cos(a2), z0 + .12));
@@ -726,58 +756,140 @@
     ctx.globalAlpha = 1;
   }
   function drawVillagers(list, time) { list.sort((a, b) => (a.x + a.y) - (b.x + b.y)); for (const v of list) drawVillager(v, time); }
-  // ---------- wheat farm: 5 slots long x 2 wide, golden wheat swaying in the wind, a water canal, fence, reeds ----------
-  const FARM = { c: 16, r: 21, w: 5, h: 2 };      // top-left slot; move these two numbers to put the farm somewhere else
-  const FARM_X0 = FARM.c * CELL, FARM_Y0 = FARM.r * CELL, FARM_X1 = FARM_X0 + FARM.w * CELL, FARM_Y1 = FARM_Y0 + FARM.h * CELL;
-  const FW = FARM_X1 - FARM_X0, FH = FARM_Y1 - FARM_Y0;
-  const WSTEM = ['#c48a22', '#d09a2c', '#b87f1e'], WHEAD = ['#f7d04f', '#ffe066', '#ecb93a'];
-  const stalks = [], tufts = [], reeds = [], rocks = [];
-  (function buildFarm() {
-    let sd = 20260; const rnd = () => { sd = (sd * 1664525 + 1013904223) >>> 0; return sd / 4294967296; };   // own random numbers: the farm looks the same every visit
+  // ---------- wheat farm: buy it in the Build menu, villagers plant it, wait for the timer, collect the wheat ----------
+  const FARM_COST = 50;            // gold to build it
+  const GROW_SEC = 20;             // seconds until the wheat is ripe (try 10, 30 ...)
+  const WHEAT_PER_HARVEST = 10;    // wheat you get each time you collect
+  const WORKERS = 4;               // villagers who walk out and work the field
+  const FARM_W = 5, FARM_H = 2;    // 5 slots long x 2 slots wide = 10 blocks
+  let farm = null, wheatCount = 0; // farm = { c, r, t0 } (t0 = when this crop was planted)
+  try { const f = JSON.parse(localStorage.getItem('farm') || 'null'); if (f && Number.isInteger(f.c) && Number.isInteger(f.r) && typeof f.t0 === 'number') farm = f; wheatCount = parseInt(localStorage.getItem('wheat'), 10) || 0; } catch (e) {}
+  let FARM_X0 = 0, FARM_Y0 = 0, FARM_X1 = 0, FARM_Y1 = 0, FW = FARM_W * CELL, FH = FARM_H * CELL;
+  const farmState = () => !farm ? 'none' : (Date.now() - farm.t0 >= GROW_SEC * 1000 ? 'ready' : 'growing');
+  const farmProgress = () => farm ? Math.min(1, (Date.now() - farm.t0) / (GROW_SEC * 1000)) : 0;
+  const saveFarm = () => { try { localStorage.setItem('farm', JSON.stringify(farm)); localStorage.setItem('wheat', wheatCount); } catch (e) {} };
+
+  const WSTEM = ['#c48a22', '#d09a2c', '#b87f1e'], WHEAD = ['#f7d04f', '#ffe066', '#ecb93a'], GSTEM = '#5f9a2c', GHEAD = '#8cc43f';
+  const mixHex = (a, b, t) => { const p = h => [1, 3, 5].map(k => parseInt(h.substr(k, 2), 16)); const A = p(a), B = p(b); return 'rgb(' + A.map((v, k) => Math.round(v + (B[k] - v) * t)).join(',') + ')'; };
+  const stalks = [], tufts = [], floaters = [];
+  function buildFarm() {
+    stalks.length = 0; tufts.length = 0;
+    let sd = (farm.c * 131 + farm.r * 7919 + 20260) >>> 0; const rnd = () => { sd = (sd * 1664525 + 1013904223) >>> 0; return sd / 4294967296; };
     for (let y = FARM_Y0 + 5; y < FARM_Y1 - 2; y += 12) for (let x = FARM_X0 + 6; x < FARM_X1 - 2; x += 12) for (let k = 0; k < 2; k++)
       stalks.push({ x: x + (rnd() - .5) * 9 + k * 5, y: y + (rnd() - .5) * 7 + k * 4, h: 27 + rnd() * 13, lean: (rnd() - .5) * 3.5, ph: rnd() * 6.28, sh: (rnd() * 3) | 0 });
     stalks.sort((a, b) => (a.x + a.y) - (b.x + b.y));
-    for (let i = 0; i < 34; i++) {
-      const x = FARM_X0 - 70 + rnd() * (FW + 140), y = FARM_Y0 - 60 + rnd() * (FH + 200);
-      if (x > FARM_X0 - 14 && x < FARM_X1 + 8 && y > FARM_Y0 - 22 && y < FARM_Y1 + 82) continue;    // not on the soil or in the water
+    for (let i = 0; i < 26; i++) {
+      const x = FARM_X0 - 60 + rnd() * (FW + 120), y = FARM_Y0 - 50 + rnd() * (FH + 100);
+      if (x > FARM_X0 - 16 && x < FARM_X1 + 16 && y > FARM_Y0 - 16 && y < FARM_Y1 + 16) continue;
       tufts.push({ x, y, f: rnd() < .35 ? ['#ffffff', '#ffd3e6', '#ffe27a'][(rnd() * 3) | 0] : null });
     }
-    for (const [dx, dy] of [[8, 80], [26, 83], [40, 78], [FW - 40, 82], [FW - 22, 78], [FW - 8, 82]]) reeds.push({ x: FARM_X0 + dx, y: FARM_Y1 + dy, h: 26 + rnd() * 14, ph: rnd() * 6 });
-    for (const [dx, dy, sz] of [[70, 88, 1], [96, 90, .7], [FW - 80, 90, .9], [FW - 56, 92, .6]]) rocks.push({ x: FARM_X0 + dx, y: FARM_Y1 + dy, s: sz });
-  })();
+  }
+  function setFarmGeom() { FARM_X0 = farm.c * CELL; FARM_Y0 = farm.r * CELL; FARM_X1 = FARM_X0 + FW; FARM_Y1 = FARM_Y0 + FH; buildFarm(); }
+  function claimFarm() { for (let j = 0; j < FARM_H; j++) for (let i = 0; i < FARM_W; i++) occ.set(slot(farm.c + i, farm.r + j), { type: 'farm', c: farm.c + i, r: farm.r + j }); }
+  if (farm) setFarmGeom();
+
+  // nearest free 5x2 patch to the cabin door, with a one-slot walkway all around
+  function findFarmSpot() {
+    const doorX = (home.c + 1.4) * CELL, doorY = (home.r + HOME_N + .55) * CELL;
+    const c0 = Math.ceil(clearing.x0 / CELL), c1 = Math.floor(clearing.x1 / CELL) - FARM_W, r0 = Math.ceil(clearing.y0 / CELL), r1 = Math.floor(clearing.y1 / CELL) - FARM_H;
+    let best = null, bd = 1e9;
+    for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) {
+      let ok = true;
+      for (let j = -1; j <= FARM_H && ok; j++) for (let i = -1; i <= FARM_W; i++) if (occ.get(slot(c + i, r + j))) { ok = false; break; }
+      if (!ok) continue;
+      const d = Math.hypot((c + FARM_W / 2) * CELL - doorX, (r + FARM_H / 2) * CELL - doorY);
+      if (d < bd) { bd = d; best = { c, r }; }
+    }
+    return best;
+  }
+  // where a farm hand heads next: first visit = their own stretch of the field, later = a short shuffle along it
+  function workSpot(v, near) {
+    const cl = (a, lo, hi) => Math.max(lo, Math.min(hi, a));
+    if (near) { v.tx = cl(v.x + rr(-80, 80), FARM_X0 + 16, FARM_X1 - 16); v.ty = cl(v.y + rr(-40, 40), FARM_Y0 + 14, FARM_Y1 - 14); }
+    else { v.tx = cl(FARM_X0 + 40 + (v.wi % WORKERS) / (WORKERS - 1 || 1) * (FW - 80) + rr(-25, 25), FARM_X0 + 16, FARM_X1 - 16); v.ty = FARM_Y0 + rr(22, FH - 22); }
+  }
+  const inField = v => v.x > FARM_X0 - 12 && v.x < FARM_X1 + 12 && v.y > FARM_Y0 - 12 && v.y < FARM_Y1 + 12;
+
+  // ---- money, wheat, messages ----
+  function spendGold(n) {
+    if (gold < n) return false;
+    setGold(gold - n); goldPending += n;
+    try { localStorage.setItem('goldPending', goldPending); localStorage.setItem('goldCache', gold); } catch (e) {}
+    if (sb) sb.rpc('spend_gold', { amount: n }).then(({ data, error }) => {     // needs a spend_gold function in Supabase; until it exists the spend is remembered on this device
+      if (!error && typeof data === 'number') { goldPending = Math.max(0, goldPending - n); try { localStorage.setItem('goldPending', goldPending); } catch (e) {} setGold(data - goldPending); }
+      else console.warn('spend_gold not available yet', error && error.message);
+    }).catch(() => {});
+    return true;
+  }
+  const toastEl = document.getElementById('toast'); let toastT = 0;
+  function toast(msg) { toastEl.textContent = msg; toastEl.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => toastEl.classList.remove('on'), 2400); }
+  const farmPill = document.getElementById('farmpill'), wheatPill = document.getElementById('wheatpill'), wheatNum = document.getElementById('wheatnum');
+  let uiKey = '';
+  function updateFarmUI() {
+    const st = farmState(), left = farm ? Math.max(0, Math.ceil(GROW_SEC - (Date.now() - farm.t0) / 1000)) : 0;
+    const key = st + left + '|' + wheatCount; if (key === uiKey) return; uiKey = key;
+    farmPill.style.display = farm ? 'flex' : 'none'; wheatPill.style.display = (farm || wheatCount) ? 'flex' : 'none';
+    farmPill.classList.toggle('ready', st === 'ready');
+    farmPill.textContent = st === 'ready' ? '\u{1F33E} Collect!' : '\u23F3 ' + Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0');
+    wheatNum.textContent = wheatCount;
+  }
+  function focusFarm() {
+    if (!farm) return;
+    const cx = (FARM_X0 + FARM_X1) / 2, cy = (FARM_Y0 + FARM_Y1) / 2; cpx = projX(cx, cy); cpy = projY(cx, cy); clampCam();
+  }
+  function collectFarm() {
+    if (farmState() !== 'ready') return;
+    wheatCount += WHEAT_PER_HARVEST; farm.t0 = Date.now(); saveFarm();      // harvest, then the field is replanted
+    setStat('wheat', '\u{1F33E}', 'Wheat', wheatCount); updateFarmUI();
+    floaters.push({ t0: performance.now(), txt: '+' + WHEAT_PER_HARVEST + ' wheat' });
+    toast('Collected ' + WHEAT_PER_HARVEST + ' wheat');
+  }
+  farmPill.addEventListener('click', () => { if (farmState() === 'ready') collectFarm(); else focusFarm(); });
+  function tapFarm(sx, sy) {                                                  // tap the ripe field (or its bubble) to collect
+    if (farmState() !== 'ready') return false;
+    for (const q of [slotAt(sx, sy), slotAt(sx, sy + 24 * zoom)]) if (q && q.c >= farm.c && q.c < farm.c + FARM_W && q.r >= farm.r && q.r < farm.r + FARM_H) { collectFarm(); return true; }
+    const [bx, by] = toScr((FARM_X0 + FARM_X1) / 2, (FARM_Y0 + FARM_Y1) / 2);
+    if (Math.hypot(sx - bx, sy - (by - 78 * zoom)) < 30 * zoom) { collectFarm(); return true; }
+    return false;
+  }
+
+  // ---- Build menu ----
+  function renderBuild() {
+    const btn = document.getElementById('farmBuy'), info = document.getElementById('farmInfo');
+    info.textContent = 'Ready in ' + GROW_SEC + 's \u00B7 ' + WHEAT_PER_HARVEST + ' wheat each time';
+    if (farm) { btn.textContent = 'Built \u2713'; btn.disabled = true; }
+    else if (gold < FARM_COST) { btn.textContent = 'Need ' + FARM_COST + ' gold'; btn.disabled = true; }
+    else { btn.textContent = 'Build \u00B7 ' + FARM_COST + ' gold'; btn.disabled = false; }
+  }
+  buildBtn.addEventListener('click', renderBuild);
+  document.getElementById('farmBuy').addEventListener('click', () => {
+    if (farm) return;
+    if (gold < FARM_COST) { toast('You need ' + FARM_COST + ' gold'); return; }
+    const spot = findFarmSpot(); if (!spot) { toast('No room for a farm'); return; }
+    spendGold(FARM_COST);
+    farm = { c: spot.c, r: spot.r, t0: Date.now() }; saveFarm(); setFarmGeom(); claimFarm();
+    buildPanel.style.display = 'none'; buildBtn.classList.remove('open');
+    focusFarm(); setStat('wheat', '\u{1F33E}', 'Wheat', wheatCount); updateFarmUI(); renderBuild();
+    toast('Farm built! Your villagers are heading out to plant');
+  });
+  if (farm || wheatCount) setStat('wheat', '\u{1F33E}', 'Wheat', wheatCount);
+
+  // ---- drawing ----
   const wave = (x, y, t) => Math.sin(t * 1.8 - (x + y) * .008) * .55 + Math.sin(t * .7 - x * .004 + y * .003) * .45;   // wind rolling across the field
   const toScr = (x, y) => [(projX(x, y) - cpx) * zoom + cw / 2, (projY(x, y) - cpy) * zoom + ch / 2];
   const screenT = () => ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   function worldT() { const k = zoom * dpr; ctx.setTransform(k * IX, k * IY, -k * IX, k * IY, (cw / 2 - cpx * zoom) * dpr, (ch / 2 - cpy * zoom) * dpr); }   // draw in flat world units, they land on the diamond
   function rrect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
-  function farmVisible() { const [x, y] = toScr((FARM_X0 + FARM_X1) / 2, (FARM_Y0 + FARM_Y1) / 2), m = 340 * zoom; return x > -m && x < cw + m && y > -m && y < ch + m; }
+  function farmVisible() { if (!farm) return false; const [x, y] = toScr((FARM_X0 + FARM_X1) / 2, (FARM_Y0 + FARM_Y1) / 2), m = 340 * zoom; return x > -m && x < cw + m && y > -m && y < ch + m; }
 
-  // soil, furrows and the water canal lie flat on the ground, under the trees and villagers
-  function drawFarmGround(time) {
+  // soil, furrows and a wooden edge lie flat on the ground, under the trees and villagers
+  function drawFarmGround() {
     if (!farmVisible()) return;
     worldT();
-    rrect(FARM_X0 - 18, FARM_Y0 - 18, FW + 36, FH + 36, 26); ctx.fillStyle = 'rgba(40,70,10,.28)'; ctx.fill();     // soft shade on the grass around the bed
-    rrect(FARM_X0 - 8, FARM_Y0 - 8, FW + 16, FH + 16, 14); ctx.fillStyle = '#5f3d20'; ctx.fill();                 // soil bed
+    rrect(FARM_X0 - 18, FARM_Y0 - 18, FW + 36, FH + 36, 26); ctx.fillStyle = 'rgba(40,70,10,.28)'; ctx.fill();     // soft shade on the grass
+    rrect(FARM_X0 - 8, FARM_Y0 - 8, FW + 16, FH + 16, 12); ctx.fillStyle = '#5f3d20'; ctx.fill();                 // soil bed
     for (let i = 0; i < 10; i++) { ctx.fillStyle = i % 2 ? '#7a502e' : '#8f6238'; ctx.fillRect(FARM_X0, FARM_Y0 + i * 16, FW, 16); }   // furrows
-    const bx = FARM_X0, by = FARM_Y1 + 10, bw = FW, bh = 66;                                                      // canal along the near side
-    rrect(bx, by, bw, bh, 30); ctx.fillStyle = '#c9a96a'; ctx.fill();                                              // sandy bank
-    rrect(bx + 4, by + 4, bw - 8, bh - 8, 27); ctx.fillStyle = '#9b7a46'; ctx.fill();                              // wet mud rim
-    const wx = bx + 9, wy = by + 9, ww = bw - 18, wh = bh - 18;
-    const g = ctx.createLinearGradient(0, wy, 0, wy + wh); g.addColorStop(0, '#79d6f2'); g.addColorStop(1, '#2f86c4');
-    rrect(wx, wy, ww, wh, 24); ctx.fillStyle = g; ctx.fill();
-    ctx.save(); rrect(wx, wy, ww, wh, 24); ctx.clip();
-    for (let i = 0; i < 8; i++) {                                                                                  // glints drifting along the water
-      const px = wx + 14 + ((i * 49 + time * 14) % (ww - 40)), py = wy + 10 + (i * 17) % (wh - 18);
-      ctx.fillStyle = 'rgba(255,255,255,' + (.3 + .25 * Math.sin(time * 2 + i * 1.7)).toFixed(2) + ')';
-      ctx.beginPath(); ctx.ellipse(px, py, 10, 1.6, 0, 0, 7); ctx.fill();
-    }
-    ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(15,60,110,.35)'; rrect(wx, wy, ww, wh, 24); ctx.stroke();           // shaded inner edge
-    ctx.restore();
-    for (const [dx, dy, r] of [[90, 33, 8], [118, 40, 6], [bw - 120, 30, 8]]) {                                    // lily pads
-      const px = bx + dx, py = by + dy + Math.sin(time * 1.2 + dx) * .8;
-      ctx.fillStyle = '#4f9a3a'; ctx.beginPath(); ctx.moveTo(px, py); ctx.arc(px, py, r, .35, 6.0); ctx.closePath(); ctx.fill();
-    }
-    ctx.fillStyle = '#ff9ec7'; ctx.beginPath(); ctx.arc(bx + 92, by + 31, 2.6, 0, 7); ctx.fill();
+    rrect(FARM_X0 - 8, FARM_Y0 - 8, FW + 16, FH + 16, 12); ctx.lineWidth = 6; ctx.strokeStyle = '#6e4826'; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = '#a9794a'; ctx.stroke();
     screenT(); ctx.lineCap = 'round';
     for (const t of tufts) {                                                                                         // grass tufts and little flowers
       const [sx, sy] = toScr(t.x, t.y), z = zoom;
@@ -788,41 +900,42 @@
     }
   }
 
-  // the standing parts: back fence, every wheat stalk (swaying), front fence, reeds and stones
+  // the standing parts: every wheat stalk (swaying), the farm hands working between the rows, the "ready" bubble
   function drawFarm(time) {
-    if (!farmVisible()) return;
-    screenT(); const z = zoom; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    const fence = (x0, y0, x1, y1) => {
-      const n = Math.max(1, Math.round(Math.hypot(x1 - x0, y1 - y0) / 40)), P = [];
-      for (let i = 0; i <= n; i++) P.push(toScr(x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n));
-      ctx.strokeStyle = '#a97a44'; ctx.lineWidth = 2.2 * z;
-      for (const h of [5, 11]) { ctx.beginPath(); P.forEach(([px, py], i) => ctx[i ? 'lineTo' : 'moveTo'](px, py - h * z)); ctx.stroke(); }
-      ctx.strokeStyle = '#7d5128'; ctx.lineWidth = 3.6 * z;
-      for (const [px, py] of P) { ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px, py - 15 * z); ctx.stroke(); }
-    };
-    fence(FARM_X0 - 14, FARM_Y0 - 14, FARM_X1 + 2, FARM_Y0 - 14);      // far long side
-    fence(FARM_X0 - 14, FARM_Y0 - 14, FARM_X0 - 14, FARM_Y1 + 6);      // far short end
-    for (const p of stalks) {
-      const sx = (projX(p.x, p.y) - cpx) * z + cw / 2, sy = (projY(p.x, p.y) - cpy) * z + ch / 2;
+    for (const v of villagers) v.inF = false;
+    if (!farm || !farmVisible()) return;
+    const wl = []; for (const v of villagers) if (v.a > .02 && inField(v)) { v.inF = true; wl.push(v); }
+    wl.sort((a, b) => (a.x + a.y) - (b.x + b.y));
+    screenT(); const z = zoom, p = farmProgress(), st = farmState(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    const hf = .22 + .78 * Math.min(1, p / .85), m = Math.max(0, Math.min(1, (p - .35) / .5)), amp = 2.5 + 3.5 * hf;   // young wheat is short, green and sways less
+    const sc = WSTEM.map(c => mixHex(GSTEM, c, m)), hc = WHEAD.map(c => mixHex(GHEAD, c, m)), hs = .4 + .6 * m;
+    let wi = 0;
+    for (const q of stalks) {
+      while (wi < wl.length && wl[wi].x + wl[wi].y <= q.x + q.y + 6) { drawVillager(wl[wi++], time); screenT(); ctx.lineCap = 'round'; ctx.lineJoin = 'round'; }
+      const sx = (projX(q.x, q.y) - cpx) * z + cw / 2, sy = (projY(q.x, q.y) - cpy) * z + ch / 2;
       if (sx < -20 || sx > cw + 20 || sy < -20 || sy > ch + 60 * z) continue;
-      const w = wave(p.x, p.y, time) * 5.5 + Math.sin(time * 2.3 + p.ph) * .7, dx = (p.lean + w) * z, hh = p.h * z;
-      ctx.strokeStyle = WSTEM[p.sh]; ctx.lineWidth = 1.7 * z;
+      const w = wave(q.x, q.y, time) * amp + Math.sin(time * 2.3 + q.ph) * .7, dx = (q.lean + w) * z * hf, hh = q.h * hf * z;
+      ctx.strokeStyle = sc[q.sh]; ctx.lineWidth = 1.7 * z;
       ctx.beginPath(); ctx.moveTo(sx, sy); ctx.quadraticCurveTo(sx + dx * .15, sy - hh * .55, sx + dx, sy - hh); ctx.stroke();
-      ctx.fillStyle = WHEAD[p.sh]; ctx.beginPath(); ctx.ellipse(sx + dx + dx / hh * 4 * z, sy - hh - 4 * z, 2.7 * z, 7 * z, dx / hh * .9, 0, 7); ctx.fill();
+      if (p > .12) { ctx.fillStyle = hc[q.sh]; ctx.beginPath(); ctx.ellipse(sx + dx + dx / hh * 4 * z, sy - hh - 4 * z * hs, 2.7 * z * hs, 7 * z * hs, dx / hh * .9, 0, 7); ctx.fill(); }
     }
-    fence(FARM_X1 + 2, FARM_Y0 - 14, FARM_X1 + 2, FARM_Y1 + 6);       // near short end, in front of the wheat
-    for (const q of rocks) {
-      const [sx, sy] = toScr(q.x, q.y), k = q.s * z;
-      ctx.fillStyle = '#6f7676'; ctx.beginPath(); ctx.ellipse(sx + 2 * k, sy + 1 * k, 10 * k, 5 * k, 0, 0, 7); ctx.fill();
-      ctx.fillStyle = '#a9afaf'; ctx.beginPath(); ctx.ellipse(sx, sy - 3 * k, 9 * k, 6.5 * k, 0, 0, 7); ctx.fill();
-      ctx.fillStyle = '#c7cccc'; ctx.beginPath(); ctx.ellipse(sx - 2 * k, sy - 5 * k, 4 * k, 2.4 * k, 0, 0, 7); ctx.fill();
+    while (wi < wl.length) { drawVillager(wl[wi++], time); screenT(); ctx.lineCap = 'round'; ctx.lineJoin = 'round'; }
+    const [cx, cy] = toScr((FARM_X0 + FARM_X1) / 2, (FARM_Y0 + FARM_Y1) / 2);
+    if (st === 'ready') {                                                      // bobbing wheat bubble: tap it to collect
+      const by = cy - 78 * z + Math.sin(time * 3) * 4 * z, r = 20 * z;
+      ctx.fillStyle = 'rgba(255,250,225,.96)'; ctx.strokeStyle = '#6b4519'; ctx.lineWidth = 2.5 * z;
+      ctx.beginPath(); ctx.arc(cx, by, r, 0, 7); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx - 6 * z, by + r - 1 * z); ctx.lineTo(cx, by + r + 8 * z); ctx.lineTo(cx + 6 * z, by + r - 1 * z); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.font = Math.round(24 * z) + 'px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#000'; ctx.fillText('\u{1F33E}', cx, by + 1 * z);
     }
-    for (const r of reeds) {
-      const [sx, sy] = toScr(r.x, r.y), dx = (wave(r.x, r.y, time) * 4 + Math.sin(time * 2 + r.ph)) * z, hh = r.h * z;
-      ctx.strokeStyle = '#4d8f2e'; ctx.lineWidth = 2 * z;
-      ctx.beginPath(); ctx.moveTo(sx - 3 * z, sy); ctx.quadraticCurveTo(sx - 3 * z, sy - hh * .5, sx - 3 * z + dx * .8, sy - hh * .8); ctx.moveTo(sx + 2 * z, sy); ctx.quadraticCurveTo(sx + 2 * z, sy - hh * .55, sx + 2 * z + dx, sy - hh); ctx.stroke();
-      ctx.fillStyle = '#7a4a22'; ctx.beginPath(); ctx.ellipse(sx + 2 * z + dx * 1.02, sy - hh - 3 * z, 2.2 * z, 5.5 * z, dx * .05, 0, 7); ctx.fill();   // cattail
+    const now = performance.now();
+    for (let i = floaters.length - 1; i >= 0; i--) {                            // "+10 wheat" floating up
+      const f = floaters[i], a = (now - f.t0) / 1500; if (a >= 1) { floaters.splice(i, 1); continue; }
+      ctx.globalAlpha = 1 - a; ctx.font = '800 ' + Math.round(18 * z) + 'px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.lineWidth = 4 * z; ctx.strokeStyle = 'rgba(60,35,5,.85)'; ctx.strokeText(f.txt, cx, cy - (30 + a * 60) * z); ctx.fillStyle = '#fff3b0'; ctx.fillText(f.txt, cx, cy - (30 + a * 60) * z);
+      ctx.globalAlpha = 1;
     }
+    ctx.textAlign = 'start'; ctx.textBaseline = 'alphabetic';
   }
 
   function frame(ms) {
@@ -876,6 +989,7 @@
       ctx.drawImage(tr.im, -w / 2, -h + 4 * t.s, w, h);
       ctx.shadowBlur = 0; ctx.shadowColor = 'transparent'; ctx.globalAlpha = 1;
     }
+    updateFarmUI();
     drawFarm(time);
     drawHome(time);
     if (sel) {                                           // outline + corner arrows on top, so a tree can never hide them
