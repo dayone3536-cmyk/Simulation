@@ -18,6 +18,20 @@
   #info button { border: 0; border-radius: 10px; padding: 9px 14px; font: 700 13px system-ui, sans-serif; color: #2a1a05; background: linear-gradient(#ffe27a, #f0a92b); box-shadow: 0 2px 0 #9a6410; }
   #info button:active { transform: translateY(2px); box-shadow: none; }
   #info button.x { background: none; box-shadow: none; color: #fff3d6; padding: 6px 8px; font-size: 18px; opacity: .7; }
+  /* move bar: appears while the cabin is selected (Clash-of-Clans style) */
+  #movebar { display: none; position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom)); pointer-events: auto;
+    align-items: center; gap: 12px; padding: 8px 10px; border-radius: 18px; background: linear-gradient(#3b2a18, #261a0e); border: 2px solid #c99a4b;
+    box-shadow: 0 6px 18px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,235,180,.35); color: #fff3d6; font: 700 14px system-ui, sans-serif; animation: pop .18s ease-out; max-width: calc(100% - 130px); }
+  #movebar button { width: 54px; height: 54px; flex: none; border: 3px solid rgba(0,0,0,.45); border-radius: 16px; font: 800 28px system-ui, sans-serif; color: #fff; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  #movebar .ok { background: linear-gradient(#7be25a, #2fa12b); box-shadow: 0 4px 0 #1b6a1a; }
+  #movebar .no { background: linear-gradient(#ff8a7a, #d23a2c); box-shadow: 0 4px 0 #8c1f16; }
+  #movebar button:active { transform: translateY(3px); box-shadow: none; }
+  #movebar.bad .ok { background: linear-gradient(#8a8a8a, #5f5f5f); box-shadow: 0 4px 0 #3a3a3a; opacity: .6; }
+  #movebar #mvMsg { min-width: 150px; text-align: center; line-height: 1.25; }
+  #movebar #mvMsg small { display: block; font-weight: 500; font-size: 11px; opacity: .75; }
+  #movebar.bad #mvMsg { color: #ff9d92; }
+  #movebar.shake { animation: shake .3s; }
+  @keyframes shake { 20%, 60% { transform: translateX(calc(-50% - 6px)); } 40%, 80% { transform: translateX(calc(-50% + 6px)); } }
   @keyframes pop { from { transform: translateX(-50%) translateY(14px) scale(.94); opacity: 0; } }
   #hint { position: fixed; left: 14px; bottom: 12px; font: 13px system-ui, sans-serif; color: #fff;
     text-shadow: 0 1px 3px rgba(0,0,0,.7); pointer-events: none; transition: opacity .6s; }
@@ -71,8 +85,9 @@
   <div id="stats"><h4>Village</h4></div>
   <div id="buildpanel"><div>Build<small>Buildings are coming soon</small></div></div>
   <button id="buildbtn" aria-label="Build"><svg viewBox="0 0 59.214 59.214" aria-hidden="true"><path fill="#010002" d="M28.693,25.135l-4.187-3.881c-1.003,2.072-2.365,3.81-4.543,4.672l3.361,3.626 c0.445-0.214,0.938-0.341,1.46-0.36L28.693,25.135z M19.131,24.136c0.004-0.023,0.003-0.045,0.008-0.069c0.098-0.464,0.36-0.954,0.776-1.371 l1.428-1.428c0.426-0.426,0.929-0.687,1.403-0.78c0.007-0.001,0.014-0.001,0.021-0.002l3.3-12.259L13.865,1.374L8.299,6.662 l8.717,5.491l-1.46,4.777l-4.777,1.46L5.288,9.673L0,15.239l6.853,12.202L19.131,24.136z M27.914,31.69l-0.277-0.275c-0.798-0.798-1.759-1.237-2.707-1.237c-0.715,0-1.373,0.263-1.85,0.74 L1.817,49.845c-0.541,0.542-0.892,1.422-0.919,2.335c-0.03,1.008,0.33,1.939,1.015,2.624l2.609,2.609 c0.707,0.707,1.731,1.112,2.812,1.112c0.95,0,1.833-0.315,2.361-0.844l18.89-21.219C29.705,35.342,29.388,33.167,27.914,31.69z M55.336,49.835L34.083,30.131l-3.857,4.004c0.11,0.863-0.024,1.702-0.433,2.393l18.689,20.16 c0.104,0.104,0.257,0.148,0.445,0.148c0.91,0,2.634-1.057,3.353-1.775l1.429-1.428C54.575,52.766,55.934,50.434,55.336,49.835z M49.207,53.448c-1.341,0-2.428-1.086-2.428-2.427s1.087-2.427,2.428-2.427c1.34,0,2.426,1.086,2.426,2.427 S50.546,53.448,49.207,53.448z M58.705,18.012c-0.68-0.68-1.781-0.68-2.461,0l-0.684,0.684c-0.566-0.782-1.505-2.111-1.391-2.551 c0.502-1.924-3.426-6.484-3.426-6.484c-9.76-9.76-16.283-9.54-19.384-8.472c-1.245,0.429-1.019,0.699,0.278,0.928 c9.406,1.642,10.58,7.194,8.984,9.338c-0.615,0.827-0.795,1.45-0.686,2.01c0.064,0.33,0.229,0.639,0.468,0.954L26.028,29.341 c0.831,0.224,1.629,0.679,2.315,1.366l0.277,0.276c0.606,0.607,1.031,1.306,1.304,2.023l14.214-14.751 c0.271,0.22,0.552,0.415,0.842,0.567c0.774,0.41,1.616,0.53,2.548,0.064c1.054-0.527,4.167,2.019,5.112,2.699 c0.007,0.005,0.013,0.007,0.02,0.012l-0.518,0.517c-0.68,0.68-0.68,1.781,0,2.461s1.781,0.68,2.461,0l4.102-4.102 C59.384,19.793,59.384,18.692,58.705,18.012z"/></svg>Build</button>
+  <div id="movebar"><button class="no" id="mvNo" aria-label="Cancel move">✕</button><div id="mvMsg"></div><button class="ok" id="mvOk" aria-label="Place cabin">✓</button></div>
 </div>
-<div id="hint">Drag to look around, pinch to zoom, tap a slot to select it</div>
+<div id="hint">Drag to look around, pinch to zoom, tap your cabin to move it</div>
 
 <script>
 (() => {
@@ -278,19 +293,15 @@
     canvas.classList.add('drag'); hint.style.opacity = 0;
     const p0 = ptrs.get(e.pointerId);
     tap = ptrs.size === 1 ? { x: p0.x, y: p0.y, t: performance.now(), ok: true } : null;   // a tap = short press, barely moved
-    if (drag && drag.id !== e.pointerId) drag = null;                                        // a second finger cancels the carry
-    if (ptrs.size === 1 && hitHome(p0.x, p0.y)) { const s = slotAt(p0.x, p0.y) || { c: home.c + 1, r: home.r + 1 }; drag = { id: e.pointerId, c: home.c, r: home.r, oc: s.c - home.c, or: s.r - home.r, ok: true }; tap = null; sel = null; card(); }
+    if (drag && drag.id !== e.pointerId) { drag.id = null; drag.held = false; }                // a second finger lets go of the cabin (it stays selected)
+    if (ptrs.size === 1 && hitHome(p0.x, p0.y)) { const pos = drag || home, s = slotAt(p0.x, p0.y) || { c: pos.c + 1, r: pos.r + 1 }; drag = { id: e.pointerId, c: pos.c, r: pos.r, oc: s.c - pos.c, or: s.r - pos.r, ok: drag ? drag.ok : true, held: true, q: p0 }; tap = null; sel = null; card(); }
     if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinchD = Math.hypot(a.x - b.x, a.y - b.y); }
   });
   canvas.addEventListener('pointermove', e => {
     if (e.pointerType === 'mouse' && !ptrs.size) hov = slotAt(pt(e).x, pt(e).y);
     const p = ptrs.get(e.pointerId); if (!p) return;
     const q = pt(e);
-    if (drag && drag.id === e.pointerId) {
-      const s = slotAt(q.x, q.y);
-      if (s) { drag.c = s.c - drag.oc; drag.r = s.r - drag.or; drag.ok = homeOK(drag.c, drag.r); }
-      p.x = q.x; p.y = q.y; return;
-    }
+    if (drag && drag.id === e.pointerId) { dragTo(q); p.x = q.x; p.y = q.y; return; }
     if (tap && (ptrs.size > 1 || Math.hypot(q.x - tap.x, q.y - tap.y) > 9)) tap.ok = false;
     if (ptrs.size === 1) { cpx -= (q.x - p.x) / zoom; cpy -= (q.y - p.y) / zoom; }
     p.x = q.x; p.y = q.y;
@@ -301,11 +312,11 @@
     clampCam();
   });
   const up = e => {
-    if (drag && drag.id === e.pointerId) endDrag(e.type === 'pointerup');
+    if (drag && drag.id === e.pointerId) { drag.id = null; drag.held = false; }   // letting go does NOT drop it: the cabin stays selected until you press the tick
     const wasTap = e.type === 'pointerup' && tap && tap.ok && ptrs.size === 1 && performance.now() - tap.t < 500;
     const at = wasTap ? pt(e) : null;
     ptrs.delete(e.pointerId); if (!ptrs.size) { canvas.classList.remove('drag'); tap = null; }
-    if (at) select(at.x, at.y);
+    if (at) { if (drag) moveHere(at.x, at.y); else select(at.x, at.y); }   // while moving, tapping any tile sends the cabin there
   };
   canvas.addEventListener('pointerleave', () => { hov = null; }); canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
   function zoomAt(sx, sy, z) {
@@ -368,27 +379,103 @@
   let homeCtx = null;
   function hitHome(sx, sy) {                       // did the finger land on the cabin (painted pixels or its base)?
     if (!HOME.naturalWidth) return false;
-    const s = slotAt(sx, sy);
-    if (s && s.c >= home.c && s.c < home.c + HOME_N && s.r >= home.r && s.r < home.r + HOME_N) return true;
-    const R = homeRect(home.c, home.r);
+    const s = slotAt(sx, sy), pos = drag || home;
+    if (s && s.c >= pos.c - 1 && s.c < pos.c + HOME_N + 1 && s.r >= pos.r - 1 && s.r < pos.r + HOME_N + 1) return true;   // a generous 1-tile margin around the footprint
+    const R = homeRect(pos.c, pos.r); if (drag) R.y -= 10 * zoom;
     if (sx < R.x || sx > R.x + R.w || sy < R.y || sy > R.y + R.h) return false;
     if (!homeCtx) { const cv = document.createElement('canvas'); cv.width = HOME.naturalWidth; cv.height = HOME.naturalHeight; homeCtx = cv.getContext('2d', { willReadFrequently: true }); homeCtx.drawImage(HOME, 0, 0); }
     const u = Math.floor((sx - R.x) / R.w * HOME.naturalWidth), v = Math.floor((sy - R.y) / R.h * HOME.naturalHeight);
     return homeCtx.getImageData(u, v, 1, 1).data[3] > 40;
   }
+  // ---------- moving the cabin ----------
+  const clampI = (v, a, b) => Math.max(a, Math.min(b, v));
+  const mvBar = document.getElementById('movebar'), mvMsg = document.getElementById('mvMsg');
+  function setDragPos(c, r) {
+    drag.c = clampI(c, 0, WORLD_W / CELL - HOME_N); drag.r = clampI(r, 0, WORLD_H / CELL - HOME_N);
+    drag.ok = homeOK(drag.c, drag.r);
+  }
+  function dragTo(q) { drag.q = q; const s = slotAt(q.x, q.y); if (s) setDragPos(s.c - drag.oc, s.r - drag.or); }
+  function moveHere(sx, sy) { const s = slotAt(sx, sy); if (s) setDragPos(s.c - 1, s.r - 1); }   // centre the cabin on the tapped tile
+  // one tile of the map: inside the clearing and nothing but the cabin itself standing on it
+  function tileFree(c, r) {
+    const x0 = c * CELL, y0 = r * CELL;
+    if (x0 < clearing.x0 || y0 < clearing.y0 || x0 + CELL > clearing.x1 || y0 + CELL > clearing.y1) return false;
+    const o = occ.get(slot(c, r)); return !o || o.type === 'home';
+  }
+  function blockReason(pos) {
+    let edge = false;
+    for (let j = 0; j < HOME_N; j++) for (let i = 0; i < HOME_N; i++) {
+      const o = occ.get(slot(pos.c + i, pos.r + j)); if (o && o.type !== 'home') return 'tree';
+      if (!tileFree(pos.c + i, pos.r + j)) edge = true;
+    }
+    return edge ? 'edge' : '';
+  }
+  // the big grid: every tile near the cabin is tinted green (free) or red (tree / outside the clearing), drawn on the ground UNDER the trees
+  function drawMoveGrid(time) {
+    if (!drag) return;
+    const cols = WORLD_W / CELL, rows = WORLD_H / CELL, pad = 5, pulse = .5 + .5 * Math.sin(time * 4);
+    const c0 = Math.max(0, drag.c - pad), c1 = Math.min(cols - 1, drag.c + HOME_N - 1 + pad);
+    const r0 = Math.max(0, drag.r - pad), r1 = Math.min(rows - 1, drag.r + HOME_N - 1 + pad);
+    mapTransform(); ctx.lineJoin = 'round';
+    for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) {
+      const inFoot = c >= drag.c && c < drag.c + HOME_N && r >= drag.r && r < drag.r + HOME_N, free = tileFree(c, r);
+      const rgb = free ? '80,230,100' : '240,70,60';
+      ringPath(c, r, 1);
+      ctx.fillStyle = 'rgba(' + rgb + ',' + (inFoot ? .42 + .12 * pulse : free ? .20 : .13).toFixed(3) + ')'; ctx.fill();
+      ctx.lineWidth = (inFoot ? 2.2 : 1.3) / zoom;
+      ctx.strokeStyle = inFoot ? 'rgba(' + rgb + ',.95)' : 'rgba(255,255,255,' + (free ? .55 : .25) + ')'; ctx.stroke();
+    }
+  }
+  // on top of the cabin and the trees: red X + red tint on every footprint tile that is blocked, so a tree can never hide it
+  function footMarks(pos) {
+    mapTransform();
+    for (let j = 0; j < HOME_N; j++) for (let i = 0; i < HOME_N; i++) {
+      const c = pos.c + i, r = pos.r + j; if (tileFree(c, r)) continue;
+      ringPath(c, r, 1); ctx.fillStyle = 'rgba(240,70,60,.38)'; ctx.fill();
+      const px = projX((c + .5) * CELL, (r + .5) * CELL), py = projY((c + .5) * CELL, (r + .5) * CELL), d = CELL * IX * .32;
+      ctx.lineCap = 'round';
+      for (const w of [[5.5, 'rgba(0,0,0,.45)'], [3.2, '#ff5a4d']]) {
+        ctx.lineWidth = w[0] / zoom; ctx.strokeStyle = w[1]; ctx.beginPath();
+        ctx.moveTo(px - d, py - d * .6); ctx.lineTo(px + d, py + d * .6); ctx.moveTo(px + d, py - d * .6); ctx.lineTo(px - d, py + d * .6); ctx.stroke();
+      }
+    }
+  }
+  let barKey = '';
+  function moveTick() {                              // runs every frame: edge-scroll while carrying + keep the tick/cross bar up to date
+    if (drag && drag.held && drag.q) {
+      const m = 70, q = drag.q; let dx = 0, dy = 0;
+      if (q.x < m) dx = -(m - q.x) / m; else if (q.x > cw - m) dx = (q.x - (cw - m)) / m;
+      if (q.y < m) dy = -(m - q.y) / m; else if (q.y > ch - m) dy = (q.y - (ch - m)) / m;
+      if (dx || dy) { cpx += dx * 9 / zoom; cpy += dy * 9 / zoom; clampCam(); dragTo(q); }
+    }
+    const key = drag ? (drag.ok ? 'ok' : blockReason(drag) || 'edge') : '';
+    if (key === barKey) return;
+    barKey = key;
+    mvBar.style.display = drag ? 'flex' : 'none'; mvBar.classList.toggle('bad', !!drag && !drag.ok);
+    mvMsg.innerHTML = key === 'ok' ? 'Looks good!<small>Tap \u2713 to place it here</small>'
+      : key === 'tree' ? 'A tree is in the way<small>Red tiles are blocked. Drag or tap a green spot</small>'
+      : key === 'edge' ? 'Too close to the forest edge<small>Drag or tap a green spot</small>' : '';
+  }
   function endDrag(commit) {
     if (!drag) return;
-    if (commit && drag.ok && (drag.c !== home.c || drag.r !== home.r)) {
-      for (let j = 0; j < HOME_N; j++) for (let i = 0; i < HOME_N; i++) occ.delete(slot(home.c + i, home.r + j));
-      home = { c: drag.c, r: drag.r };
-      for (let j = 0; j < HOME_N; j++) for (let i = 0; i < HOME_N; i++) occ.set(slot(home.c + i, home.r + j), { type: 'home', c: home.c + i, r: home.r + j });
-      try { localStorage.setItem('homePos', JSON.stringify(home)); } catch (e) {}
+    if (commit) {
+      if (!drag.ok) { mvBar.classList.remove('shake'); void mvBar.offsetWidth; mvBar.classList.add('shake'); return; }   // red spot: refuse, stay selected
+      if (drag.c !== home.c || drag.r !== home.r) {
+        for (let j = 0; j < HOME_N; j++) for (let i = 0; i < HOME_N; i++) occ.delete(slot(home.c + i, home.r + j));
+        home = { c: drag.c, r: drag.r };
+        for (let j = 0; j < HOME_N; j++) for (let i = 0; i < HOME_N; i++) occ.set(slot(home.c + i, home.r + j), { type: 'home', c: home.c + i, r: home.r + j });
+        try { localStorage.setItem('homePos', JSON.stringify(home)); } catch (e) {}
+      }
     }
-    drag = null;                                   // a red drop just snaps the cabin back where it was
+    drag = null; barKey = '#';                      // cross = cabin goes back to where it was
   }
+  document.getElementById('mvOk').addEventListener('click', () => endDrag(true));
+  document.getElementById('mvNo').addEventListener('click', () => endDrag(false));
+  window.addEventListener('keydown', e => { if (!drag) return; if (e.key === 'Enter') endDrag(true); else if (e.key === 'Escape') endDrag(false); });
   function drawHome(time) {
     if (!(HOME.complete && HOME.naturalWidth)) return;
     updateVillagers(time);
+    moveTick();
     const hx1 = (home.c + HOME_N) * CELL, hy1 = (home.r + HOME_N) * CELL, bk = [], fr = [];
     for (const v of villagers) (v.x > hx1 || v.y > hy1 || v.st === 'enter' || v.st === 'exit' || v.st === 'toDoor' ? fr : bk).push(v);   // in front of the cabin, or tucked behind it
     drawVillagers(bk, time);
@@ -400,7 +487,6 @@
       ctx.lineTo(projX(x1, y1), projY(x1, y1)); ctx.lineTo(projX(x0, y1), projY(x0, y1)); ctx.closePath();
     };
     const rgb = drag ? (drag.ok ? '80,230,100' : '240,70,60') : null;
-    if (rgb) { foot(); ctx.fillStyle = 'rgba(' + rgb + ',.40)'; ctx.fill(); }
     const R = homeRect(pos.c, pos.r), lift = drag ? 10 * zoom : 0;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (drag) { ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.beginPath(); ctx.ellipse(R.x + R.w * .5, R.y + R.h * .8, R.w * .38, R.h * .16, 0, 0, 7); ctx.fill(); }
@@ -408,9 +494,10 @@
     ctx.drawImage(HOME, R.x, R.y - lift, R.w, R.h);
     ctx.globalAlpha = 1;
     if (rgb) {                                     // green / red underline on top so the cabin's stone base can't hide it
-      foot(); ctx.fillStyle = 'rgba(' + rgb + ',.16)'; ctx.fill();
+      foot(); ctx.fillStyle = 'rgba(' + rgb + ',.10)'; ctx.fill();
       ctx.lineJoin = 'round'; ctx.lineWidth = 5 / zoom; ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.stroke();
       ctx.lineWidth = 3 / zoom; ctx.strokeStyle = 'rgb(' + rgb + ')'; ctx.stroke();
+      footMarks(pos);
     }
     drawVillagers(fr, time);
   }
@@ -649,6 +736,8 @@
       const rp = (now - selT) / 650;                      // ripple: two rings that spread out and fade
       for (let i = 0; i < 2; i++) { const q = rp - i * .22; if (q > 0 && q < 1) { ringPath(sel.c, sel.r, 1 + q * 1.4); ctx.lineWidth = (3 - q * 2) / zoom; ctx.strokeStyle = 'rgba(' + rgb + ',' + (.9 * (1 - q)).toFixed(2) + ')'; ctx.stroke(); } }
     }
+
+    drawMoveGrid(time);
 
     // project every tree to the screen once, keep the visible ones (already sorted far to near)
     const vis = [];
