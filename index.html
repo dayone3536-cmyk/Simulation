@@ -47,12 +47,13 @@
   #topright { position: absolute; right: calc(12px + env(safe-area-inset-right)); top: calc(10px + env(safe-area-inset-top)); display: flex; align-items: center; gap: 8px; }
   #goldbar { position: relative; display: flex; align-items: center; gap: 8px;
     min-width: 96px; padding: 4px 14px 4px 4px; border-radius: 999px; background: linear-gradient(#3b2a18, #261a0e); border: 2px solid #c99a4b;
-    box-shadow: 0 4px 12px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,235,180,.35); color: #ffe27a; font: 800 17px system-ui, sans-serif; }
-  #goldbar .coin { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #9a6410; box-sizing: border-box;
-    background: radial-gradient(circle at 35% 30%, #fff4b0, #f0a92b 60%, #b9791a); }
+    box-shadow: 0 4px 12px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,235,180,.35); color: #f4efe2; font: 800 17px system-ui, sans-serif; }
+  /* flat coin: no shiny gradient. To use a real sprite later, set background: url(coin.png) center/contain no-repeat and drop the border */
+  #goldbar .coin { width: 26px; height: 26px; border-radius: 50%; box-sizing: border-box; background: #e8e2d2; border: 3px solid #a89f88; position: relative; }
+  #goldbar .coin::after { content: ''; position: absolute; inset: 4px; border-radius: 50%; border: 2px solid #a89f88; }
   #moreBtn { pointer-events: auto; width: 38px; height: 38px; padding: 0; border-radius: 50%; cursor: pointer; border: 2px solid #c99a4b; background: linear-gradient(#3b2a18, #261a0e);
-    box-shadow: 0 4px 12px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,235,180,.35); display: flex; align-items: center; justify-content: center; gap: 3px; }
-  #moreBtn i { width: 5px; height: 5px; border-radius: 50%; background: #ffe27a; }
+    box-shadow: 0 4px 12px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,235,180,.35); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
+  #moreBtn i { width: 5px; height: 5px; border-radius: 50%; background: #f4efe2; }
   #moreBtn:active, #moreBtn.open { background: linear-gradient(#5a4126, #3b2a18); }
   #stats { display: none; pointer-events: auto; position: absolute; right: calc(12px + env(safe-area-inset-right)); top: calc(58px + env(safe-area-inset-top)); width: 230px; max-width: calc(100% - 24px);
     padding: 8px 12px 10px; border-radius: 16px; background: linear-gradient(#3b2a18, #261a0e); border: 2px solid #c99a4b; box-shadow: 0 8px 22px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,235,180,.35);
@@ -154,8 +155,12 @@
       if (!session) { const r = await sb.auth.signInAnonymously(); if (r.error) throw r.error; }   // same browser = same player
       const { data, error } = await sb.rpc('get_player');      // creates the player with 50 gold the first time
       if (error) throw error;
-      setGold(data);
-    } catch (e) { console.error('Gold load failed', e); goldEl.textContent = '?'; }
+      setGold(data); try { localStorage.setItem('goldCache', data); } catch (e2) {}
+    } catch (e) {
+      console.error('Gold load failed', e);                       // happens inside Claude's preview: it blocks outside servers. On your real site it works.
+      let c = 50; try { const v = parseInt(localStorage.getItem('goldCache'), 10); if (v >= 0) c = v; } catch (e2) {}
+      setGold(c);
+    }
   }
   initGold();
 
@@ -218,6 +223,7 @@
     const claim = (c, r, o) => { const old = occ.get(slot(c, r)); if (old) { const k = trees.indexOf(old); if (k >= 0) trees.splice(k, 1); } occ.set(slot(c, r), o); };
     try { const s = JSON.parse(localStorage.getItem('homePos') || 'null'); if (s && Number.isInteger(s.c) && Number.isInteger(s.r) && homeOK(s.c, s.r, true)) home = { c: s.c, r: s.r }; } catch (e) {}
     for (let j = 0; j < HOME_N; j++) for (let i = 0; i < HOME_N; i++) claim(home.c + i, home.r + j, { type: 'home', c: home.c + i, r: home.r + j });
+    for (let j = 0; j <= FARM.h; j++) for (let i = 0; i < FARM.w; i++) claim(FARM.c + i, FARM.r + j, { type: 'farm', c: FARM.c + i, r: FARM.r + j });   // wheat rows + the water row
     trees.sort((a, b) => (a.x + a.y) - (b.x + b.y) || a.x - b.x);   // far to near in the diamond view
   }
 
@@ -507,7 +513,7 @@
   const villagers = []; let vLast = 0;
   const TUNIC = ['#c8553d', '#3f7cac', '#6a994e', '#e0a030', '#8e5ea2', '#d98880', '#2a9d8f', '#e76f51', '#4f6fb3', '#b5651d'];
   const SKIN = ['#f6d2b0', '#ecbf92', '#c98f63', '#8d5a3b'], HAIR = ['#3b2415', '#7a4a21', '#d9a441', '#1f1f1f', '#a63d2a'];
-  const outside = (x, y, m) => { const x0 = home.c * CELL - m, y0 = home.r * CELL - m, x1 = (home.c + HOME_N) * CELL + m, y1 = (home.r + HOME_N) * CELL + m; return !(x > x0 && x < x1 && y > y0 && y < y1); };
+  const outside = (x, y, m) => { if (x > FARM_X0 - m && x < FARM_X1 + m && y > FARM_Y0 - m && y < FARM_Y1 + 90 + m) return false; const x0 = home.c * CELL - m, y0 = home.r * CELL - m, x1 = (home.c + HOME_N) * CELL + m, y1 = (home.r + HOME_N) * CELL + m; return !(x > x0 && x < x1 && y > y0 && y < y1); };
   function pickSpot() {                              // somewhere in the clearing around the cabin, never inside it
     const cx = (home.c + HOME_N / 2) * CELL, cy = (home.r + HOME_N / 2) * CELL;
     for (let k = 0; k < 30; k++) {
@@ -720,9 +726,109 @@
     ctx.globalAlpha = 1;
   }
   function drawVillagers(list, time) { list.sort((a, b) => (a.x + a.y) - (b.x + b.y)); for (const v of list) drawVillager(v, time); }
+  // ---------- wheat farm: 5 slots long x 2 wide, golden wheat swaying in the wind, a water canal, fence, reeds ----------
+  const FARM = { c: 16, r: 21, w: 5, h: 2 };      // top-left slot; move these two numbers to put the farm somewhere else
+  const FARM_X0 = FARM.c * CELL, FARM_Y0 = FARM.r * CELL, FARM_X1 = FARM_X0 + FARM.w * CELL, FARM_Y1 = FARM_Y0 + FARM.h * CELL;
+  const FW = FARM_X1 - FARM_X0, FH = FARM_Y1 - FARM_Y0;
+  const WSTEM = ['#c48a22', '#d09a2c', '#b87f1e'], WHEAD = ['#f7d04f', '#ffe066', '#ecb93a'];
+  const stalks = [], tufts = [], reeds = [], rocks = [];
+  (function buildFarm() {
+    let sd = 20260; const rnd = () => { sd = (sd * 1664525 + 1013904223) >>> 0; return sd / 4294967296; };   // own random numbers: the farm looks the same every visit
+    for (let y = FARM_Y0 + 5; y < FARM_Y1 - 2; y += 12) for (let x = FARM_X0 + 6; x < FARM_X1 - 2; x += 12) for (let k = 0; k < 2; k++)
+      stalks.push({ x: x + (rnd() - .5) * 9 + k * 5, y: y + (rnd() - .5) * 7 + k * 4, h: 27 + rnd() * 13, lean: (rnd() - .5) * 3.5, ph: rnd() * 6.28, sh: (rnd() * 3) | 0 });
+    stalks.sort((a, b) => (a.x + a.y) - (b.x + b.y));
+    for (let i = 0; i < 34; i++) {
+      const x = FARM_X0 - 70 + rnd() * (FW + 140), y = FARM_Y0 - 60 + rnd() * (FH + 200);
+      if (x > FARM_X0 - 14 && x < FARM_X1 + 8 && y > FARM_Y0 - 22 && y < FARM_Y1 + 82) continue;    // not on the soil or in the water
+      tufts.push({ x, y, f: rnd() < .35 ? ['#ffffff', '#ffd3e6', '#ffe27a'][(rnd() * 3) | 0] : null });
+    }
+    for (const [dx, dy] of [[8, 80], [26, 83], [40, 78], [FW - 40, 82], [FW - 22, 78], [FW - 8, 82]]) reeds.push({ x: FARM_X0 + dx, y: FARM_Y1 + dy, h: 26 + rnd() * 14, ph: rnd() * 6 });
+    for (const [dx, dy, sz] of [[70, 88, 1], [96, 90, .7], [FW - 80, 90, .9], [FW - 56, 92, .6]]) rocks.push({ x: FARM_X0 + dx, y: FARM_Y1 + dy, s: sz });
+  })();
+  const wave = (x, y, t) => Math.sin(t * 1.8 - (x + y) * .008) * .55 + Math.sin(t * .7 - x * .004 + y * .003) * .45;   // wind rolling across the field
+  const toScr = (x, y) => [(projX(x, y) - cpx) * zoom + cw / 2, (projY(x, y) - cpy) * zoom + ch / 2];
+  const screenT = () => ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  function worldT() { const k = zoom * dpr; ctx.setTransform(k * IX, k * IY, -k * IX, k * IY, (cw / 2 - cpx * zoom) * dpr, (ch / 2 - cpy * zoom) * dpr); }   // draw in flat world units, they land on the diamond
+  function rrect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+  function farmVisible() { const [x, y] = toScr((FARM_X0 + FARM_X1) / 2, (FARM_Y0 + FARM_Y1) / 2), m = 340 * zoom; return x > -m && x < cw + m && y > -m && y < ch + m; }
+
+  // soil, furrows and the water canal lie flat on the ground, under the trees and villagers
+  function drawFarmGround(time) {
+    if (!farmVisible()) return;
+    worldT();
+    rrect(FARM_X0 - 18, FARM_Y0 - 18, FW + 36, FH + 36, 26); ctx.fillStyle = 'rgba(40,70,10,.28)'; ctx.fill();     // soft shade on the grass around the bed
+    rrect(FARM_X0 - 8, FARM_Y0 - 8, FW + 16, FH + 16, 14); ctx.fillStyle = '#5f3d20'; ctx.fill();                 // soil bed
+    for (let i = 0; i < 10; i++) { ctx.fillStyle = i % 2 ? '#7a502e' : '#8f6238'; ctx.fillRect(FARM_X0, FARM_Y0 + i * 16, FW, 16); }   // furrows
+    const bx = FARM_X0, by = FARM_Y1 + 10, bw = FW, bh = 66;                                                      // canal along the near side
+    rrect(bx, by, bw, bh, 30); ctx.fillStyle = '#c9a96a'; ctx.fill();                                              // sandy bank
+    rrect(bx + 4, by + 4, bw - 8, bh - 8, 27); ctx.fillStyle = '#9b7a46'; ctx.fill();                              // wet mud rim
+    const wx = bx + 9, wy = by + 9, ww = bw - 18, wh = bh - 18;
+    const g = ctx.createLinearGradient(0, wy, 0, wy + wh); g.addColorStop(0, '#79d6f2'); g.addColorStop(1, '#2f86c4');
+    rrect(wx, wy, ww, wh, 24); ctx.fillStyle = g; ctx.fill();
+    ctx.save(); rrect(wx, wy, ww, wh, 24); ctx.clip();
+    for (let i = 0; i < 8; i++) {                                                                                  // glints drifting along the water
+      const px = wx + 14 + ((i * 49 + time * 14) % (ww - 40)), py = wy + 10 + (i * 17) % (wh - 18);
+      ctx.fillStyle = 'rgba(255,255,255,' + (.3 + .25 * Math.sin(time * 2 + i * 1.7)).toFixed(2) + ')';
+      ctx.beginPath(); ctx.ellipse(px, py, 10, 1.6, 0, 0, 7); ctx.fill();
+    }
+    ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(15,60,110,.35)'; rrect(wx, wy, ww, wh, 24); ctx.stroke();           // shaded inner edge
+    ctx.restore();
+    for (const [dx, dy, r] of [[90, 33, 8], [118, 40, 6], [bw - 120, 30, 8]]) {                                    // lily pads
+      const px = bx + dx, py = by + dy + Math.sin(time * 1.2 + dx) * .8;
+      ctx.fillStyle = '#4f9a3a'; ctx.beginPath(); ctx.moveTo(px, py); ctx.arc(px, py, r, .35, 6.0); ctx.closePath(); ctx.fill();
+    }
+    ctx.fillStyle = '#ff9ec7'; ctx.beginPath(); ctx.arc(bx + 92, by + 31, 2.6, 0, 7); ctx.fill();
+    screenT(); ctx.lineCap = 'round';
+    for (const t of tufts) {                                                                                         // grass tufts and little flowers
+      const [sx, sy] = toScr(t.x, t.y), z = zoom;
+      if (sx < -20 || sx > cw + 20 || sy < -20 || sy > ch + 20) continue;
+      ctx.strokeStyle = '#3f8a22'; ctx.lineWidth = 1.5 * z; ctx.beginPath();
+      ctx.moveTo(sx - 3 * z, sy); ctx.lineTo(sx - 5 * z, sy - 7 * z); ctx.moveTo(sx, sy); ctx.lineTo(sx, sy - 9 * z); ctx.moveTo(sx + 3 * z, sy); ctx.lineTo(sx + 5 * z, sy - 7 * z); ctx.stroke();
+      if (t.f) { ctx.fillStyle = t.f; ctx.beginPath(); ctx.arc(sx + 6 * z, sy - 3 * z, 2.2 * z, 0, 7); ctx.fill(); }
+    }
+  }
+
+  // the standing parts: back fence, every wheat stalk (swaying), front fence, reeds and stones
+  function drawFarm(time) {
+    if (!farmVisible()) return;
+    screenT(); const z = zoom; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    const fence = (x0, y0, x1, y1) => {
+      const n = Math.max(1, Math.round(Math.hypot(x1 - x0, y1 - y0) / 40)), P = [];
+      for (let i = 0; i <= n; i++) P.push(toScr(x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n));
+      ctx.strokeStyle = '#a97a44'; ctx.lineWidth = 2.2 * z;
+      for (const h of [5, 11]) { ctx.beginPath(); P.forEach(([px, py], i) => ctx[i ? 'lineTo' : 'moveTo'](px, py - h * z)); ctx.stroke(); }
+      ctx.strokeStyle = '#7d5128'; ctx.lineWidth = 3.6 * z;
+      for (const [px, py] of P) { ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px, py - 15 * z); ctx.stroke(); }
+    };
+    fence(FARM_X0 - 14, FARM_Y0 - 14, FARM_X1 + 2, FARM_Y0 - 14);      // far long side
+    fence(FARM_X0 - 14, FARM_Y0 - 14, FARM_X0 - 14, FARM_Y1 + 6);      // far short end
+    for (const p of stalks) {
+      const sx = (projX(p.x, p.y) - cpx) * z + cw / 2, sy = (projY(p.x, p.y) - cpy) * z + ch / 2;
+      if (sx < -20 || sx > cw + 20 || sy < -20 || sy > ch + 60 * z) continue;
+      const w = wave(p.x, p.y, time) * 5.5 + Math.sin(time * 2.3 + p.ph) * .7, dx = (p.lean + w) * z, hh = p.h * z;
+      ctx.strokeStyle = WSTEM[p.sh]; ctx.lineWidth = 1.7 * z;
+      ctx.beginPath(); ctx.moveTo(sx, sy); ctx.quadraticCurveTo(sx + dx * .15, sy - hh * .55, sx + dx, sy - hh); ctx.stroke();
+      ctx.fillStyle = WHEAD[p.sh]; ctx.beginPath(); ctx.ellipse(sx + dx + dx / hh * 4 * z, sy - hh - 4 * z, 2.7 * z, 7 * z, dx / hh * .9, 0, 7); ctx.fill();
+    }
+    fence(FARM_X1 + 2, FARM_Y0 - 14, FARM_X1 + 2, FARM_Y1 + 6);       // near short end, in front of the wheat
+    for (const q of rocks) {
+      const [sx, sy] = toScr(q.x, q.y), k = q.s * z;
+      ctx.fillStyle = '#6f7676'; ctx.beginPath(); ctx.ellipse(sx + 2 * k, sy + 1 * k, 10 * k, 5 * k, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#a9afaf'; ctx.beginPath(); ctx.ellipse(sx, sy - 3 * k, 9 * k, 6.5 * k, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#c7cccc'; ctx.beginPath(); ctx.ellipse(sx - 2 * k, sy - 5 * k, 4 * k, 2.4 * k, 0, 0, 7); ctx.fill();
+    }
+    for (const r of reeds) {
+      const [sx, sy] = toScr(r.x, r.y), dx = (wave(r.x, r.y, time) * 4 + Math.sin(time * 2 + r.ph)) * z, hh = r.h * z;
+      ctx.strokeStyle = '#4d8f2e'; ctx.lineWidth = 2 * z;
+      ctx.beginPath(); ctx.moveTo(sx - 3 * z, sy); ctx.quadraticCurveTo(sx - 3 * z, sy - hh * .5, sx - 3 * z + dx * .8, sy - hh * .8); ctx.moveTo(sx + 2 * z, sy); ctx.quadraticCurveTo(sx + 2 * z, sy - hh * .55, sx + 2 * z + dx, sy - hh); ctx.stroke();
+      ctx.fillStyle = '#7a4a22'; ctx.beginPath(); ctx.ellipse(sx + 2 * z + dx * 1.02, sy - hh - 3 * z, 2.2 * z, 5.5 * z, dx * .05, 0, 7); ctx.fill();   // cattail
+    }
+  }
+
   function frame(ms) {
     const time = ms / 1000;
     drawGround();
+    drawFarmGround(time);
     const now = performance.now();
     if (hov && !(sel && hov.c === sel.c && hov.r === sel.r)) {       // desktop hover preview
       mapTransform(); ringPath(hov.c, hov.r, 1); ctx.fillStyle = 'rgba(255,255,255,.16)'; ctx.fill();
@@ -770,6 +876,7 @@
       ctx.drawImage(tr.im, -w / 2, -h + 4 * t.s, w, h);
       ctx.shadowBlur = 0; ctx.shadowColor = 'transparent'; ctx.globalAlpha = 1;
     }
+    drawFarm(time);
     drawHome(time);
     if (sel) {                                           // outline + corner arrows on top, so a tree can never hide them
       mapTransform(); ringPath(sel.c, sel.r, 1);
