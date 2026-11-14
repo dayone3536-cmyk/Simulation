@@ -26,6 +26,8 @@
   #movebar button { width: 54px; height: 54px; flex: none; border: 3px solid rgba(0,0,0,.45); border-radius: 16px; font: 800 28px system-ui, sans-serif; color: #fff; cursor: pointer; -webkit-tap-highlight-color: transparent; }
   #movebar .ok { background: linear-gradient(#7be25a, #2fa12b); box-shadow: 0 4px 0 #1b6a1a; }
   #movebar .no { background: linear-gradient(#ff8a7a, #d23a2c); box-shadow: 0 4px 0 #8c1f16; }
+  #movebar .rot { display: none; background: linear-gradient(#ffe27a, #e2a11f); box-shadow: 0 4px 0 #8f6410; color: #3a2405; }
+  #movebar.placing .rot { display: block; }
   #movebar button:active { transform: translateY(3px); box-shadow: none; }
   #movebar.bad .ok { background: linear-gradient(#8a8a8a, #5f5f5f); box-shadow: 0 4px 0 #3a3a3a; opacity: .6; }
   #movebar #mvMsg { min-width: 150px; text-align: center; line-height: 1.25; }
@@ -103,7 +105,7 @@
   <div id="toast"></div>
   <div id="buildpanel"><div class="bt">Build</div><div class="bcard"><span class="bi" data-ic="wheat"></span><div class="bm"><b>Wheat Farm</b><small id="farmInfo"></small></div><button id="farmBuy"></button></div></div>
   <button id="buildbtn" aria-label="Build"><svg viewBox="0 0 59.214 59.214" aria-hidden="true"><path fill="#010002" d="M28.693,25.135l-4.187-3.881c-1.003,2.072-2.365,3.81-4.543,4.672l3.361,3.626 c0.445-0.214,0.938-0.341,1.46-0.36L28.693,25.135z M19.131,24.136c0.004-0.023,0.003-0.045,0.008-0.069c0.098-0.464,0.36-0.954,0.776-1.371 l1.428-1.428c0.426-0.426,0.929-0.687,1.403-0.78c0.007-0.001,0.014-0.001,0.021-0.002l3.3-12.259L13.865,1.374L8.299,6.662 l8.717,5.491l-1.46,4.777l-4.777,1.46L5.288,9.673L0,15.239l6.853,12.202L19.131,24.136z M27.914,31.69l-0.277-0.275c-0.798-0.798-1.759-1.237-2.707-1.237c-0.715,0-1.373,0.263-1.85,0.74 L1.817,49.845c-0.541,0.542-0.892,1.422-0.919,2.335c-0.03,1.008,0.33,1.939,1.015,2.624l2.609,2.609 c0.707,0.707,1.731,1.112,2.812,1.112c0.95,0,1.833-0.315,2.361-0.844l18.89-21.219C29.705,35.342,29.388,33.167,27.914,31.69z M55.336,49.835L34.083,30.131l-3.857,4.004c0.11,0.863-0.024,1.702-0.433,2.393l18.689,20.16 c0.104,0.104,0.257,0.148,0.445,0.148c0.91,0,2.634-1.057,3.353-1.775l1.429-1.428C54.575,52.766,55.934,50.434,55.336,49.835z M49.207,53.448c-1.341,0-2.428-1.086-2.428-2.427s1.087-2.427,2.428-2.427c1.34,0,2.426,1.086,2.426,2.427 S50.546,53.448,49.207,53.448z M58.705,18.012c-0.68-0.68-1.781-0.68-2.461,0l-0.684,0.684c-0.566-0.782-1.505-2.111-1.391-2.551 c0.502-1.924-3.426-6.484-3.426-6.484c-9.76-9.76-16.283-9.54-19.384-8.472c-1.245,0.429-1.019,0.699,0.278,0.928 c9.406,1.642,10.58,7.194,8.984,9.338c-0.615,0.827-0.795,1.45-0.686,2.01c0.064,0.33,0.229,0.639,0.468,0.954L26.028,29.341 c0.831,0.224,1.629,0.679,2.315,1.366l0.277,0.276c0.606,0.607,1.031,1.306,1.304,2.023l14.214-14.751 c0.271,0.22,0.552,0.415,0.842,0.567c0.774,0.41,1.616,0.53,2.548,0.064c1.054-0.527,4.167,2.019,5.112,2.699 c0.007,0.005,0.013,0.007,0.02,0.012l-0.518,0.517c-0.68,0.68-0.68,1.781,0,2.461s1.781,0.68,2.461,0l4.102-4.102 C59.384,19.793,59.384,18.692,58.705,18.012z"/></svg>Build</button>
-  <div id="movebar"><button class="no" id="mvNo" aria-label="Cancel move" data-ic="cross"></button><div id="mvMsg"></div><button class="ok" id="mvOk" aria-label="Place cabin" data-ic="check"></button></div>
+  <div id="movebar"><button class="no" id="mvNo" aria-label="Cancel move" data-ic="cross"></button><div id="mvMsg"></div><button class="rot" id="mvRot" aria-label="Rotate" title="Rotate">&#x27F3;</button><button class="ok" id="mvOk" aria-label="Place" data-ic="check"></button></div>
 </div>
 <div id="hint">Drag to look around, pinch to zoom, tap your cabin to move it</div>
 
@@ -276,7 +278,7 @@
     const claim = (c, r, o) => { const old = occ.get(slot(c, r)); if (old) { const k = trees.indexOf(old); if (k >= 0) trees.splice(k, 1); } occ.set(slot(c, r), o); };
     try { const s = JSON.parse(localStorage.getItem('homePos') || 'null'); if (s && Number.isInteger(s.c) && Number.isInteger(s.r) && homeOK(s.c, s.r, true)) home = { c: s.c, r: s.r }; } catch (e) {}
     for (let j = 0; j < HOME_N; j++) for (let i = 0; i < HOME_N; i++) claim(home.c + i, home.r + j, { type: 'home', c: home.c + i, r: home.r + j });
-    for (let j = 0; j <= FARM.h; j++) for (let i = 0; i < FARM.w; i++) claim(FARM.c + i, FARM.r + j, { type: 'farm', c: FARM.c + i, r: FARM.r + j });   // wheat rows + the water row
+    for (const f of farms) claimFarmSlots(f);   // farms the player already placed take their own tiles
     trees.sort((a, b) => (a.x + a.y) - (b.x + b.y) || a.x - b.x);   // far to near in the diamond view
   }
 
@@ -289,7 +291,11 @@
     return (c < 0 || r < 0 || c >= WORLD_W / CELL || r >= WORLD_H / CELL) ? null : { c, r };
   }
   function card() { infoEl.style.display = 'none'; }   // no slot pop-up: building lives behind the Build button
-  function select(sx, sy) { if (tapFarm(sx, sy)) return; sel = slotAt(sx, sy); selT = performance.now(); card(); }
+  function select(sx, sy) {
+    if (placing) { placeTo(sx, sy); return; }          // while choosing a farm spot, a tap moves the ghost
+    if (tapFarm(sx, sy)) return;
+    sel = slotAt(sx, sy); selT = performance.now(); card();
+  }
   infoEl.addEventListener('click', e => {
     const a = e.target.dataset.a; if (!a) return;
     if (a === 'close') sel = null;
@@ -360,7 +366,7 @@
     const p0 = ptrs.get(e.pointerId);
     tap = ptrs.size === 1 ? { x: p0.x, y: p0.y, t: performance.now(), ok: true } : null;   // a tap = short press, barely moved
     if (drag && drag.id !== e.pointerId) { drag.id = null; drag.held = false; }                // a second finger lets go of the cabin (it stays selected)
-    if (ptrs.size === 1 && hitHome(p0.x, p0.y)) { const pos = drag || home, s = slotAt(p0.x, p0.y) || { c: pos.c + 1, r: pos.r + 1 }; drag = { id: e.pointerId, c: pos.c, r: pos.r, oc: s.c - pos.c, or: s.r - pos.r, ok: drag ? drag.ok : true, held: true, q: p0 }; tap = null; sel = null; card(); }
+    if (!placing && ptrs.size === 1 && hitHome(p0.x, p0.y)) { const pos = drag || home, s = slotAt(p0.x, p0.y) || { c: pos.c + 1, r: pos.r + 1 }; drag = { id: e.pointerId, c: pos.c, r: pos.r, oc: s.c - pos.c, or: s.r - pos.r, ok: drag ? drag.ok : true, held: true, q: p0 }; tap = null; sel = null; card(); }
     if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinchD = Math.hypot(a.x - b.x, a.y - b.y); }
   });
   canvas.addEventListener('pointermove', e => {
@@ -384,6 +390,8 @@
     ptrs.delete(e.pointerId); if (!ptrs.size) { canvas.classList.remove('drag'); tap = null; }
     if (at) { if (drag) moveHere(at.x, at.y); else select(at.x, at.y); }   // while moving, tapping any tile sends the cabin there
   };
+
+  
   canvas.addEventListener('pointerleave', () => { hov = null; }); canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
   function zoomAt(sx, sy, z) {
     const u = cpx + (sx - cw / 2) / zoom, v = cpy + (sy - ch / 2) / zoom;   // projected point under the cursor
@@ -500,7 +508,7 @@
   }
   // ---------- moving the cabin ----------
   const clampI = (v, a, b) => Math.max(a, Math.min(b, v));
-  const mvBar = document.getElementById('movebar'), mvMsg = document.getElementById('mvMsg');
+  const mvBar = document.getElementById('movebar'), mvMsg = document.getElementById('mvMsg'), mvRot = document.getElementById('mvRot');
   function setDragPos(c, r) {
     drag.c = clampI(c, 0, WORLD_W / CELL - HOME_N); drag.r = clampI(r, 0, WORLD_H / CELL - HOME_N);
     drag.ok = homeOK(drag.c, drag.r);
@@ -524,32 +532,35 @@
   // the big grid: every tile near the cabin is tinted green (free) or red (tree / outside the clearing), drawn on the ground UNDER the trees
   let gridKey = '';
   function updateMoveGrid(time) {
-    if (!drag) { if (gridKey) { gridG.clear(); footG.clear(); gridKey = ''; } return; }
-    const cols = WORLD_W / CELL, rows = WORLD_H / CELL, pad = 5, pulse = .5 + .5 * Math.sin(time * 4);
-    const c0 = Math.max(0, drag.c - pad), c1 = Math.min(cols - 1, drag.c + HOME_N - 1 + pad);
-    const r0 = Math.max(0, drag.r - pad), r1 = Math.min(rows - 1, drag.r + HOME_N - 1 + pad);
-    const inFoot = (c, r) => c >= drag.c && c < drag.c + HOME_N && r >= drag.r && r < drag.r + HOME_N;
-    const key = drag.c + ',' + drag.r + ',' + zoom.toFixed(2);
-    if (key !== gridKey) {                           // the big grid only changes when the cabin moves a tile (or you zoom), so it is not redrawn every frame
+    const src = drag || placing;
+    if (!src) { if (gridKey) { gridG.clear(); footG.clear(); gridKey = ''; } return; }
+    const isFarm = !!placing, cols = isFarm ? fCols(placing.rot) : HOME_N, rows = isFarm ? fRows(placing.rot) : HOME_N;
+    const freeAt = isFarm ? farmTileOK : tileFree;
+    const worldCols = WORLD_W / CELL, worldRows = WORLD_H / CELL, pad = 5, pulse = .5 + .5 * Math.sin(time * 4);
+    const c0 = Math.max(0, src.c - pad), c1 = Math.min(worldCols - 1, src.c + cols - 1 + pad);
+    const r0 = Math.max(0, src.r - pad), r1 = Math.min(worldRows - 1, src.r + rows - 1 + pad);
+    const inFoot = (c, r) => c >= src.c && c < src.c + cols && r >= src.r && r < src.r + rows;
+    const key = src.c + ',' + src.r + ',' + cols + ',' + rows + ',' + zoom.toFixed(2);
+    if (key !== gridKey) {                           // the big grid only changes when the building moves a tile (or you zoom), so it is not redrawn every frame
       gridKey = key; gridG.clear();
       for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) {
         if (inFoot(c, r)) continue;
-        const free = tileFree(c, r);
+        const free = freeAt(c, r);
         gridG.lineStyle({ width: 1.3 / zoom, color: 0xffffff, alpha: free ? .55 : .25, join: 'round' });
         gridG.beginFill(free ? 0x50e664 : 0xf0463c, free ? .20 : .13); gridG.drawPolygon(ringPts(c, r, 1)); gridG.endFill();
       }
     }
-    footG.clear();                                   // the 3x3 footprint pulses, so it is drawn fresh (just 9 tiles)
-    for (let j = 0; j < HOME_N; j++) for (let i = 0; i < HOME_N; i++) {
-      const c = drag.c + i, r = drag.r + j, col = tileFree(c, r) ? 0x50e664 : 0xf0463c;
+    footG.clear();                                   // the footprint pulses, so it is drawn fresh
+    for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+      const c = src.c + i, r = src.r + j, col = freeAt(c, r) ? 0x50e664 : 0xf0463c;
       footG.lineStyle({ width: 2.2 / zoom, color: col, alpha: .95, join: 'round' });
       footG.beginFill(col, .42 + .12 * pulse); footG.drawPolygon(ringPts(c, r, 1)); footG.endFill();
     }
   }
   // on top of the cabin and the trees: red X + red tint on every footprint tile that is blocked, so a tree can never hide it
-  function drawFootMarks(pos) {
-    for (let j = 0; j < HOME_N; j++) for (let i = 0; i < HOME_N; i++) {
-      const c = pos.c + i, r = pos.r + j; if (tileFree(c, r)) continue;
+  function drawFootMarks(pos, cols = HOME_N, rows = HOME_N, freeAt = tileFree) {
+    for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+      const c = pos.c + i, r = pos.r + j; if (freeAt(c, r)) continue;
       overG.lineStyle(0); overG.beginFill(0xf0463c, .38); overG.drawPolygon(ringPts(c, r, 1)); overG.endFill();
       const px = projX((c + .5) * CELL, (r + .5) * CELL), py = projY((c + .5) * CELL, (r + .5) * CELL), d = CELL * IX * .32;
       for (const w of [[5.5, 0x000000, .45], [3.2, 0xff5a4d, 1]]) {
@@ -568,11 +579,17 @@
       if (q.y < m) dy = -(m - q.y) / m; else if (q.y > ch - m) dy = (q.y - (ch - m)) / m;
       if (dx || dy) { cpx += dx * 9 / zoom; cpy += dy * 9 / zoom; clampCam(); dragTo(q); }
     }
-    const key = drag ? (drag.ok ? 'ok' : blockReason(drag) || 'edge') : '';
+    const pos = drag || placing;
+    const valid = placing ? farmSpotOK(placing.c, placing.r, placing.rot) : drag ? drag.ok : true;
+    const key = !pos ? '' : placing ? (valid ? 'pok' : 'pbad') : (drag.ok ? 'ok' : blockReason(drag) || 'edge');
     if (key === barKey) return;
     barKey = key;
-    mvBar.style.display = drag ? 'flex' : 'none'; mvBar.classList.toggle('bad', !!drag && !drag.ok);
-    mvMsg.innerHTML = key === 'ok' ? 'Looks good!<small>Tap \u2713 to place it here</small>'
+    mvBar.style.display = pos ? 'flex' : 'none'; mvBar.classList.toggle('bad', !!pos && !valid);
+    mvBar.classList.toggle('placing', !!placing);
+    mvMsg.innerHTML = !pos ? ''
+      : placing ? (valid ? 'Looks good!<small>Tap the map to move \u00B7 \u27F3 rotates \u00B7 \u2713 confirms</small>'
+        : 'Can\u2019t build here<small>Move to a free spot \u00B7 \u27F3 rotates</small>')
+      : key === 'ok' ? 'Looks good!<small>Tap \u2713 to place it here</small>'
       : key === 'tree' ? 'A tree is in the way<small>Red tiles are blocked. Drag or tap a green spot</small>'
       : key === 'edge' ? 'Too close to the forest edge<small>Drag or tap a green spot</small>' : '';
   }
@@ -589,9 +606,19 @@
     }
     drag = null; barKey = '#';                      // cross = cabin goes back to where it was
   }
-  document.getElementById('mvOk').addEventListener('click', () => endDrag(true));
-  document.getElementById('mvNo').addEventListener('click', () => endDrag(false));
-  window.addEventListener('keydown', e => { if (!drag) return; if (e.key === 'Enter') endDrag(true); else if (e.key === 'Escape') endDrag(false); });
+  document.getElementById('mvOk').addEventListener('click', () => { if (placing) endPlacing(true); else endDrag(true); });
+  document.getElementById('mvNo').addEventListener('click', () => { if (placing) endPlacing(false); else endDrag(false); });
+  mvRot.addEventListener('click', () => rotateFarm());
+  window.addEventListener('keydown', e => {
+    if (placing) {
+      if (e.key === 'Enter') endPlacing(true);
+      else if (e.key === 'Escape') endPlacing(false);
+      else if (e.key === 'r' || e.key === 'R') rotateFarm();
+      return;
+    }
+    if (!drag) return;
+    if (e.key === 'Enter') endDrag(true); else if (e.key === 'Escape') endDrag(false);
+  });
   function homeRectP(c, r) {                       // where the cabin picture goes, in projected space (no camera)
     const bx = (c + HOME_N) * CELL, by = (r + HOME_N) * CELL;
     const w = HOME_N * 2 * CELL * IX * 1.12, h = w * HOME.naturalHeight / HOME.naturalWidth;
@@ -613,15 +640,17 @@
   }
   // everything drawn on top of the trees and the cabin: the cabin's green / red footprint, and the selected slot's outline + corner arrows
   function updateOverlay(time) {
-    if (!sel && !drag) { if (overOn) { overG.clear(); overOn = false; } return; }
+    if (!sel && !drag && !placing) { if (overOn) { overG.clear(); overOn = false; } return; }
     overOn = true; overG.clear();
-    if (drag) {
-      const pos = drag, rgb = drag.ok ? 0x50e664 : 0xf0463c, x0 = pos.c * CELL, y0 = pos.r * CELL, x1 = (pos.c + HOME_N) * CELL, y1 = (pos.r + HOME_N) * CELL;
+    if (drag || placing) {
+      const isFarm = !!placing, pos = drag || placing, ok = isFarm ? farmSpotOK(pos.c, pos.r, pos.rot) : pos.ok;
+      const cols = isFarm ? fCols(pos.rot) : HOME_N, rows = isFarm ? fRows(pos.rot) : HOME_N;
+      const rgb = ok ? 0x50e664 : 0xf0463c, x0 = pos.c * CELL, y0 = pos.r * CELL, x1 = (pos.c + cols) * CELL, y1 = (pos.r + rows) * CELL;
       const P = [projX(x0, y0), projY(x0, y0), projX(x1, y0), projY(x1, y0), projX(x1, y1), projY(x1, y1), projX(x0, y1), projY(x0, y1)];
       overG.lineStyle(0); overG.beginFill(rgb, .10); overG.drawPolygon(P); overG.endFill();
       overG.lineStyle({ width: 5 / zoom, color: 0x000000, alpha: .35, join: 'round' }); overG.drawPolygon(P);
       overG.lineStyle({ width: 3 / zoom, color: rgb, alpha: 1, join: 'round' }); overG.drawPolygon(P);
-      drawFootMarks(pos);
+      drawFootMarks(pos, cols, rows, isFarm ? farmTileOK : tileFree);
     }
     if (sel) {
       const P = ringPts(sel.c, sel.r, 1);
@@ -646,7 +675,11 @@
   const villagers = []; let vLast = 0;
   const TUNIC = ['#c8553d', '#3f7cac', '#6a994e', '#e0a030', '#8e5ea2', '#d98880', '#2a9d8f', '#e76f51', '#4f6fb3', '#b5651d'];
   const SKIN = ['#f6d2b0', '#ecbf92', '#c98f63', '#8d5a3b'], HAIR = ['#3b2415', '#7a4a21', '#d9a441', '#1f1f1f', '#a63d2a'];
-  const outside = (x, y, m) => { if (x > FARM_X0 - m && x < FARM_X1 + m && y > FARM_Y0 - m && y < FARM_Y1 + 90 + m) return false; const x0 = home.c * CELL - m, y0 = home.r * CELL - m, x1 = (home.c + HOME_N) * CELL + m, y1 = (home.r + HOME_N) * CELL + m; return !(x > x0 && x < x1 && y > y0 && y < y1); };
+  const outside = (x, y, m) => {
+    for (const f of farms) { const b = farmBounds(f); if (b && x > b.x0 - m && x < b.x1 + m && y > b.y0 - m && y < b.y1 + m) return false; }
+    const x0 = home.c * CELL - m, y0 = home.r * CELL - m, x1 = (home.c + HOME_N) * CELL + m, y1 = (home.r + HOME_N) * CELL + m;
+    return !(x > x0 && x < x1 && y > y0 && y < y1);
+  };
   function pickSpot() {                              // somewhere in the clearing around the cabin, never inside it
     const cx = (home.c + HOME_N / 2) * CELL, cy = (home.r + HOME_N / 2) * CELL;
     for (let k = 0; k < 30; k++) {
@@ -685,10 +718,11 @@
     const doorX = (home.c + 1.4) * CELL, doorY = (home.r + HOME_N - .55) * CELL, stepY = (home.r + HOME_N + .55) * CELL, span = stepY - doorY;
     for (const v of villagers) {
       v.walking = false;
-      if (v.job && farm) {                                           // farm hands: out of the cabin, over to the field, work until the wheat is ripe
-        if (farmState() === 'growing') {
+      if (v.job && farms.length) {                                   // farm hands: out of the cabin, over to a growing field, work until that wheat is ripe
+        const grow = farms.filter(f => farmState(f) === 'growing');
+        if (grow.length) {
           if (v.st === 'inside') v.ti = 0;
-          else if (v.st === 'idle' || v.st === 'walk' || v.st === 'toDoor') { workSpot(v, false); v.st = 'toFarm'; }
+          else if (v.st === 'idle' || v.st === 'walk' || v.st === 'toDoor') { v.wf = grow[v.wi % grow.length]; workSpot(v, false, v.wf); v.st = 'toFarm'; }
         } else if (v.st === 'toFarm' || v.st === 'work') { v.st = 'idle'; v.wait = rr(.5, 2.5); }
       }
       if (v.st === 'idle') {
@@ -713,7 +747,7 @@
         if (arrived) { v.st = 'idle'; v.a = 1; v.wait = rr(.5, 2.5); }
       }
       if (v.st === 'toFarm') { if (go(v, v.tx, v.ty, dt)) { v.st = 'work'; v.ti = rr(3.5, 7); v.tyaw = 3 * Math.PI / 4 + rr(-.6, .6); } }
-      else if (v.st === 'work') { v.ti -= dt; v.yaw += wrapA(v.tyaw - v.yaw) * Math.min(1, dt * 4); if (v.ti <= 0) { workSpot(v, true); v.st = 'toFarm'; } }
+      else if (v.st === 'work') { v.ti -= dt; v.yaw += wrapA(v.tyaw - v.yaw) * Math.min(1, dt * 4); if (v.ti <= 0) { if (v.wf) workSpot(v, true, v.wf); v.st = 'toFarm'; } }
       v.wk = (v.wk || 0) + ((v.st === 'work' ? 1 : 0) - (v.wk || 0)) * Math.min(1, dt * 6);
       v.mv += ((v.walking ? 1 : 0) - v.mv) * Math.min(1, dt * 9); if (!v.walking) v.spd = 0;
       v.lk += (v.look - v.lk) * Math.min(1, dt * 5);
@@ -856,64 +890,98 @@
       if (v.pt < 0 || time - v.pt >= (v.walking || v.wave > 0 || v.wk > .05 ? 1 / 20 : 1 / 8)) { v.pt = time; paintVillager(v, time); spr.texture.baseTexture.update(); }
     }
   }
-  // ---------- wheat farm: 5 slots long x 2 wide, golden wheat swaying in the wind, a water canal, fence, reeds ----------
-  const FARM = { c: 16, r: 21, w: 5, h: 2 };      // top-left slot; move these two numbers to put the farm somewhere else
-  const FARM_X0 = FARM.c * CELL, FARM_Y0 = FARM.r * CELL, FARM_X1 = FARM_X0 + FARM.w * CELL, FARM_Y1 = FARM_Y0 + FARM.h * CELL;
-  const FW = FARM_X1 - FARM_X0, FH = FARM_Y1 - FARM_Y0;
+  // ---------- wheat farm: a 5x2 field the player chooses where to place and can rotate ----------
+  const FARM_BASE_W = 5, FARM_BASE_H = 2;          // field size in slots before rotation
+  const FW = FARM_BASE_W * CELL, FH = FARM_BASE_H * CELL;   // local field size in world units
+  const fCols = rot => rot ? FARM_BASE_H : FARM_BASE_W;      // footprint width in slots
+  const fRows = rot => rot ? FARM_BASE_W : FARM_BASE_H;      // footprint height in slots
   const WSTEM = ['#c48a22', '#d09a2c', '#b87f1e'], WHEAD = ['#f7d04f', '#ffe066', '#ecb93a'];
-  const STEM_S = .25;                              // stalk / reed pictures are baked at 4x, so draw them at a quarter size
-  const stalks = [], tufts = [], reeds = [], rocks = [];
-  (function buildFarm() {
+  const STEM_S = .25;                              // stalk pictures are baked at 4x, so draw them at a quarter size
+  const stalks = [], tufts = [], rocks = [];
+  let farms = [], placing = null, wheatCount = 0;   // farms = [{ t0, c, r, rot }]; placing = a preview while buying another farm
+  (function buildFarmData() {
     let sd = 20260; const rnd = () => { sd = (sd * 1664525 + 1013904223) >>> 0; return sd / 4294967296; };   // own random numbers: the farm looks the same every visit
-    for (let y = FARM_Y0 + 5; y < FARM_Y1 - 2; y += 12) for (let x = FARM_X0 + 6; x < FARM_X1 - 2; x += 12) for (let k = 0; k < 2; k++)
+    for (let y = 5; y < FH - 2; y += 12) for (let x = 6; x < FW - 2; x += 12) for (let k = 0; k < 2; k++)
       stalks.push({ x: x + (rnd() - .5) * 9 + k * 5, y: y + (rnd() - .5) * 7 + k * 4, h: 27 + rnd() * 13, lean: (rnd() - .5) * 3.5, ph: rnd() * 6.28, sh: (rnd() * 3) | 0 });
-    stalks.sort((a, b) => (a.x + a.y) - (b.x + b.y));
     for (let i = 0; i < 34; i++) {
-      const x = FARM_X0 - 70 + rnd() * (FW + 140), y = FARM_Y0 - 60 + rnd() * (FH + 200);
-      if (x > FARM_X0 - 14 && x < FARM_X1 + 8 && y > FARM_Y0 - 22 && y < FARM_Y1 + 82) continue;    // not on the soil or in the water
+      const x = -70 + rnd() * (FW + 140), y = -60 + rnd() * (FH + 200);
+      if (x > -14 && x < FW + 8 && y > -22 && y < FH + 8) continue;    // not on the soil
       tufts.push({ x, y, f: rnd() < .35 ? ['#ffffff', '#ffd3e6', '#ffe27a'][(rnd() * 3) | 0] : null });
     }
-    for (const [dx, dy] of [[8, 80], [26, 83], [40, 78], [FW - 40, 82], [FW - 22, 78], [FW - 8, 82]]) reeds.push({ x: FARM_X0 + dx, y: FARM_Y1 + dy, h: 26 + rnd() * 14, ph: rnd() * 6 });
-    for (const [dx, dy, sz] of [[70, 88, 1], [96, 90, .7], [FW - 80, 90, .9], [FW - 56, 92, .6]]) rocks.push({ x: FARM_X0 + dx, y: FARM_Y1 + dy, s: sz });
+    for (const [lx, ly, sz] of [[70, FH + 8, 1], [96, FH + 10, .7], [FW - 80, FH + 10, .9], [FW - 56, FH + 12, .6]]) rocks.push({ x: lx, y: ly, s: sz });
   })();
   const wave = (x, y, t) => Math.sin(t * .55 - (x + y) * .008) * .55 + Math.sin(t * .22 - x * .004 + y * .003) * .45;   // slow wind rolling across the field
-  const farmCenter = [projX((FARM_X0 + FARM_X1) / 2, (FARM_Y0 + FARM_Y1) / 2), projY((FARM_X0 + FARM_X1) / 2, (FARM_Y0 + FARM_Y1) / 2)];
-  function farmVisible() { return Math.abs(farmCenter[0] - cpx) < cw / 2 / zoom + 340 && Math.abs(farmCenter[1] - cpy) < ch / 2 / zoom + 340; }
-  function rrectG(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
-  const FWATER = { wx: FARM_X0 + 9, wy: FARM_Y1 + 19, ww: FW - 18, wh: 48 };
-  const glints = [];
-
-  // The flat, never-moving ground art (soil, furrows, canal, lily pads) is painted ONCE into one picture, already tilted into the diamond view.
-  // After that the GPU just draws a single sprite instead of re-drawing ~50 shapes 60 times a second.
-  function buildFarmGround() {
-    const S = 3, X0 = FARM_X0 - 20, Y0 = FARM_Y0 - 20, RW = FW + 40, RH = FH + 100;
-    const cs = [[X0, Y0], [X0 + RW, Y0], [X0 + RW, Y0 + RH], [X0, Y0 + RH]].map(([x, y]) => [projX(x, y), projY(x, y)]);
-    const u0 = Math.min(...cs.map(p => p[0])), u1 = Math.max(...cs.map(p => p[0])), v0 = Math.min(...cs.map(p => p[1])), v1 = Math.max(...cs.map(p => p[1]));
-    const cv = bakeCanvas(u1 - u0, v1 - v0, S), g = cv.getContext('2d');
-    g.setTransform(S * IX, S * IY, -S * IX, S * IY, -u0 * S, -v0 * S);       // flat world units land on the diamond
-    rrectG(g, FARM_X0 - 18, FARM_Y0 - 18, FW + 36, FH + 36, 26); g.fillStyle = 'rgba(40,70,10,.28)'; g.fill();     // soft shade on the grass around the bed
-    rrectG(g, FARM_X0 - 8, FARM_Y0 - 8, FW + 16, FH + 16, 14); g.fillStyle = '#5f3d20'; g.fill();                 // soil bed
-    for (let i = 0; i < 10; i++) { g.fillStyle = i % 2 ? '#7a502e' : '#8f6238'; g.fillRect(FARM_X0, FARM_Y0 + i * 16, FW, 16); }   // furrows
-    const bx = FARM_X0, by = FARM_Y1 + 10, bw = FW, bh = 66;                                                      // canal along the near side
-    rrectG(g, bx, by, bw, bh, 30); g.fillStyle = '#c9a96a'; g.fill();                                              // sandy bank
-    rrectG(g, bx + 4, by + 4, bw - 8, bh - 8, 27); g.fillStyle = '#9b7a46'; g.fill();                              // wet mud rim
-    const { wx, wy, ww, wh } = FWATER;
-    const gr = g.createLinearGradient(0, wy, 0, wy + wh); gr.addColorStop(0, '#79d6f2'); gr.addColorStop(1, '#2f86c4');
-    rrectG(g, wx, wy, ww, wh, 24); g.fillStyle = gr; g.fill();
-    g.save(); rrectG(g, wx, wy, ww, wh, 24); g.clip(); g.lineWidth = 5; g.strokeStyle = 'rgba(15,60,110,.35)'; rrectG(g, wx, wy, ww, wh, 24); g.stroke(); g.restore();   // shaded inner edge
-    for (const [dx, dy, r] of [[90, 33, 8], [118, 40, 6], [bw - 120, 30, 8]]) {                                    // lily pads
-      const px = bx + dx, py = by + dy;
-      g.fillStyle = '#4f9a3a'; g.beginPath(); g.moveTo(px, py); g.arc(px, py, r, .35, 6.0); g.closePath(); g.fill();
+  function farmWorld(f, lx, ly) {
+    const X0 = f.c * CELL, Y0 = f.r * CELL;
+    return f.rot ? [X0 + ly, Y0 + FW - lx] : [X0 + lx, Y0 + ly];
+  }
+  function farmProj(f, lx, ly) { if (!f) return [0, 0]; const [x, y] = farmWorld(f, lx, ly); return [projX(x, y), projY(x, y)]; }
+  function farmBounds(f) {
+    if (!f) return null;
+    const cols = fCols(f.rot), rows = fRows(f.rot);
+    return { x0: f.c * CELL, y0: f.r * CELL, x1: (f.c + cols) * CELL, y1: (f.r + rows) * CELL };
+  }
+  function farmCenter(f) {
+    if (!f) return [0, 0];
+    const b = farmBounds(f), x = (b.x0 + b.x1) / 2, y = (b.y0 + b.y1) / 2;
+    return [projX(x, y), projY(x, y)];
+  }
+  function farmVisible(f) {
+    if (!f) return false;
+    const ctr = farmCenter(f);
+    return Math.abs(ctr[0] - cpx) < cw / 2 / zoom + 340 && Math.abs(ctr[1] - cpy) < ch / 2 / zoom + 340;
+  }
+  function farmTileOK(c, r) {
+    const x0 = c * CELL, y0 = r * CELL;
+    if (x0 < clearing.x0 || y0 < clearing.y0 || x0 + CELL > clearing.x1 || y0 + CELL > clearing.y1) return false;
+    return !occ.get(slot(c, r));
+  }
+  function farmSpotOK(c, r, rot) {
+    const cols = fCols(rot), rows = fRows(rot);
+    if (c < 0 || r < 0 || c + cols > WORLD_W / CELL || r + rows > WORLD_H / CELL) return false;
+    for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) if (!farmTileOK(c + i, r + j)) return false;
+    return true;
+  }
+  function eachFarmSlot(src, fn) {
+    if (!src) return;
+    const cols = fCols(src.rot), rows = fRows(src.rot);
+    for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) fn(src.c + i, src.r + j);
+  }
+  function claimFarmSlots(src) {
+    eachFarmSlot(src, (c, r) => {
+      const old = occ.get(slot(c, r));
+      if (old && old.type === 'tree') { dropTree(old); const k = trees.indexOf(old); if (k >= 0) trees.splice(k, 1); }
+      occ.set(slot(c, r), { type: 'farm', c, r });
+    });
+  }
+  function findFarmSpot(rot) {
+    const cols = fCols(rot), rows = fRows(rot);
+    const maxC = WORLD_W / CELL - cols, maxR = WORLD_H / CELL - rows;
+    const c0 = Math.max(0, Math.ceil(clearing.x0 / CELL)), r0 = Math.max(0, Math.ceil(clearing.y0 / CELL));
+    const c1 = Math.min(maxC, Math.floor(clearing.x1 / CELL) - cols), r1 = Math.min(maxR, Math.floor(clearing.y1 / CELL) - rows);
+    const prefC = Math.max(c0, Math.min(c1, home.c)), prefR = Math.max(r0, Math.min(r1, home.r + HOME_N + 1));
+    let best = null, bestD = Infinity;
+    for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) {
+      if (!farmSpotOK(c, r, rot)) continue;
+      const d = Math.abs(c - prefC) + Math.abs(r - prefR);
+      if (d < bestD) { bestD = d; best = { c, r, rot }; }
     }
-    g.fillStyle = '#ff9ec7'; g.beginPath(); g.arc(bx + 92, by + 31, 2.6, 0, 7); g.fill();
-    const sp = new PX.Sprite(PX.Texture.from(cv)); sp.position.set(u0, v0); sp.scale.set(1 / S); farmFlatL.addChild(sp);
-    // glints drifting along the water: one tiny tilted ellipse picture, 8 copies
-    const gc = bakeCanvas(20, 10, 4), q = gc.getContext('2d');
-    q.setTransform(4 * IX, 4 * IY, -4 * IX, 4 * IY, 40, 20); q.fillStyle = '#fff'; q.beginPath(); q.ellipse(0, 0, 10, 1.6, 0, 0, 7); q.fill();
-    const gt = PX.Texture.from(gc);
-    for (let i = 0; i < 8; i++) { const s = new PX.Sprite(gt); s.anchor.set(.5); s.scale.set(.25); farmFlatL.addChild(s); glints.push(s); }
-    // grass tufts and little flowers: 4 little pictures (no flower / white / pink / yellow), copied around the farm
-    const tuftTex = {};
+    return best || { c: prefC, r: prefR, rot };
+  }
+  function rrectG(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+
+  // The flat ground art (soil + furrows) is baked into one picture, already tilted into the diamond view.
+  // It is rebuilt whenever the farm is placed or rotated.
+  let stalkTex = null, tuftTex = null;
+  function makeFarmTextures() {
+    if (stalkTex) return;
+    stalkTex = [0, 1, 2].map(i => {
+      const cv = bakeCanvas(16, 58, 4), g = cv.getContext('2d');
+      g.setTransform(4, 0, 0, 4, 32, 220); g.lineCap = 'round'; g.strokeStyle = WSTEM[i]; g.lineWidth = 1.7; g.beginPath(); g.moveTo(0, 0); g.lineTo(0, -40); g.stroke();
+      g.fillStyle = WHEAD[i]; g.beginPath(); g.ellipse(0, -44, 2.7, 7, 0, 0, 7); g.fill();
+      return PX.Texture.from(cv);
+    });
+    tuftTex = {};
     for (const f of [null, '#ffffff', '#ffd3e6', '#ffe27a']) {
       const tc = bakeCanvas(20, 14, 4), t = tc.getContext('2d');
       t.setTransform(4, 0, 0, 4, 32, 48); t.lineCap = 'round'; t.strokeStyle = '#3f8a22'; t.lineWidth = 1.5; t.beginPath();
@@ -921,69 +989,90 @@
       if (f) { t.fillStyle = f; t.beginPath(); t.arc(6, -3, 2.2, 0, 7); t.fill(); }
       tuftTex[f] = PX.Texture.from(tc);
     }
-    for (const t of tufts) { const s = new PX.Sprite(tuftTex[t.f]); s.anchor.set(8 / 20, 12 / 14); s.scale.set(.25); s.position.set(projX(t.x, t.y), projY(t.x, t.y)); farmFlatL.addChild(s); }
   }
-  function updateFarmGround(time) {
-    if (!farmVisible()) return;
-    const { wx, wy, ww, wh } = FWATER;
-    for (let i = 0; i < glints.length; i++) {
-      const px = wx + 14 + ((i * 49 + time * 14) % (ww - 40)), py = wy + 10 + (i * 17) % (wh - 18), s = glints[i];
-      s.position.set(projX(px, py), projY(px, py)); s.alpha = .3 + .25 * Math.sin(time * 2 + i * 1.7);
-    }
+  function buildFarmGround(f) {
+    const S = 3, M = 20;
+    const cs = [[-M, -M], [FW + M, -M], [FW + M, FH + M], [-M, FH + M]].map(([lx, ly]) => farmProj(f, lx, ly));
+    const u0 = Math.min(...cs.map(p => p[0])), u1 = Math.max(...cs.map(p => p[0])), v0 = Math.min(...cs.map(p => p[1])), v1 = Math.max(...cs.map(p => p[1]));
+    const cv = bakeCanvas(u1 - u0, v1 - v0, S), g = cv.getContext('2d');
+    const X0 = f.c * CELL, Y0 = f.r * CELL;
+    const a = IX, b = f.rot ? -IY : IY, c = f.rot ? IX : -IX, d = IY;
+    const e = f.rot ? (X0 - Y0 - FW) * IX : (X0 - Y0) * IX;
+    const fv = f.rot ? (X0 + Y0 + FW) * IY : (X0 + Y0) * IY;
+    g.setTransform(S * a, S * b, S * c, S * d, (e - u0) * S, (fv - v0) * S);       // local farm units land on the diamond
+    rrectG(g, -18, -18, FW + 36, FH + 36, 26); g.fillStyle = 'rgba(40,70,10,.28)'; g.fill();     // soft shade on the grass around the bed
+    rrectG(g, -8, -8, FW + 16, FH + 16, 14); g.fillStyle = '#5f3d20'; g.fill();                   // soil bed
+    for (let i = 0; i < 10; i++) { g.fillStyle = i % 2 ? '#7a502e' : '#8f6238'; g.fillRect(0, i * 16, FW, 16); }   // furrows
+    if (f.groundTex) f.groundTex.destroy(true);
+    f.groundTex = PX.Texture.from(cv);
+    const sp = new PX.Sprite(f.groundTex); sp.position.set(u0, v0); sp.scale.set(1 / S); f.flat.addChild(sp);
+    // grass tufts and little flowers around the field
+    for (const t of tufts) { const s = new PX.Sprite(tuftTex[t.f]); s.anchor.set(8 / 20, 12 / 14); s.scale.set(.25); const [u, v] = farmProj(f, t.x, t.y); s.position.set(u, v); f.flat.addChild(s); }
   }
 
-  // the standing parts: back fence, every wheat stalk (swaying), front fence, stones and reeds.
-  // The stalks and reeds are small pre-painted pictures that the GPU leans in the wind (no more 1400 curves drawn per frame).
-  let stalkC = null, reedC = null;
-  function buildFarmStanding() {
+  // the standing parts: back fence, every wheat stalk (swaying), front fence and stones.
+  function buildFarmStanding(f) {
     const fence = (g, x0, y0, x1, y1) => {
       const n = Math.max(1, Math.round(Math.hypot(x1 - x0, y1 - y0) / 40)), P = [];
-      for (let i = 0; i <= n; i++) { const x = x0 + (x1 - x0) * i / n, y = y0 + (y1 - y0) * i / n; P.push([projX(x, y), projY(x, y)]); }
+      for (let i = 0; i <= n; i++) { const lx = x0 + (x1 - x0) * i / n, ly = y0 + (y1 - y0) * i / n; P.push(farmProj(f, lx, ly)); }
       g.lineStyle({ width: 2.2, color: 0xa97a44, cap: 'round', join: 'round' });
       for (const h of [5, 11]) P.forEach(([px, py], i) => i ? g.lineTo(px, py - h) : g.moveTo(px, py - h));
       g.lineStyle({ width: 3.6, color: 0x7d5128, cap: 'round', join: 'round' });
       for (const [px, py] of P) { g.moveTo(px, py); g.lineTo(px, py - 15); }
     };
-    const back = farmL.addChild(new PX.Graphics());
-    fence(back, FARM_X0 - 14, FARM_Y0 - 14, FARM_X1 + 2, FARM_Y0 - 14);      // far long side
-    fence(back, FARM_X0 - 14, FARM_Y0 - 14, FARM_X0 - 14, FARM_Y1 + 6);      // far short end
-    stalkC = farmL.addChild(new PX.Container());
-    const stalkTex = [0, 1, 2].map(i => {
-      const cv = bakeCanvas(16, 58, 4), g = cv.getContext('2d');
-      g.setTransform(4, 0, 0, 4, 32, 220); g.lineCap = 'round'; g.strokeStyle = WSTEM[i]; g.lineWidth = 1.7; g.beginPath(); g.moveTo(0, 0); g.lineTo(0, -40); g.stroke();
-      g.fillStyle = WHEAD[i]; g.beginPath(); g.ellipse(0, -44, 2.7, 7, 0, 0, 7); g.fill();
-      return PX.Texture.from(cv);
-    });
-    for (const p of stalks) {
-      const s = new PX.Sprite(stalkTex[p.sh]); s.anchor.set(.5, 55 / 58); p.u = projX(p.x, p.y); p.v = projY(p.x, p.y);
-      s.position.set(p.u, p.v); s.scale.set(p.h / 40 * STEM_S); p.spr = s; stalkC.addChild(s);
+    const E = [[-14, -14, FW + 2, -14], [-14, -14, -14, FH + 6], [FW + 2, -14, FW + 2, FH + 6], [-14, FH + 6, FW + 2, FH + 6]];
+    const back = f.stand.addChild(new PX.Graphics());
+    for (const i of (f.rot ? [0, 2] : [0, 1])) fence(back, ...E[i]);
+    f.stalkC = f.stand.addChild(new PX.Container());
+    f.stalkSprites = stalks.map(p => { const [u, v] = farmProj(f, p.x, p.y); return { x: p.x, y: p.y, h: p.h, lean: p.lean, ph: p.ph, sh: p.sh, u, v, spr: null }; });
+    f.stalkSprites.sort((a, b) => a.v - b.v);
+    for (const p of f.stalkSprites) {
+      const s = new PX.Sprite(stalkTex[p.sh]); s.anchor.set(.5, 55 / 58);
+      s.position.set(p.u, p.v); s.scale.set(p.h / 40 * STEM_S); p.spr = s; f.stalkC.addChild(s);
     }
-    const front = farmL.addChild(new PX.Graphics());
-    fence(front, FARM_X1 + 2, FARM_Y0 - 14, FARM_X1 + 2, FARM_Y1 + 6);       // near short end, in front of the wheat
-    const rg = farmL.addChild(new PX.Graphics());
+    const front = f.stand.addChild(new PX.Graphics());
+    for (const i of (f.rot ? [1, 3] : [2, 3])) fence(front, ...E[i]);
+    const rg = f.stand.addChild(new PX.Graphics());
     for (const q of rocks) {
-      const sx = projX(q.x, q.y), sy = projY(q.x, q.y), k = q.s;
+      const [sx, sy] = farmProj(f, q.x, q.y), k = q.s;
       rg.beginFill(0x6f7676); rg.drawEllipse(sx + 2 * k, sy + 1 * k, 10 * k, 5 * k); rg.endFill();
       rg.beginFill(0xa9afaf); rg.drawEllipse(sx, sy - 3 * k, 9 * k, 6.5 * k); rg.endFill();
       rg.beginFill(0xc7cccc); rg.drawEllipse(sx - 2 * k, sy - 5 * k, 4 * k, 2.4 * k); rg.endFill();
     }
-    reedC = farmL.addChild(new PX.Container());
-    const rc = bakeCanvas(20, 54, 4), g = rc.getContext('2d');
-    g.setTransform(4, 0, 0, 4, 40, 200); g.lineCap = 'round'; g.strokeStyle = '#4d8f2e'; g.lineWidth = 2;
-    g.beginPath(); g.moveTo(-3, 0); g.lineTo(-3, -32); g.moveTo(2, 0); g.lineTo(2, -40); g.stroke();
-    g.fillStyle = '#7a4a22'; g.beginPath(); g.ellipse(2, -43, 2.2, 5.5, 0, 0, 7); g.fill();       // cattail
-    const reedTex = PX.Texture.from(rc);
-    for (const r of reeds) { const s = new PX.Sprite(reedTex); s.anchor.set(.5, 50 / 54); s.position.set(projX(r.x, r.y), projY(r.x, r.y)); s.scale.set(r.h / 40 * STEM_S); r.spr = s; reedC.addChild(s); }
+  }
+  function rebuildFarm(f) {
+    if (!f) return;
+    if (!f.flat) f.flat = farmFlatL.addChild(new PX.Container());
+    if (!f.stand) f.stand = farmL.addChild(new PX.Container());
+    for (const c of [f.flat, f.stand]) { const kids = c.removeChildren(); for (const ch of kids) ch.destroy({ children: true }); }
+    if (f.groundTex) { f.groundTex.destroy(true); f.groundTex = null; }
+    f.stalkC = null; f.stalkSprites = null;
+    makeFarmTextures();
+    buildFarmGround(f);
+    buildFarmStanding(f);
+  }
+  function destroyFarmVisual(f) {
+    if (!f) return;
+    for (const k of ['flat', 'stand']) { const c = f[k]; if (c) { c.removeFromParent(); c.destroy({ children: true }); f[k] = null; } }
+    if (f.groundTex) { f.groundTex.destroy(true); f.groundTex = null; }
+    f.stalkC = null; f.stalkSprites = null;
+    if (typeof destroyFarmUI === 'function') destroyFarmUI(f);
   }
   function updateFarm(time) {
-    const vis = farmVisible() && !!farm; farmL.visible = vis; farmFlatL.visible = !!farm;
-    if (!vis || (fc & 1)) return;                    // wind sways at 30 updates a second
-    const vl = cpx - cw / 2 / zoom - 20 / zoom, vr = cpx + cw / 2 / zoom + 20 / zoom, vt = cpy - ch / 2 / zoom - 20 / zoom, vb = cpy + ch / 2 / zoom + 60;
-    for (const p of stalks) {
-      const on = p.u > vl && p.u < vr && p.v > vt && p.v < vb; p.spr.visible = on; if (!on) continue;
-      p.spr.scale.set(p.h / 40 * STEM_S * (.7 + .3 * gHf), p.h / 40 * STEM_S * gHf); p.spr.tint = gTint; p.spr.skew.x = -(p.lean * gHf + wave(p.x, p.y, time) * (2.2 + 3 * gHf) + Math.sin(time * .6 + p.ph) * .35) / (p.h * gHf * STEM_S);
+    const list = placing ? [...farms, placing] : farms;
+    for (const f of list) {
+      if (!f.flat || !f.stand) continue;
+      const vis = farmVisible(f);
+      f.stand.visible = f.flat.visible = vis;
+      f.stand.alpha = f.flat.alpha = (f === placing) ? .82 : 1;
+      if (!vis || (fc & 1)) continue;                // wind sways at 30 updates a second
+      const hf = f.hf == null ? 1 : f.hf, tint = f.tint == null ? 0xffffff : f.tint;
+      const vl = cpx - cw / 2 / zoom - 20 / zoom, vr = cpx + cw / 2 / zoom + 20 / zoom, vt = cpy - ch / 2 / zoom - 20 / zoom, vb = cpy + ch / 2 / zoom + 60;
+      for (const p of f.stalkSprites || []) {
+        const on = p.u > vl && p.u < vr && p.v > vt && p.v < vb; p.spr.visible = on; if (!on) continue;
+        p.spr.scale.set(p.h / 40 * STEM_S * (.7 + .3 * hf), p.h / 40 * STEM_S * hf); p.spr.tint = tint; p.spr.skew.x = -(p.lean * hf + wave(p.x, p.y, time) * (2.2 + 3 * hf) + Math.sin(time * .6 + p.ph) * .35) / (p.h * hf * STEM_S);
+      }
     }
-    for (const r of reeds) r.spr.skew.x = -(wave(r.x, r.y, time) * 4 + Math.sin(time * .6 + r.ph)) / (r.h * STEM_S);
   }
 
 
@@ -991,13 +1080,24 @@
   const FARM_COST = 50;            // gold to build it
   const GROW_SEC = 20;             // seconds until the wheat is ripe (try 10, 30 ...)
   const WHEAT_PER_HARVEST = 10;    // wheat you get each time you collect
-  const WORKERS = 4;               // villagers who walk out and work the field
-  let farm = null, wheatCount = 0; // farm = { t0 } once built (t0 = when this crop was planted)
-  try { const f = JSON.parse(localStorage.getItem('farm') || 'null'); if (f && typeof f.t0 === 'number') farm = { t0: f.t0 }; const w = parseInt(localStorage.getItem('wheat'), 10); if (w > 0) wheatCount = w; } catch (e) {}
-  const farmState = () => !farm ? 'none' : (Date.now() - farm.t0 >= GROW_SEC * 1000 ? 'ready' : 'growing');
-  const farmProgress = () => farm ? Math.min(1, (Date.now() - farm.t0) / (GROW_SEC * 1000)) : 0;
-  const saveFarm = () => { try { localStorage.setItem('farm', JSON.stringify(farm)); localStorage.setItem('wheat', wheatCount); } catch (e) {} };
-  let gHf = 1, gTint = 0xffffff;   // how tall / what colour the wheat is right now (updateFarmUI sets them, updateFarm applies them)
+  const WORKERS = 4;               // villagers who walk out and work the fields
+  try {
+    const saved = JSON.parse(localStorage.getItem('farms') || 'null');
+    const old = saved ? null : JSON.parse(localStorage.getItem('farm') || 'null');   // older saves had a single farm
+    const list = Array.isArray(saved) ? saved : (old && typeof old.t0 === 'number' ? [old] : []);
+    for (const s of list) {
+      if (!s || typeof s.t0 !== 'number') continue;
+      const f = { t0: s.t0, c: Number.isInteger(s.c) ? s.c : 16, r: Number.isInteger(s.r) ? s.r : 21, rot: s.rot ? 1 : 0 };
+      const cols = fCols(f.rot), rows = fRows(f.rot);
+      f.c = Math.max(0, Math.min(WORLD_W / CELL - cols, f.c));
+      f.r = Math.max(0, Math.min(WORLD_H / CELL - rows, f.r));
+      farms.push(f);
+    }
+    const w = parseInt(localStorage.getItem('wheat'), 10); if (w > 0) wheatCount = w;
+  } catch (e) {}
+  const farmState = f => !f ? 'none' : (Date.now() - f.t0 >= GROW_SEC * 1000 ? 'ready' : 'growing');
+  const farmProgress = f => f ? Math.min(1, (Date.now() - f.t0) / (GROW_SEC * 1000)) : 0;
+  const saveFarms = () => { try { localStorage.setItem('farms', JSON.stringify(farms.map(f => ({ t0: f.t0, c: f.c, r: f.r, rot: f.rot })))); localStorage.setItem('wheat', wheatCount); } catch (e) {} };
 
   const toastEl = document.getElementById('toast'); let toastT = 0;
   function toast(msg) { toastEl.textContent = msg; toastEl.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => toastEl.classList.remove('on'), 2200); }
@@ -1013,96 +1113,155 @@
   }
 
   // where a farm hand heads next: first visit = their own stretch of the field, later = a short shuffle along it
-  function workSpot(v, near) {
+  function workSpot(v, near, f) {
+    const b = f && farmBounds(f); if (!b) return;
     const cl = (a, lo, hi) => Math.max(lo, Math.min(hi, a));
-    if (near) { v.tx = cl(v.x + rr(-80, 80), FARM_X0 + 16, FARM_X1 - 16); v.ty = cl(v.y + rr(-40, 40), FARM_Y0 + 14, FARM_Y1 - 14); }
-    else { v.tx = cl(FARM_X0 + 40 + (v.wi % WORKERS) / (WORKERS - 1 || 1) * (FW - 80) + rr(-25, 25), FARM_X0 + 16, FARM_X1 - 16); v.ty = FARM_Y0 + rr(22, FH - 22); }
+    if (near) { v.tx = cl(v.x + rr(-80, 80), b.x0 + 16, b.x1 - 16); v.ty = cl(v.y + rr(-40, 40), b.y0 + 14, b.y1 - 14); }
+    else { v.tx = cl(b.x0 + 40 + (v.wi % WORKERS) / (WORKERS - 1 || 1) * (b.x1 - b.x0 - 80) + rr(-25, 25), b.x0 + 16, b.x1 - 16); v.ty = b.y0 + rr(22, b.y1 - b.y0 - 22); }
   }
 
   // ---- HUD: wheat counter + Build menu ----
   const wheatPill = document.getElementById('wheatpill'), wheatNum = document.getElementById('wheatnum');
   let uiKey = '';
   function refreshWheatHud() {
-    const key = !!farm + '|' + wheatCount; if (key === uiKey) return; uiKey = key;
-    wheatPill.style.display = (farm || wheatCount) ? 'flex' : 'none'; wheatNum.textContent = wheatCount;
+    const key = farms.length + '|' + wheatCount; if (key === uiKey) return; uiKey = key;
+    wheatPill.style.display = (farms.length || wheatCount) ? 'flex' : 'none'; wheatNum.textContent = wheatCount;
   }
-  function focusFarm() { cpx = farmCenter[0]; cpy = farmCenter[1]; clampCam(); }
+  function focusFarm(f) { if (!f) return; const ctr = farmCenter(f); cpx = ctr[0]; cpy = ctr[1]; clampCam(); }
   function renderBuild() {
     const btn = document.getElementById('farmBuy'), info = document.getElementById('farmInfo');
     info.textContent = 'Ready in ' + GROW_SEC + 's \u00B7 ' + WHEAT_PER_HARVEST + ' wheat each time';
-    if (farm) { btn.textContent = 'Built'; btn.disabled = true; }
+    if (placing) { btn.textContent = 'Placing\u2026'; btn.disabled = true; }
     else if (gold < FARM_COST) { btn.textContent = 'Need ' + FARM_COST + ' gold'; btn.disabled = true; }
     else { btn.textContent = 'Build \u00B7 ' + FARM_COST + ' gold'; btn.disabled = false; }
   }
-  buildBtn.addEventListener('click', renderBuild);
-  document.getElementById('farmBuy').addEventListener('click', () => {
-    if (farm) return;
+  function startPlacing() {
+    if (placing) return;
     if (gold < FARM_COST) { toast('You need ' + FARM_COST + ' gold'); return; }
-    spendGold(FARM_COST);
-    farm = { t0: Date.now() }; saveFarm();
+    const spot = findFarmSpot(0);
+    placing = { c: spot.c, r: spot.r, rot: spot.rot };
+    sel = null; hov = null; drag = null; tap = null; barKey = '#';
     buildPanel.style.display = 'none'; buildBtn.classList.remove('open');
-    focusFarm(); setStat('wheat', ICON.wheat, 'Wheat', wheatCount); refreshWheatHud(); renderBuild();
-    toast('Farm built! Your villagers are heading out to plant');
-  });
-  if (farm || wheatCount) setStat('wheat', ICON.wheat, 'Wheat', wheatCount);
+    rebuildFarm(placing); focusFarm(placing);
+    toast('Choose a spot for your farm, then tap \u2713');
+  }
+  function placeTo(sx, sy) {
+    if (!placing) return;
+    const s = slotAt(sx, sy); if (!s) return;
+    const cols = fCols(placing.rot), rows = fRows(placing.rot);
+    placing.c = clampI(s.c - Math.floor(cols / 2), 0, WORLD_W / CELL - cols);
+    placing.r = clampI(s.r - Math.floor(rows / 2), 0, WORLD_H / CELL - rows);
+    barKey = '#'; rebuildFarm(placing);
+  }
+  function rotateFarm() {
+    if (!placing) return;
+    const oldC = fCols(placing.rot), oldR = fRows(placing.rot);
+    const cx = placing.c + oldC / 2, cy = placing.r + oldR / 2;
+    placing.rot ^= 1;
+    const cols = fCols(placing.rot), rows = fRows(placing.rot);
+    placing.c = clampI(Math.round(cx - cols / 2), 0, WORLD_W / CELL - cols);
+    placing.r = clampI(Math.round(cy - rows / 2), 0, WORLD_H / CELL - rows);
+    barKey = '#'; rebuildFarm(placing);
+  }
+  function endPlacing(commit) {
+    if (!placing) return;
+    const p = placing;
+    if (commit) {
+      if (!farmSpotOK(p.c, p.r, p.rot)) { mvBar.classList.remove('shake'); void mvBar.offsetWidth; mvBar.classList.add('shake'); return; }
+      if (!spendGold(FARM_COST)) return;
+      const f = { t0: Date.now(), c: p.c, r: p.r, rot: p.rot };
+      destroyFarmVisual(p);
+      placing = null; barKey = '#';
+      farms.push(f); claimFarmSlots(f); saveFarms(); rebuildFarm(f);
+      refreshWheatHud(); setStat('wheat', ICON.wheat, 'Wheat', wheatCount); renderBuild(); focusFarm(f);
+      toast('Farm built! Your villagers are heading out to plant');
+    } else {
+      destroyFarmVisual(p);
+      placing = null; barKey = '#'; renderBuild();
+    }
+  }
+  buildBtn.addEventListener('click', renderBuild);
+  document.getElementById('farmBuy').addEventListener('click', () => { if (!placing) startPlacing(); });
+  if (farms.length || wheatCount) setStat('wheat', ICON.wheat, 'Wheat', wheatCount);
 
   // ---- on the map: green progress bar with the time (Clash-style), then a wheat bubble to tap ----
   const farmUIL = world.addChild(new PX.Container());
-  const barBox = farmUIL.addChild(new PX.Container()), barG = barBox.addChild(new PX.Graphics());
-  const barT = barBox.addChild(new PX.Text('', { fontFamily: 'system-ui, sans-serif', fontWeight: '800', fontSize: 26, fill: 0xffffff, stroke: 0x1e0f05, strokeThickness: 7, lineJoin: 'round' }));
-  barT.anchor.set(.5); barT.scale.set(.5); barT.resolution = 2;
-  const bubble = farmUIL.addChild(new PX.Container()), bubG = bubble.addChild(new PX.Graphics());
-  bubG.lineStyle({ width: 2.5, color: 0x6b4519, join: 'round' }); bubG.beginFill(0xfffae1, .97); bubG.drawCircle(0, 0, 25); bubG.endFill();
-  bubG.beginFill(0xfffae1, .97); bubG.drawPolygon([-7, 23, 0, 34, 7, 23]); bubG.endFill();
-  const wheatBig = bubble.addChild(new PX.Sprite(PX.Texture.from('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(ICON.wheat.replace('width="64" height="64"', 'width="192" height="192"')))));
-  wheatBig.anchor.set(.5); wheatBig.scale.set(40 / 192); wheatBig.position.set(0, -1);
-  barBox.visible = bubble.visible = false;
-  const floaters = []; let barSec = -1;
-  const fx = () => farmCenter[0], fy = () => farmCenter[1];
+  const floaters = [];
   const lerp = (a, b, t) => a + (b - a) * t;
+  const wheatTexBig = PX.Texture.from('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(ICON.wheat.replace('width="64" height="64"', 'width="192" height="192"')));
+  function ensureFarmUI(f) {
+    if (f.ui) return f.ui;
+    const barBox = farmUIL.addChild(new PX.Container()), barG = barBox.addChild(new PX.Graphics());
+    const barT = barBox.addChild(new PX.Text('', { fontFamily: 'system-ui, sans-serif', fontWeight: '800', fontSize: 26, fill: 0xffffff, stroke: 0x1e0f05, strokeThickness: 7, lineJoin: 'round' }));
+    barT.anchor.set(.5); barT.scale.set(.5); barT.resolution = 2;
+    const bubble = farmUIL.addChild(new PX.Container()), bubG = bubble.addChild(new PX.Graphics());
+    bubG.lineStyle({ width: 2.5, color: 0x6b4519, join: 'round' }); bubG.beginFill(0xfffae1, .97); bubG.drawCircle(0, 0, 25); bubG.endFill();
+    bubG.beginFill(0xfffae1, .97); bubG.drawPolygon([-7, 23, 0, 34, 7, 23]); bubG.endFill();
+    const wheatBig = bubble.addChild(new PX.Sprite(wheatTexBig));
+    wheatBig.anchor.set(.5); wheatBig.scale.set(40 / 192); wheatBig.position.set(0, -1);
+    barBox.visible = bubble.visible = false;
+    return (f.ui = { barBox, barG, barT, bubble, barSec: -1 });
+  }
+  function destroyFarmUI(f) {
+    if (!f || !f.ui) return;
+    for (const c of [f.ui.barBox, f.ui.bubble]) if (c) { c.removeFromParent(); c.destroy({ children: true }); }
+    f.ui = null;
+  }
   function updateFarmUI(time) {
     refreshWheatHud();
-    const st = farmState(), p = farmProgress();
-    const hf = farm ? .22 + .78 * Math.min(1, p / .85) : 1, m = farm ? Math.max(0, Math.min(1, (p - .35) / .5)) : 1;   // young wheat is short and green, it turns golden as it ripens
-    gHf = hf; gTint = (Math.round(lerp(.6, 1, m) * 255) << 16) | (Math.round(lerp(.93, 1, m) * 255) << 8) | Math.round(lerp(.36, 1, m) * 255);
-    const show = !!farm && farmVisible();
-    barBox.visible = show && st === 'growing'; bubble.visible = show && st === 'ready';
-    if (barBox.visible) {
-      const bw = 118, bh = 20, bx = fx() - bw / 2, bt = fy() - 72, left = Math.max(0, Math.ceil(GROW_SEC * (1 - p)));
-      barG.clear();
-      barG.beginFill(0x000000, .25); barG.drawRoundedRect(bx - 2, bt + 1, bw + 4, bh + 6, 10); barG.endFill();
-      barG.lineStyle({ width: 2, color: 0xc99a4b }); barG.beginFill(0x2a1a0c); barG.drawRoundedRect(bx - 3, bt - 3, bw + 6, bh + 6, 10); barG.endFill(); barG.lineStyle(0);
-      barG.beginFill(0x4a321a); barG.drawRoundedRect(bx, bt, bw, bh, 7); barG.endFill();
-      if (p > 0) {
-        const w = Math.max(10, bw * p), r = Math.min(7, w / 2);
-        barG.beginFill(0x3aaa30); barG.drawRoundedRect(bx, bt, w, bh, r); barG.endFill();
-        barG.beginFill(0x6fe052); barG.drawRoundedRect(bx, bt, w, bh * .62, r); barG.endFill();
-        barG.beginFill(0xc2fa8c, .55); barG.drawRoundedRect(bx + 2, bt + 2, Math.max(4, w - 4), 4, 2); barG.endFill();
+    const canShow = !placing;
+    for (const f of farms) {
+      const ui = ensureFarmUI(f);
+      const st = farmState(f), p = farmProgress(f);
+      const hf = .22 + .78 * Math.min(1, p / .85), m = Math.max(0, Math.min(1, (p - .35) / .5));   // young wheat is short and green, it turns golden as it ripens
+      f.hf = hf;
+      f.tint = (Math.round(lerp(.6, 1, m) * 255) << 16) | (Math.round(lerp(.93, 1, m) * 255) << 8) | Math.round(lerp(.36, 1, m) * 255);
+      const show = canShow && farmVisible(f);
+      ui.barBox.visible = show && st === 'growing'; ui.bubble.visible = show && st === 'ready';
+      const [fx, fy] = farmCenter(f);
+      if (ui.barBox.visible) {
+        const bw = 118, bh = 20, bx = fx - bw / 2, bt = fy - 72, left = Math.max(0, Math.ceil(GROW_SEC * (1 - p)));
+        ui.barG.clear();
+        ui.barG.beginFill(0x000000, .25); ui.barG.drawRoundedRect(bx - 2, bt + 1, bw + 4, bh + 6, 10); ui.barG.endFill();
+        ui.barG.lineStyle({ width: 2, color: 0xc99a4b }); ui.barG.beginFill(0x2a1a0c); ui.barG.drawRoundedRect(bx - 3, bt - 3, bw + 6, bh + 6, 10); ui.barG.endFill(); ui.barG.lineStyle(0);
+        ui.barG.beginFill(0x4a321a); ui.barG.drawRoundedRect(bx, bt, bw, bh, 7); ui.barG.endFill();
+        if (p > 0) {
+          const w = Math.max(10, bw * p), r = Math.min(7, w / 2);
+          ui.barG.beginFill(0x3aaa30); ui.barG.drawRoundedRect(bx, bt, w, bh, r); ui.barG.endFill();
+          ui.barG.beginFill(0x6fe052); ui.barG.drawRoundedRect(bx, bt, w, bh * .62, r); ui.barG.endFill();
+          ui.barG.beginFill(0xc2fa8c, .55); ui.barG.drawRoundedRect(bx + 2, bt + 2, Math.max(4, w - 4), 4, 2); ui.barG.endFill();
+        }
+        if (left !== ui.barSec) { ui.barSec = left; ui.barT.text = Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0'); }
+        ui.barT.position.set(fx, bt + bh / 2 + .5);
       }
-      if (left !== barSec) { barSec = left; barT.text = Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0'); }
-      barT.position.set(fx(), bt + bh / 2 + .5);
+      if (ui.bubble.visible) ui.bubble.position.set(fx, fy - 80 + Math.sin(time * 3) * 4);
     }
-    if (bubble.visible) bubble.position.set(fx(), fy() - 80 + Math.sin(time * 3) * 4);
     const now = performance.now();
     for (let i = floaters.length - 1; i >= 0; i--) {                       // "+10 wheat" floating up
       const f = floaters[i], a = (now - f.t0) / 1500;
       if (a >= 1) { farmUIL.removeChild(f.txt); f.txt.destroy(); floaters.splice(i, 1); continue; }
-      f.txt.alpha = 1 - a; f.txt.position.set(fx(), fy() - 30 - a * 60);
+      f.txt.alpha = 1 - a; f.txt.position.set(f.x, f.y - 30 - a * 60);
     }
   }
-  function collectFarm() {
-    if (farmState() !== 'ready') return;
-    wheatCount += WHEAT_PER_HARVEST; farm.t0 = Date.now(); barSec = -1; saveFarm();      // harvest, then the field is replanted
+  function collectFarm(f) {
+    if (farmState(f) !== 'ready') return;
+    wheatCount += WHEAT_PER_HARVEST; f.t0 = Date.now(); if (f.ui) f.ui.barSec = -1; saveFarms();      // harvest, then the field is replanted
     setStat('wheat', ICON.wheat, 'Wheat', wheatCount); refreshWheatHud();
+    const [fx, fy] = farmCenter(f);
     const t = new PX.Text('+' + WHEAT_PER_HARVEST + ' wheat', { fontFamily: 'system-ui, sans-serif', fontWeight: '800', fontSize: 36, fill: 0xfff3b0, stroke: 0x3c2305, strokeThickness: 8, lineJoin: 'round' });
-    t.anchor.set(.5); t.scale.set(.5); t.resolution = 2; farmUIL.addChild(t); floaters.push({ t0: performance.now(), txt: t });
+    t.anchor.set(.5); t.scale.set(.5); t.resolution = 2; farmUIL.addChild(t); floaters.push({ t0: performance.now(), txt: t, x: fx, y: fy });
     toast('Collected ' + WHEAT_PER_HARVEST + ' wheat');
   }
-  function tapFarm(sx, sy) {                                                  // tap the ripe field (or its bubble) to collect
-    if (farmState() !== 'ready') return false;
-    for (const q of [slotAt(sx, sy), slotAt(sx, sy + 24 * zoom)]) if (q && q.c >= FARM.c && q.c < FARM.c + FARM.w && q.r >= FARM.r && q.r < FARM.r + FARM.h) { collectFarm(); return true; }
-    const bx = (fx() - cpx) * zoom + cw / 2, by = (fy() - 80 - cpy) * zoom + ch / 2;
-    if (Math.hypot(sx - bx, sy - by) < 34 * zoom) { collectFarm(); return true; }
+  function tapFarm(sx, sy) {                                                  // tap a ripe field (or its bubble) to collect
+    if (placing) return false;
+    for (const f of farms) {
+      if (farmState(f) !== 'ready') continue;
+      const b = farmBounds(f), c0 = Math.floor(b.x0 / CELL), r0 = Math.floor(b.y0 / CELL), c1 = Math.ceil(b.x1 / CELL), r1 = Math.ceil(b.y1 / CELL);
+      for (const q of [slotAt(sx, sy), slotAt(sx, sy + 24 * zoom)]) if (q && q.c >= c0 && q.c < c1 && q.r >= r0 && q.r < r1) { collectFarm(f); return true; }
+      const [fx, fy] = farmCenter(f);
+      const bx = (fx - cpx) * zoom + cw / 2, by = (fy - 80 - cpy) * zoom + ch / 2;
+      if (Math.hypot(sx - bx, sy - by) < 34 * zoom) { collectFarm(f); return true; }
+    }
     return false;
   }
 
@@ -1117,7 +1276,6 @@
     try {
       world.scale.set(zoom); world.position.set(cw / 2 - cpx * zoom, ch / 2 - cpy * zoom);     // the camera
       cullGround();
-      updateFarmGround(time);
       updateSelection(time, now);
       updateMoveGrid(time);
       updateTrees(time, now);
@@ -1136,7 +1294,7 @@
     [...BLK, ...TRE].forEach(a => { a.tex = PX.Texture.from(a.im, mm); });
     shadowTex = radialTex('20,70,6', .42, 64); glowTex = radialTex('255,225,120', .9, 64);
     growForest();
-    buildGround(); buildTrees(); buildFarmGround(); buildFarmStanding();
+    buildGround(); buildTrees(); farms.forEach(rebuildFarm);
     syncVillagers();
     resize();
     // whole clearing diamond fits on screen
@@ -1144,7 +1302,7 @@
     zoom = Math.min(cw / dw, ch / dh);
     cpx = projX(spawn.x, spawn.y); cpy = projY(spawn.x, spawn.y); clampCam();
     requestAnimationFrame(frame);
-    window.game = { setStat, setPopulation, villagers, occ, slot, cam: () => ({ cpx, cpy, zoom }), spawn, clearing, trees, WORLD_W, WORLD_H, CELL, projX, projY, unprojX, unprojY };   // hooks for the next step
+    window.game = { setStat, setPopulation, villagers, occ, slot, cam: () => ({ cpx, cpy, zoom }), spawn, clearing, trees, farms, gold: () => gold, setGold, placing: () => placing, WORLD_W, WORLD_H, CELL, projX, projY, unprojX, unprojY };   // hooks for the next step
   };
   [...BLK, ...TRE].forEach(a => a.im.onload = ready);
   const missing = name => () => { hint.textContent = name + ' not found. Put it in the same folder as index.html'; hint.style.opacity = 1; };
