@@ -42,7 +42,7 @@
     app.stage.interactiveChildren = false;
   } catch (e) { console.error('Pixi failed to start', e); app = null; }
   const hint = document.getElementById('hint');
-  if (!app) { hint.textContent = 'This browser could not start the graphics engine (WebGL / Pixi.js). Check your internet and try again.'; hint.style.opacity = 1; return; }
+  if (!app) { hint.textContent = 'This browser could not start the graphics engine (WebGL / Pixi.js). Check your internet and try again.'; hint.style.opacity = 1; throw new Error('Pixi failed to start'); }
   let ctx = null;   // the 2D context of whichever villager canvas is being painted right now
 
   // scene graph, drawn bottom to top. Everything inside `world` lives in projected (screen-shaped) space; the camera is just world.position + world.scale.
