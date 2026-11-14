@@ -48,7 +48,84 @@
   function refreshWheatHud() {
     const key = farms.length + '|' + wheatCount; if (key === uiKey) return; uiKey = key;
     wheatPill.style.display = (farms.length || wheatCount) ? 'flex' : 'none'; wheatNum.textContent = wheatCount;
+    if (typeof renderTrade === 'function') renderTrade();
   }
+
+  // ---- food consumption: villagers eat over time ----
+  const CONSUME_EVERY_MS = 20000;     // every 20 seconds
+  let lastConsumeMs = 0;
+  function updateFoodConsumption(now) {
+    if (!lastConsumeMs) { lastConsumeMs = now; return; }
+    if (now - lastConsumeMs < CONSUME_EVERY_MS) return;
+    lastConsumeMs = now;
+    const need = Math.max(1, Math.ceil(population / 2));   // population of 10 consumes 5 food per interval
+    if (need <= 0) return;
+    if (wheatCount >= need) {
+      wheatCount -= need;
+      saveFarms();
+      setStat('wheat', ICON.wheat, 'Wheat', wheatCount);
+      refreshWheatHud();
+      if (typeof renderTrade === 'function') renderTrade();
+    } else if (wheatCount > 0) {
+      const eaten = wheatCount;
+      wheatCount = 0;
+      saveFarms();
+      setStat('wheat', ICON.wheat, 'Wheat', wheatCount);
+      refreshWheatHud();
+      if (typeof renderTrade === 'function') renderTrade();
+      toast('Villagers ate ' + eaten + ' food and are still hungry');
+    } else {
+      toast('Your villagers are hungry! Harvest more food');
+    }
+  }
+
+  // ---- trade: exchange food for gold ----
+  const FOOD_PER_GOLD = 2;            // 2 food -> 1 gold
+  const tradeBtn = document.getElementById('tradebtn'), tradePanel = document.getElementById('tradepanel');
+  const tradeMsg = document.getElementById('tradeMsg'), tradeRange = document.getElementById('tradeRange');
+  const tradeAmt = document.getElementById('tradeAmt'), tradeGet = document.getElementById('tradeGet'), tradeConfirm = document.getElementById('tradeConfirm');
+  let tradeOpen = false;
+  function renderTrade() {
+    if (!tradePanel) return;
+    const have = wheatCount | 0, maxFood = Math.floor(have / FOOD_PER_GOLD) * FOOD_PER_GOLD;
+    if (+tradeRange.max !== maxFood) tradeRange.max = maxFood;
+    let v = Math.min(+tradeRange.value || 0, maxFood);
+    if (v % FOOD_PER_GOLD) v = Math.floor(v / FOOD_PER_GOLD) * FOOD_PER_GOLD;
+    tradeRange.value = v;
+    tradeRange.disabled = maxFood <= 0;
+    if (tradeMsg) tradeMsg.textContent = 'Trade: you have ' + have + ' food. You can get ' + Math.floor(have / FOOD_PER_GOLD) + ' gold.';
+    if (tradeAmt) tradeAmt.textContent = v;
+    const goldGain = Math.floor(v / FOOD_PER_GOLD);
+    if (tradeGet) tradeGet.textContent = goldGain > 0 ? ('Get ' + goldGain + ' gold for ' + v + ' food') : 'Adjust food to trade for gold';
+    if (tradeConfirm) tradeConfirm.disabled = goldGain <= 0;
+  }
+  function setTradeOpen(open) {
+    tradeOpen = !!open;
+    if (tradePanel) { tradePanel.style.display = tradeOpen ? 'block' : 'none'; tradePanel.setAttribute('aria-hidden', tradeOpen ? 'false' : 'true'); }
+    if (tradeBtn) tradeBtn.classList.toggle('open', tradeOpen);
+    if (tradeOpen) { if (buildPanel) { buildPanel.style.display = 'none'; buildBtn.classList.remove('open'); } renderTrade(); }
+  }
+  if (tradeBtn) tradeBtn.addEventListener('click', () => setTradeOpen(!tradeOpen));
+  if (tradeRange) tradeRange.addEventListener('input', renderTrade);
+  const tradeCancel = document.getElementById('tradeCancel');
+  if (tradeCancel) tradeCancel.addEventListener('click', () => setTradeOpen(false));
+  if (tradeConfirm) tradeConfirm.addEventListener('click', () => {
+    const food = Math.floor((+tradeRange.value || 0) / FOOD_PER_GOLD) * FOOD_PER_GOLD;
+    const gain = Math.floor(food / FOOD_PER_GOLD);
+    if (food <= 0 || gain <= 0 || food > wheatCount) { renderTrade(); return; }
+    wheatCount -= food;
+    setGold(gold + gain);
+    try { localStorage.setItem('goldCache', gold); } catch (e) {}
+    saveFarms();
+    setStat('wheat', ICON.wheat, 'Wheat', wheatCount);
+    refreshWheatHud();
+    tradeRange.value = 0;
+    renderTrade();
+    toast('Traded ' + food + ' food for ' + gain + ' gold');
+  });
+  window.addEventListener('pointerdown', e => {
+    if (tradeOpen && tradePanel && !tradePanel.contains(e.target) && tradeBtn && !tradeBtn.contains(e.target)) setTradeOpen(false);
+  }, true);
   function focusFarm(f) { if (!f) return; const ctr = farmCenter(f); cpx = ctr[0]; cpy = ctr[1]; clampCam(); }
   function renderBuild() {
     const btn = document.getElementById('farmBuy'), info = document.getElementById('farmInfo');
@@ -138,7 +215,7 @@
       placing = null; barKey = '#'; renderBuild();
     }
   }
-  buildBtn.addEventListener('click', renderBuild);
+  buildBtn.addEventListener('click', () => { setTradeOpen(false); renderBuild(); });
   document.getElementById('farmBuy').addEventListener('click', () => { if (!placing && !movingFarm) startPlacing(); });
   if (farms.length || wheatCount) setStat('wheat', ICON.wheat, 'Wheat', wheatCount);
 
@@ -167,6 +244,7 @@
   }
   function updateFarmUI(time) {
     refreshWheatHud();
+    updateFoodConsumption(performance.now());
     const canShow = !placing;
     const movingF = movingFarm ? movingFarm.farm : null;
     for (const f of farms) {
