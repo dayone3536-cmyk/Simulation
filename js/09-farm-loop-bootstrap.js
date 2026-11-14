@@ -119,6 +119,7 @@
   const elSpark = document.getElementById('spark'), elTag = document.getElementById('priceTag'), elTimer = document.getElementById('priceTimer');
   const elHave = document.getElementById('tradeGet'), elNote = document.getElementById('tradeNote'), elFx = document.getElementById('coinfx');
   const sell10 = document.getElementById('sell10'), sell50 = document.getElementById('sell50'), sellX = document.getElementById('sellX'), sellXn = document.getElementById('sellXn');
+  const harvestReadyBtn = document.getElementById('harvestReady'), harvestReadyTxt = document.getElementById('harvestReadyTxt');
   let tradeOpen = false;
   function drawSpark() {
     if (!elSpark) return;
@@ -133,6 +134,7 @@
     const have = wheatCount | 0, p = market.p, prev = market.hist.length > 1 ? market.hist[market.hist.length - 2] : p;
     const need = Math.max(1, Math.ceil(population / 2)), reserve = need * 2;
     const extra = Math.max(0, have - reserve);
+    const readyCount = farms.filter(f => farmState(f) === 'ready').length;
     elGold.textContent = p;
     elMood.textContent = market.note;
     elTrend.textContent = p > prev ? '\u25B2 Rising' : p < prev ? '\u25BC Falling' : '\u2022 Steady';
@@ -143,6 +145,10 @@
     elTimer.textContent = 'Price shifts in ' + left + 's';
     drawSpark();
     elHave.textContent = 'Granary: ' + have + ' food';
+    if (harvestReadyBtn) {
+      harvestReadyBtn.style.display = readyCount > 0 ? 'flex' : 'none';
+      if (harvestReadyTxt) harvestReadyTxt.textContent = 'Harvest ' + readyCount + ' ready farm' + (readyCount === 1 ? '' : 's') + ' (+' + (readyCount * WHEAT_PER_HARVEST) + ' food)';
+    }
     const g10 = goldFor(10), g50 = goldFor(50), gX = goldFor(extra);
     sell10.disabled = have < 10 || g10 < 1;
     sell50.disabled = have < 50 || g50 < 1;
@@ -198,6 +204,7 @@
   if (sell10) sell10.addEventListener('click', () => sellFood(10));
   if (sell50) sell50.addEventListener('click', () => sellFood(50));
   if (sellX) sellX.addEventListener('click', () => sellFood(Math.max(0, (wheatCount | 0) - Math.max(1, Math.ceil(population / 2)) * 2)));
+  if (harvestReadyBtn) harvestReadyBtn.addEventListener('click', harvestAllReady);
   setInterval(() => { tickMarket(); renderTrade(); }, 1000);
   renderTrade();
   window.addEventListener('pointerdown', e => {
@@ -357,14 +364,23 @@
       f.txt.alpha = 1 - a; f.txt.position.set(f.x, f.y - 30 - a * 60);
     }
   }
-  function collectFarm(f) {
-    if (farmState(f) !== 'ready') return;
+  function collectFarm(f, opts) {
+    if (farmState(f) !== 'ready') return false;
     wheatCount += WHEAT_PER_HARVEST; f.t0 = Date.now(); if (f.ui) f.ui.barSec = -1; saveFarms();      // harvest, then the field is replanted
     setStat('wheat', ICON.wheat, 'Wheat', wheatCount); refreshWheatHud();
     const [fx, fy] = farmCenter(f);
     const t = new PX.Text('+' + WHEAT_PER_HARVEST + ' wheat', { fontFamily: 'system-ui, sans-serif', fontWeight: '800', fontSize: 36, fill: 0xfff3b0, stroke: 0x3c2305, strokeThickness: 8, lineJoin: 'round' });
     t.anchor.set(.5); t.scale.set(.5); t.resolution = 2; farmUIL.addChild(t); floaters.push({ t0: performance.now(), txt: t, x: fx, y: fy });
-    toast('Collected ' + WHEAT_PER_HARVEST + ' wheat');
+    if (!opts || !opts.silent) toast('Collected ' + WHEAT_PER_HARVEST + ' wheat');
+    return true;
+  }
+  function harvestAllReady() {
+    const ready = farms.filter(f => farmState(f) === 'ready');
+    if (!ready.length) { toast('No farms are ready yet'); return; }
+    for (const f of ready) collectFarm(f, { silent: true });
+    const total = ready.length * WHEAT_PER_HARVEST;
+    toast('Harvested ' + ready.length + ' farm' + (ready.length === 1 ? '' : 's') + ' for +' + total + ' food');
+    renderTrade();
   }
   function tapFarm(sx, sy) {                                                  // tap a ripe farm (or its bubble) to collect
     if (placing || movingFarm) return false;
