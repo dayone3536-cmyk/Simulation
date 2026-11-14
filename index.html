@@ -368,7 +368,11 @@
     tap = ptrs.size === 1 ? { x: p0.x, y: p0.y, t: performance.now(), ok: true } : null;   // a tap = short press, barely moved
     if (drag && drag.id !== e.pointerId) { drag.id = null; drag.held = false; }                // a second finger lets go of the cabin (it stays selected)
     if (movingFarm && movingFarm.id !== e.pointerId) { movingFarm.id = null; movingFarm.held = false; }
-    if (!placing && !movingFarm && ptrs.size === 1 && hitHome(p0.x, p0.y)) { const pos = drag || home, s = slotAt(p0.x, p0.y) || { c: pos.c + 1, r: pos.r + 1 }; drag = { id: e.pointerId, c: pos.c, r: pos.r, oc: s.c - pos.c, or: s.r - pos.r, ok: drag ? drag.ok : true, held: true, q: p0 }; tap = null; sel = null; card(); }
+    if (placing && placing.id && placing.id !== e.pointerId) { placing.id = null; placing.held = false; }
+    if (placing && ptrs.size === 1) {
+      const s = slotAt(p0.x, p0.y) || { c: placing.c, r: placing.r };
+      placing.id = e.pointerId; placing.held = true; placing.q = p0; placing.offC = s.c - placing.c; placing.offR = s.r - placing.r;
+    } else if (!placing && !movingFarm && ptrs.size === 1 && hitHome(p0.x, p0.y)) { const pos = drag || home, s = slotAt(p0.x, p0.y) || { c: pos.c + 1, r: pos.r + 1 }; drag = { id: e.pointerId, c: pos.c, r: pos.r, oc: s.c - pos.c, or: s.r - pos.r, ok: drag ? drag.ok : true, held: true, q: p0 }; tap = null; sel = null; card(); }
     else if (!placing && !movingFarm && !drag && ptrs.size === 1) { const f = farmAt(p0.x, p0.y); if (f) { startMovingFarm(f, p0.x, p0.y); movingFarm.id = e.pointerId; tap = null; card(); } }
     else if (movingFarm && ptrs.size === 1) { movingFarm.id = e.pointerId; movingFarm.held = true; movingFarm.q = p0; }
     if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinchD = Math.hypot(a.x - b.x, a.y - b.y); }
@@ -378,6 +382,7 @@
     const p = ptrs.get(e.pointerId); if (!p) return;
     const q = pt(e);
     if (drag && drag.id === e.pointerId) { dragTo(q); p.x = q.x; p.y = q.y; return; }
+    if (placing && placing.id === e.pointerId) { placing.q = q; const s = slotAt(q.x, q.y); if (s) { const cols = fCols(placing.rot), rows = fRows(placing.rot); placing.c = clampI(s.c - (placing.offC || 0), 0, WORLD_W / CELL - cols); placing.r = clampI(s.r - (placing.offR || 0), 0, WORLD_H / CELL - rows); barKey = '#'; rebuildFarm(placing); } p.x = q.x; p.y = q.y; return; }
     if (movingFarm && movingFarm.id === e.pointerId) { movingFarm.q = q; const s = slotAt(q.x, q.y); if (s) { setMovingFarmPos(s.c - movingFarm.offC, s.r - movingFarm.offR); barKey = '#'; rebuildFarm(movingFarm.farm); } p.x = q.x; p.y = q.y; return; }
     if (tap && (ptrs.size > 1 || Math.hypot(q.x - tap.x, q.y - tap.y) > 9)) tap.ok = false;
     if (ptrs.size === 1) { cpx -= (q.x - p.x) / zoom; cpy -= (q.y - p.y) / zoom; }
@@ -390,11 +395,12 @@
   });
   const up = e => {
     if (drag && drag.id === e.pointerId) { drag.id = null; drag.held = false; }   // letting go does NOT drop it: the cabin stays selected until you press the tick
+    if (placing && placing.id === e.pointerId) { placing.id = null; placing.held = false; }
     if (movingFarm && movingFarm.id === e.pointerId) { movingFarm.id = null; movingFarm.held = false; }
     const wasTap = e.type === 'pointerup' && tap && tap.ok && ptrs.size === 1 && performance.now() - tap.t < 500;
     const at = wasTap ? pt(e) : null;
     ptrs.delete(e.pointerId); if (!ptrs.size) { canvas.classList.remove('drag'); tap = null; }
-    if (at) { if (drag) moveHere(at.x, at.y); else select(at.x, at.y); }   // while moving, tapping any tile sends the cabin/farm there
+    if (at) { if (drag) moveHere(at.x, at.y); else select(at.x, at.y); }   // while moving/placing, tapping any tile sends it there
   };
 
   
@@ -584,6 +590,12 @@
       if (q.x < m) dx = -(m - q.x) / m; else if (q.x > cw - m) dx = (q.x - (cw - m)) / m;
       if (q.y < m) dy = -(m - q.y) / m; else if (q.y > ch - m) dy = (q.y - (ch - m)) / m;
       if (dx || dy) { cpx += dx * 9 / zoom; cpy += dy * 9 / zoom; clampCam(); dragTo(q); }
+    }
+    if (placing && placing.held && placing.q) {
+      const m = 70, q = placing.q; let dx = 0, dy = 0;
+      if (q.x < m) dx = -(m - q.x) / m; else if (q.x > cw - m) dx = (q.x - (cw - m)) / m;
+      if (q.y < m) dy = -(m - q.y) / m; else if (q.y > ch - m) dy = (q.y - (ch - m)) / m;
+      if (dx || dy) { cpx += dx * 9 / zoom; cpy += dy * 9 / zoom; clampCam(); const s = slotAt(q.x, q.y); if (s) { const cols = fCols(placing.rot), rows = fRows(placing.rot); placing.c = clampI(s.c - (placing.offC || 0), 0, WORLD_W / CELL - cols); placing.r = clampI(s.r - (placing.offR || 0), 0, WORLD_H / CELL - rows); barKey = '#'; rebuildFarm(placing); } }
     }
     if (movingFarm && movingFarm.held && movingFarm.q) {
       const m = 70, q = movingFarm.q; let dx = 0, dy = 0;
@@ -1170,7 +1182,7 @@
     sel = null; hov = null; drag = null; tap = null; barKey = '#';
     buildPanel.style.display = 'none'; buildBtn.classList.remove('open');
     rebuildFarm(placing); focusFarm(placing);
-    toast('Choose a spot for your farm, then tap \u2713');
+    toast('Drag or tap to place your farm, then tap \u2713');
   }
   function placeTo(sx, sy) {
     if (!placing) return;
