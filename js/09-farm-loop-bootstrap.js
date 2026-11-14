@@ -79,25 +79,104 @@
     }
   }
 
-  // ---- trade: exchange food for gold ----
-  const FOOD_PER_GOLD = 2;            // 2 food -> 1 gold
+  // ---- market: sell food to a merchant. The price moves over time, so timing your sales is the fun part ----
+  const MKT_BASE = 5, MKT_MIN = 2, MKT_MAX = 9;   // gold you get for 10 food
+  const MKT_EVERY_MS = 40000;                     // the price changes every 40 seconds
+  const MKT_BIG_SALE = 50;                        // selling this much at once pushes the price down a notch
+  const market = { p: MKT_BASE, hist: [5, 5, 5, 5, 5, 5], next: Date.now() + MKT_EVERY_MS, note: 'The merchant is setting up his stall.' };
+  try {
+    const m = JSON.parse(localStorage.getItem('market') || 'null');
+    if (m && Number.isFinite(m.p)) {
+      market.p = Math.max(MKT_MIN, Math.min(MKT_MAX, Math.round(m.p)));
+      if (Array.isArray(m.hist) && m.hist.length) market.hist = m.hist.filter(Number.isFinite).slice(-8);
+      if (!market.hist.length) market.hist = [market.p];
+      if (typeof m.note === 'string') market.note = m.note.slice(0, 80);
+    }
+  } catch (e) {}
+  const saveMarket = () => { try { localStorage.setItem('market', JSON.stringify({ p: market.p, hist: market.hist, note: market.note })); } catch (e) {} };
+  const goldFor = food => Math.floor(food * market.p / 10);
+  function tickMarket() {
+    if (Date.now() < market.next) return false;
+    market.next = Date.now() + MKT_EVERY_MS;
+    const r = Math.random(); let d, note;
+    if (r < .12) { d = 2; note = 'A caravan is in town. Everyone wants bread!'; }
+    else if (r < .24) { d = -2; note = 'Every field is full. Wheat is cheap today.'; }
+    else {
+      const pull = market.p > MKT_BASE + 2 ? -1 : market.p < MKT_BASE - 2 ? 1 : 0;   // prices drift back toward normal
+      d = [-1, 0, 0, 1][Math.floor(Math.random() * 4)] + pull; d = Math.max(-1, Math.min(1, d));
+      note = d > 0 ? 'Demand is rising.' : d < 0 ? 'Prices are easing.' : 'The market is calm.';
+    }
+    market.p = Math.max(MKT_MIN, Math.min(MKT_MAX, market.p + d));
+    market.hist.push(market.p); if (market.hist.length > 8) market.hist.shift();
+    market.note = note; saveMarket();
+    return true;
+  }
   const tradeBtn = document.getElementById('tradebtn'), tradePanel = document.getElementById('tradepanel');
-  const tradeMsg = document.getElementById('tradeMsg'), tradeRange = document.getElementById('tradeRange');
-  const tradeAmt = document.getElementById('tradeAmt'), tradeGet = document.getElementById('tradeGet'), tradeConfirm = document.getElementById('tradeConfirm');
+  const elMood = document.getElementById('tradeMood'), elGold = document.getElementById('priceGold'), elTrend = document.getElementById('trend');
+  const elSpark = document.getElementById('spark'), elTag = document.getElementById('priceTag'), elTimer = document.getElementById('priceTimer');
+  const elHave = document.getElementById('tradeGet'), elNote = document.getElementById('tradeNote'), elFx = document.getElementById('coinfx');
+  const sell10 = document.getElementById('sell10'), sell50 = document.getElementById('sell50'), sellX = document.getElementById('sellX'), sellXn = document.getElementById('sellXn');
   let tradeOpen = false;
+  function drawSpark() {
+    if (!elSpark) return;
+    const h = market.hist, n = h.length, pts = h.map((v, i) => [n > 1 ? i / (n - 1) * 96 + 2 : 50, 25 - (v - MKT_MIN) / (MKT_MAX - MKT_MIN) * 22]);
+    const line = pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' '), last = pts[pts.length - 1];
+    elSpark.innerHTML = '<polyline points="' + line + '" fill="none" stroke="#c99a4b" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' +
+      '<circle cx="' + last[0].toFixed(1) + '" cy="' + last[1].toFixed(1) + '" r="2.6" fill="#ffe27a" stroke="#7a4a08" stroke-width=".8"/>';
+  }
   function renderTrade() {
-    if (!tradePanel) return;
-    const have = wheatCount | 0, maxFood = Math.floor(have / FOOD_PER_GOLD) * FOOD_PER_GOLD;
-    if (+tradeRange.max !== maxFood) tradeRange.max = maxFood;
-    let v = Math.min(+tradeRange.value || 0, maxFood);
-    if (v % FOOD_PER_GOLD) v = Math.floor(v / FOOD_PER_GOLD) * FOOD_PER_GOLD;
-    tradeRange.value = v;
-    tradeRange.disabled = maxFood <= 0;
-    if (tradeMsg) tradeMsg.textContent = 'Trade: you have ' + have + ' food. You can get ' + Math.floor(have / FOOD_PER_GOLD) + ' gold.';
-    if (tradeAmt) tradeAmt.textContent = v;
-    const goldGain = Math.floor(v / FOOD_PER_GOLD);
-    if (tradeGet) tradeGet.textContent = goldGain > 0 ? ('Get ' + goldGain + ' gold for ' + v + ' food') : 'Adjust food to trade for gold';
-    if (tradeConfirm) tradeConfirm.disabled = goldGain <= 0;
+    if (tradeBtn) tradeBtn.classList.toggle('hot', market.p >= 7);
+    if (!tradePanel || !tradeOpen) return;
+    const have = wheatCount | 0, p = market.p, prev = market.hist.length > 1 ? market.hist[market.hist.length - 2] : p;
+    const need = Math.max(1, Math.ceil(population / 2)), reserve = need * 2;
+    const extra = Math.max(0, have - reserve);
+    elGold.textContent = p;
+    elMood.textContent = market.note;
+    elTrend.textContent = p > prev ? '\u25B2 up' : p < prev ? '\u25BC down' : '\u2022 steady';
+    elTrend.className = p > prev ? 'up' : p < prev ? 'down' : '';
+    elTag.textContent = p >= 7 ? 'Great price. Sell now!' : p === 6 ? 'Good price' : p === 5 ? 'Fair price' : p === 4 ? 'A bit low' : 'Low price. Maybe wait?';
+    elTag.className = p >= 7 ? 'great' : p <= 3 ? 'poor' : '';
+    const left = Math.max(0, Math.ceil((market.next - Date.now()) / 1000));
+    elTimer.textContent = 'New price in ' + left + 's';
+    drawSpark();
+    elHave.textContent = 'You have ' + have + ' food';
+    sell10.disabled = have < 10 || goldFor(10) < 1;
+    sell50.disabled = have < 50;
+    sellX.disabled = goldFor(extra) < 1;
+    sellXn.textContent = extra > 0 ? extra : '0';
+    elNote.textContent = 'Your villagers eat ' + need + ' food every 20 seconds. \u201CExtra\u201D keeps enough for ' + reserve + '.';
+  }
+  function coinBurst(n) {
+    if (!elFx || !ICON.coin) return;
+    const count = Math.max(5, Math.min(14, n + 4));
+    for (let i = 0; i < count; i++) {
+      const d = document.createElement('div'); d.className = 'cf'; d.innerHTML = ICON.coin;
+      d.style.setProperty('--dx', (Math.random() * 120 - 60).toFixed(0) + 'px');
+      d.style.setProperty('--dy', (-70 - Math.random() * 70).toFixed(0) + 'px');
+      d.style.setProperty('--rot', (Math.random() * 360 - 180).toFixed(0) + 'deg');
+      d.style.animationDelay = (i * 35) + 'ms';
+      elFx.appendChild(d); setTimeout(() => d.remove(), 1500);
+    }
+    const gb = document.getElementById('goldbar');
+    if (gb) { gb.classList.remove('bump'); void gb.offsetWidth; gb.classList.add('bump'); }
+  }
+  function sellFood(food) {
+    food = Math.floor(food);
+    const gain = goldFor(food);
+    if (food <= 0 || gain <= 0 || food > wheatCount) { renderTrade(); return; }
+    wheatCount -= food;
+    setGold(gold + gain);
+    try { localStorage.setItem('goldCache', gold); } catch (e) {}
+    saveFarms();
+    setStat('wheat', ICON.wheat, 'Wheat', wheatCount);
+    refreshWheatHud();
+    if (food >= MKT_BIG_SALE && market.p > MKT_MIN) {          // dump a lot on the merchant and he pays less next time
+      market.p--; market.hist[market.hist.length - 1] = market.p;
+      market.note = 'You flooded the stall. The price dipped.'; saveMarket();
+    }
+    coinBurst(gain);
+    renderTrade();
+    toast('Sold ' + food + ' food for ' + gain + ' gold');
   }
   function setTradeOpen(open) {
     tradeOpen = !!open;
@@ -106,23 +185,13 @@
     if (tradeOpen) { if (buildPanel) { buildPanel.style.display = 'none'; buildBtn.classList.remove('open'); } renderTrade(); }
   }
   if (tradeBtn) tradeBtn.addEventListener('click', () => setTradeOpen(!tradeOpen));
-  if (tradeRange) tradeRange.addEventListener('input', renderTrade);
   const tradeCancel = document.getElementById('tradeCancel');
   if (tradeCancel) tradeCancel.addEventListener('click', () => setTradeOpen(false));
-  if (tradeConfirm) tradeConfirm.addEventListener('click', () => {
-    const food = Math.floor((+tradeRange.value || 0) / FOOD_PER_GOLD) * FOOD_PER_GOLD;
-    const gain = Math.floor(food / FOOD_PER_GOLD);
-    if (food <= 0 || gain <= 0 || food > wheatCount) { renderTrade(); return; }
-    wheatCount -= food;
-    setGold(gold + gain);
-    try { localStorage.setItem('goldCache', gold); } catch (e) {}
-    saveFarms();
-    setStat('wheat', ICON.wheat, 'Wheat', wheatCount);
-    refreshWheatHud();
-    tradeRange.value = 0;
-    renderTrade();
-    toast('Traded ' + food + ' food for ' + gain + ' gold');
-  });
+  if (sell10) sell10.addEventListener('click', () => sellFood(10));
+  if (sell50) sell50.addEventListener('click', () => sellFood(50));
+  if (sellX) sellX.addEventListener('click', () => sellFood(Math.max(0, (wheatCount | 0) - Math.max(1, Math.ceil(population / 2)) * 2)));
+  setInterval(() => { tickMarket(); renderTrade(); }, 1000);
+  renderTrade();
   window.addEventListener('pointerdown', e => {
     if (tradeOpen && tradePanel && !tradePanel.contains(e.target) && tradeBtn && !tradeBtn.contains(e.target)) setTradeOpen(false);
   }, true);
