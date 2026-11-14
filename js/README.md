@@ -10,5 +10,6 @@ Loaded in order by `index.html`:
 - `07-villagers.js` – villager simulation and sprite rendering
 - `08-farms.js` – wheat farm component/data/rendering
 - `09-farm-loop-bootstrap.js` – farm gameplay loop/UI and game bootstrap
+- `10-home-upgrade.js` – cabin → timber manor upgrade, construction FX and celebration
 
 Component-focused copies are in `js/components/` (trees, buildings/home, farms, villagers) for easier navigation.

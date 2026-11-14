@@ -170,3 +170,87 @@
   .sellrow button small { font-size: 9px; }
   #tradeNote { margin-top: 6px; font-size: 10px; }
   #tradebtn { min-width: 84px; height: 44px; padding: 0 12px 0 8px; }
+
+  /* ---------- home / manor upgrade panel ---------- */
+  #homepanel { display: none; position: absolute; right: calc(14px + env(safe-area-inset-right)); bottom: calc(112px + env(safe-area-inset-bottom)); pointer-events: auto;
+    width: 300px; max-width: calc(100% - 28px); max-height: calc(100% - 128px - env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain;
+    padding: 12px 12px 11px; border-radius: 22px; border: 1.5px solid #c99a4b; color: #fff3d6; font: 600 14px system-ui, sans-serif; animation: pop2 .2s ease-out;
+    background: radial-gradient(120% 70% at 50% 0, rgba(255,226,122,.14), rgba(255,226,122,0) 60%), linear-gradient(#412e1a, #20150a);
+    box-shadow: 0 0 0 3px rgba(20,12,4,.55), 0 16px 36px rgba(0,0,0,.62), inset 0 1px 0 rgba(255,235,180,.4), inset 0 0 26px rgba(0,0,0,.35); }
+  #homepanel::-webkit-scrollbar { width: 6px; }
+  #homepanel::-webkit-scrollbar-thumb { background: rgba(201,154,75,.5); border-radius: 99px; }
+  #homepanel .th { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; }
+  #homepanel .hi { width: 38px; height: 38px; flex: none; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(#5a4126, #2a1b0c); border: 1.5px solid #c99a4b; box-shadow: inset 0 0 10px rgba(0,0,0,.5); }
+  #homepanel .hi svg { width: 26px; height: 26px; }
+  #homepanel .tt { flex: 1; min-width: 0; }
+  #homepanel .bt { font: 700 17px Georgia, 'Times New Roman', serif; letter-spacing: .03em; color: #ffe9c0; line-height: 1.15; }
+  #homeSub { font: italic 500 11px Georgia, serif; color: #d9c08a; line-height: 1.3; margin-top: 2px; }
+  #homepanel .x { width: 32px; height: 32px; flex: none; padding: 8px; border: 0; border-radius: 50%; background: rgba(255,243,214,.1); color: #fff3d6; cursor: pointer; }
+  #homepanel .x svg { width: 100%; height: 100%; }
+  #homeLevels { display: flex; align-items: stretch; gap: 7px; }
+  .hcard { flex: 1; min-width: 0; padding: 7px 6px 6px; border-radius: 15px; text-align: center; position: relative;
+    background: rgba(0,0,0,.24); border: 1px solid rgba(201,154,75,.28); box-shadow: inset 0 2px 10px rgba(0,0,0,.3); transition: border-color .2s, box-shadow .2s; }
+  .hcard.next { border-color: rgba(255,210,100,.55); box-shadow: inset 0 2px 10px rgba(0,0,0,.3), 0 0 16px rgba(255,200,70,.12); }
+  .hprev { height: 74px; display: flex; align-items: center; justify-content: center; border-radius: 11px; overflow: hidden;
+    background: radial-gradient(ellipse at 50% 68%, rgba(120,160,70,.28), rgba(0,0,0,0) 72%); }
+  .hprev img { max-width: 94%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 5px 5px rgba(0,0,0,.4)); }
+  .hname { font: 700 12px Georgia, 'Times New Roman', serif; margin-top: 4px; color: #ffe9c0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hpop { display: inline-flex; align-items: center; justify-content: center; gap: 4px; margin-top: 2px; font: 800 12px system-ui, sans-serif; color: #ffe27a; font-variant-numeric: tabular-nums; }
+  .hpop .ico { width: 15px; height: 15px; flex: none; }
+  .htag { font: 800 8px system-ui, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: #c99a4b; margin-top: 3px; }
+  .hcard.next .htag { color: #ffe27a; }
+  .harrow { align-self: center; flex: none; color: #c99a4b; font-size: 17px; line-height: 1; margin: 0 -2px; text-shadow: 0 0 8px rgba(255,200,80,.3); }
+  #homeUpgradeCard { display: flex; align-items: center; gap: 9px; margin-top: 9px; padding: 9px 10px; border-radius: 14px;
+    background: rgba(0,0,0,.23); border: 1px solid rgba(201,154,75,.3); }
+  .hinfo { flex: 1; min-width: 0; }
+  .hlabel { font: 700 13px Georgia, 'Times New Roman', serif; color: #ffe9c0; line-height: 1.2; }
+  .hbenefit { display: flex; align-items: center; gap: 5px; font: 600 11px system-ui, sans-serif; color: #bfe6a4; margin-top: 3px; }
+  .hbenefit .ico { width: 16px; height: 16px; flex: none; }
+  #homeUpgradeBtn { display: flex; align-items: center; gap: 5px; flex: none; border: 0; border-radius: 12px; padding: 9px 12px;
+    font: 800 15px Georgia, serif; font-variant-numeric: tabular-nums; color: #2a1a05; background: linear-gradient(#ffe27a, #f0a92b);
+    box-shadow: 0 3px 0 #9a6410, inset 0 1px 0 rgba(255,255,255,.5); cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform .12s, box-shadow .12s, filter .15s; }
+  #homeUpgradeBtn .ico { width: 18px; height: 18px; flex: none; }
+  #homeUpgradeBtn:hover:not(:disabled) { filter: brightness(1.05); }
+  #homeUpgradeBtn:active:not(:disabled) { transform: translateY(2px); box-shadow: none; }
+  #homeUpgradeBtn:disabled { filter: grayscale(1); opacity: .48; cursor: default; }
+  #homeProgressWrap { display: none; margin-top: 9px; padding: 9px 11px 10px; border-radius: 14px;
+    background: rgba(0,0,0,.28); border: 1px solid rgba(201,154,75,.32); }
+  .hpl { display: flex; justify-content: space-between; align-items: center; font: 600 11px system-ui, sans-serif; color: #d9c08a; margin-bottom: 6px; }
+  .hpl b { font: 800 13px system-ui, sans-serif; color: #ffe27a; font-variant-numeric: tabular-nums; }
+  .hpb { height: 12px; border-radius: 99px; background: #2a1a0c; box-shadow: inset 0 2px 4px rgba(0,0,0,.55); overflow: hidden; border: 1px solid rgba(201,154,75,.35); }
+  .hpb i { display: block; height: 100%; width: 0%; border-radius: 99px; background: linear-gradient(90deg, #f0a92b, #ffe27a);
+    box-shadow: 0 0 12px rgba(255,200,60,.55); transition: width .3s linear; position: relative; }
+  .hpb i::after { content: ''; position: absolute; inset: 1px 2px auto; height: 35%; border-radius: 99px; background: rgba(255,255,255,.35); }
+  #homeProgressNote { font: 500 10px system-ui, sans-serif; color: #bfa77a; margin-top: 6px; text-align: center; }
+  #homeMaxed { display: none; margin-top: 9px; padding: 11px 12px; border-radius: 14px; text-align: center;
+    background: linear-gradient(135deg, rgba(255,210,90,.16), rgba(0,0,0,.2)); border: 1px solid rgba(255,210,90,.5); box-shadow: inset 0 0 16px rgba(255,200,80,.06); }
+  .hmax { display: flex; align-items: center; justify-content: center; gap: 6px; font: 800 14px Georgia, serif; color: #ffe27a; }
+  .hmax .ico { width: 20px; height: 20px; flex: none; }
+  .hmaxnote { font: 500 11px system-ui, sans-serif; color: #d9c08a; margin-top: 4px; }
+  #homeNote { margin-top: 8px; font: 500 10px system-ui, sans-serif; color: #bfa77a; text-align: center; line-height: 1.35; }
+  #homepanel.upgrading #homeUpgradeCard { display: none; }
+  #homepanel.upgrading #homeProgressWrap { display: block; }
+  #homepanel.upgrading .hcard.next .htag { color: #ffe27a; }
+  #homepanel.maxed #homeLevels .next, #homepanel.maxed #homeLevels .harrow { display: none; }
+  #homepanel.maxed #homeLevels .current { flex: 1; }
+  #homepanel.maxed #homeUpgradeCard, #homepanel.maxed #homeProgressWrap { display: none; }
+  #homepanel.maxed #homeMaxed { display: block; }
+  #homepanel.maxed #homeLevels { max-width: 150px; margin: 0 auto; }
+
+  /* celebration banner + golden flash when the manor finishes */
+  #homeCelebrate { position: absolute; left: 50%; top: calc(86px + env(safe-area-inset-top)); transform: translate(-50%, -18px); display: flex; align-items: center; gap: 12px;
+    padding: 11px 20px 11px 14px; border-radius: 18px; pointer-events: none; opacity: 0; transition: opacity .35s ease, transform .35s cubic-bezier(.2,.8,.3,1);
+    background: radial-gradient(120% 80% at 20% 0, rgba(255,226,122,.24), rgba(255,226,122,0) 60%), linear-gradient(#4a341d, #24170a);
+    border: 1.5px solid #ffd36b; box-shadow: 0 0 0 3px rgba(20,12,4,.5), 0 0 30px rgba(255,200,60,.35), 0 14px 30px rgba(0,0,0,.55); }
+  #homeCelebrate.on { opacity: 1; transform: translate(-50%, 0); }
+  .hcIcon { width: 42px; height: 42px; flex: none; filter: drop-shadow(0 0 12px rgba(255,210,80,.6)); animation: hcspin 4s linear infinite; }
+  .hcIcon svg { width: 100%; height: 100%; display: block; }
+  .hcText b { display: block; font: 800 18px Georgia, serif; color: #ffe27a; text-shadow: 0 0 14px rgba(255,200,60,.5); }
+  .hcText span { display: block; font: 600 12px system-ui, sans-serif; color: #ffe9c0; margin-top: 2px; }
+  @keyframes hcspin { to { transform: rotate(360deg); } }
+  #homeFlash { position: fixed; inset: 0; pointer-events: none; z-index: 6; opacity: 0;
+    background: radial-gradient(circle at 50% 55%, rgba(255,228,130,.55), rgba(255,210,90,.15) 35%, rgba(255,200,60,0) 65%); }
+  #homeFlash.on { animation: homeflash 1s ease-out; }
+  @keyframes homeflash { 0% { opacity: 0; } 18% { opacity: 1; } 100% { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .hcIcon, #homeFlash.on { animation: none; } }
