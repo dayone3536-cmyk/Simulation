@@ -1,25 +1,30 @@
   // ---------- the farm loop: buy it in the Build menu, villagers plant it, wait for the green bar, tap the bubble to collect the wheat ----------
   const FARM_COST = 50;            // gold to build it
-  const GROW_SEC = 20;             // seconds until the wheat is ripe (try 10, 30 ...)
+  const FIRST_FARM_GROW_SEC = 5;   // the very first crop the player ever plants ripens in 5 seconds
+  const FARM_GROW_SEC = 15;        // every crop after that takes 15 seconds to ripen
   const WHEAT_PER_HARVEST = 10;    // wheat you get each time you collect
   const WORKERS = 4;               // villagers who walk out and work the fields
+  let farmsBuilt = 0;              // how many farms the player has ever built (only the first crop is quick)
+  try { farmsBuilt = parseInt(localStorage.getItem('farmsBuilt'), 10) || 0; } catch (e) {}
   try {
     const saved = JSON.parse(localStorage.getItem('farms') || 'null');
     const old = saved ? null : JSON.parse(localStorage.getItem('farm') || 'null');   // older saves had a single farm
     const list = Array.isArray(saved) ? saved : (old && typeof old.t0 === 'number' ? [old] : []);
     for (const s of list) {
       if (!s || typeof s.t0 !== 'number') continue;
-      const f = { t0: s.t0, c: Number.isInteger(s.c) ? s.c : 16, r: Number.isInteger(s.r) ? s.r : 21, rot: s.rot ? 1 : 0 };
+      const f = { t0: s.t0, fast: !!s.fast, c: Number.isInteger(s.c) ? s.c : 16, r: Number.isInteger(s.r) ? s.r : 21, rot: s.rot ? 1 : 0 };   // fast = the one quick first crop, cleared as soon as it is collected
       const cols = fCols(f.rot), rows = fRows(f.rot);
       f.c = Math.max(0, Math.min(WORLD_W / CELL - cols, f.c));
       f.r = Math.max(0, Math.min(WORLD_H / CELL - rows, f.r));
       farms.push(f);
     }
+    if (farmsBuilt < farms.length) farmsBuilt = farms.length;
     const w = parseInt(localStorage.getItem('wheat'), 10); if (w > 0) wheatCount = w;
   } catch (e) {}
-  const farmState = f => !f ? 'none' : (Date.now() - f.t0 >= GROW_SEC * 1000 ? 'ready' : 'growing');
-  const farmProgress = f => f ? Math.min(1, (Date.now() - f.t0) / (GROW_SEC * 1000)) : 0;
-  const saveFarms = () => { try { localStorage.setItem('farms', JSON.stringify(farms.map(f => ({ t0: f.t0, c: f.c, r: f.r, rot: f.rot })))); localStorage.setItem('wheat', wheatCount); } catch (e) {} };
+  const farmGrowSec = f => (f && f.fast) ? FIRST_FARM_GROW_SEC : FARM_GROW_SEC;   // only the very first crop ever is quick
+  const farmState = f => !f ? 'none' : (Date.now() - f.t0 >= farmGrowSec(f) * 1000 ? 'ready' : 'growing');
+  const farmProgress = f => f ? Math.min(1, (Date.now() - f.t0) / (farmGrowSec(f) * 1000)) : 0;
+  const saveFarms = () => { try { localStorage.setItem('farms', JSON.stringify(farms.map(f => ({ t0: f.t0, fast: f.fast ? 1 : 0, c: f.c, r: f.r, rot: f.rot })))); localStorage.setItem('wheat', wheatCount); localStorage.setItem('farmsBuilt', farmsBuilt); } catch (e) {} };
 
   const toastEl = document.getElementById('toast'); let toastT = 0;
   function toast(msg) { toastEl.textContent = msg; toastEl.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => toastEl.classList.remove('on'), 2200); }
@@ -213,7 +218,8 @@
   function focusFarm(f) { if (!f) return; const ctr = farmCenter(f); cpx = ctr[0]; cpy = ctr[1]; clampCam(); }
   function renderBuild() {
     const btn = document.getElementById('farmBuy'), info = document.getElementById('farmInfo');
-    info.textContent = 'Ready in ' + GROW_SEC + 's \u00B7 ' + WHEAT_PER_HARVEST + ' wheat each time';
+    const nextGrow = farmsBuilt === 0 ? FIRST_FARM_GROW_SEC : FARM_GROW_SEC;
+    info.textContent = 'Ready in ' + nextGrow + 's \u00B7 ' + WHEAT_PER_HARVEST + ' wheat each time';
     if (placing) { btn.textContent = 'Placing\u2026'; btn.disabled = true; }
     else if (gold < FARM_COST) { btn.textContent = 'Need ' + FARM_COST + ' gold'; btn.disabled = true; }
     else { btn.textContent = 'Build \u00B7 ' + FARM_COST + ' gold'; btn.disabled = false; }
@@ -288,12 +294,13 @@
     if (commit) {
       if (!farmSpotOK(p.c, p.r, p.rot)) { mvBar.classList.remove('shake'); void mvBar.offsetWidth; mvBar.classList.add('shake'); return; }
       if (!spendGold(FARM_COST)) return;
-      const f = { t0: Date.now(), c: p.c, r: p.r, rot: p.rot };
+      const f = { t0: Date.now(), fast: farmsBuilt === 0, c: p.c, r: p.r, rot: p.rot };   // only the very first farm gets one quick crop
+      farmsBuilt++;
       destroyFarmVisual(p);
       placing = null; barKey = '#';
       farms.push(f); claimFarmSlots(f); saveFarms(); rebuildFarm(f);
       refreshWheatHud(); setStat('wheat', ICON.wheat, 'Wheat', wheatCount); renderBuild(); focusFarm(f);
-      toast('Farm built! Your villagers are heading out to plant');
+      toast(f.fast ? 'Farm built! Your first crop is quick \u2014 ready in 5s' : 'Farm built! Your villagers are heading out to plant');
     } else {
       destroyFarmVisual(p);
       placing = null; barKey = '#'; renderBuild();
@@ -341,7 +348,7 @@
       ui.barBox.visible = show && st === 'growing'; ui.bubble.visible = show && st === 'ready';
       const [fx, fy] = farmCenter(f);
       if (ui.barBox.visible) {
-        const bw = 118, bh = 20, bx = fx - bw / 2, bt = fy - 72, left = Math.max(0, Math.ceil(GROW_SEC * (1 - p)));
+        const bw = 118, bh = 20, bx = fx - bw / 2, bt = fy - 72, left = Math.max(0, Math.ceil(farmGrowSec(f) * (1 - p)));
         ui.barG.clear();
         ui.barG.beginFill(0x000000, .25); ui.barG.drawRoundedRect(bx - 2, bt + 1, bw + 4, bh + 6, 10); ui.barG.endFill();
         ui.barG.lineStyle({ width: 2, color: 0xc99a4b }); ui.barG.beginFill(0x2a1a0c); ui.barG.drawRoundedRect(bx - 3, bt - 3, bw + 6, bh + 6, 10); ui.barG.endFill(); ui.barG.lineStyle(0);
@@ -366,7 +373,7 @@
   }
   function collectFarm(f, opts) {
     if (farmState(f) !== 'ready') return false;
-    wheatCount += WHEAT_PER_HARVEST; f.t0 = Date.now(); if (f.ui) f.ui.barSec = -1; saveFarms();      // harvest, then the field is replanted
+    wheatCount += WHEAT_PER_HARVEST; f.fast = false; f.t0 = Date.now(); if (f.ui) f.ui.barSec = -1; saveFarms();   // collecting ends the quick first crop; every replant takes 15s
     setStat('wheat', ICON.wheat, 'Wheat', wheatCount); refreshWheatHud();
     const [fx, fy] = farmCenter(f);
     const t = new PX.Text('+' + WHEAT_PER_HARVEST + ' wheat', { fontFamily: 'system-ui, sans-serif', fontWeight: '800', fontSize: 36, fill: 0xfff3b0, stroke: 0x3c2305, strokeThickness: 8, lineJoin: 'round' });
