@@ -37,6 +37,10 @@
   <div id="movebar"><button class="no" id="mvNo" aria-label="Cancel move" data-ic="cross"></button><div id="mvMsg"></div><button class="rot" id="mvRot" aria-label="Rotate" title="Rotate">&#x27F3;</button><button class="ok" id="mvOk" aria-label="Place" data-ic="check"></button></div>
 </div>
 <div id="hint">Drag to look around, pinch to zoom, tap your cabin to move it</div>
+<script>
+  window.addEventListener('error', function(e){ var h=document.getElementById('hint'); if(h){ h.textContent='Error: '+(e.message||e.error||'unknown'); h.style.opacity=1; h.style.color='#ffb0a8'; } });
+  window.addEventListener('unhandledrejection', function(e){ var h=document.getElementById('hint'); if(h){ var r=e.reason; h.textContent='Error: '+(r&&r.message||r||'unknown'); h.style.opacity=1; h.style.color='#ffb0a8'; } });
+</script>
 
 <script src="js/01-config-renderer.js"></script>
 <script src="js/02-icons-hud-rng.js"></script>

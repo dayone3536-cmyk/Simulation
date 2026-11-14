@@ -321,7 +321,7 @@
       updateHome(time);
       updateOverlay(time);
       app.renderer.render(app.stage);
-    } catch (e) { if (!frame.err) { frame.err = 1; console.error('frame error', e); } }
+    } catch (e) { if (!frame.err) { frame.err = 1; console.error('frame error', e); try { hint.textContent = 'Error: ' + (e && e.message || e); hint.style.opacity = 1; hint.style.color = '#ffb0a8'; } catch (_) {} } }
   }
 
   let loaded = 0;
