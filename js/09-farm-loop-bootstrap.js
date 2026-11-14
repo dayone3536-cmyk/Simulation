@@ -106,9 +106,8 @@
     const s = slotAt(sx, sy) || { c: f.c, r: f.r };
     eachFarmSlot(f, (c, r) => { const o = occ.get(slot(c, r)); if (o && o.type === 'farm') occ.delete(slot(c, r)); });
     movingFarm = { farm: f, c: f.c, r: f.r, rot: f.rot, oc: f.c, or: f.r, orot: f.rot, offC: s.c - f.c, offR: s.r - f.r, ok: true, held: true, id: null, q: { x: sx, y: sy } };
-    sel = null; hov = null; tap = null; barKey = '#';
+    sel = null; hov = null; barKey = '#';
     rebuildFarm(f);
-    toast('Drag your farm to a new spot, then tap \u2713');
   }
   function endMovingFarm(commit) {
     if (!movingFarm) return;
@@ -212,13 +211,15 @@
     t.anchor.set(.5); t.scale.set(.5); t.resolution = 2; farmUIL.addChild(t); floaters.push({ t0: performance.now(), txt: t, x: fx, y: fy });
     toast('Collected ' + WHEAT_PER_HARVEST + ' wheat');
   }
-  function tapFarm(sx, sy) {                                                  // tap a ripe farm's harvest bubble to collect
+  function tapFarm(sx, sy) {                                                  // tap a ripe farm (or its bubble) to collect
     if (placing || movingFarm) return false;
     for (const f of farms) {
       if (farmState(f) !== 'ready') continue;
       const [fx, fy] = farmCenter(f);
       const bx = (fx - cpx) * zoom + cw / 2, by = (fy - 80 - cpy) * zoom + ch / 2;
-      if (Math.hypot(sx - bx, sy - by) < 34 * zoom) { collectFarm(f); return true; }
+      if (Math.hypot(sx - bx, sy - by) < 46 * zoom) { collectFarm(f); return true; }
+      const s = slotAt(sx, sy), b = farmBounds(f);
+      if (s) { const c0 = Math.floor(b.x0 / CELL), r0 = Math.floor(b.y0 / CELL), c1 = Math.ceil(b.x1 / CELL), r1 = Math.ceil(b.y1 / CELL); if (s.c >= c0 && s.c < c1 && s.r >= r0 && s.r < r1) { collectFarm(f); return true; } }
     }
     return false;
   }

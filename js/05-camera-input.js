@@ -45,7 +45,7 @@
       const s = slotAt(p0.x, p0.y) || { c: placing.c, r: placing.r };
       placing.id = e.pointerId; placing.held = true; placing.q = p0; placing.offC = s.c - placing.c; placing.offR = s.r - placing.r;
     } else if (!placing && !movingFarm && ptrs.size === 1 && hitHome(p0.x, p0.y)) { const pos = drag || home, s = slotAt(p0.x, p0.y) || { c: pos.c + 1, r: pos.r + 1 }; drag = { id: e.pointerId, c: pos.c, r: pos.r, oc: s.c - pos.c, or: s.r - pos.r, ok: drag ? drag.ok : true, held: true, q: p0 }; tap = null; sel = null; card(); }
-    else if (!placing && !movingFarm && !drag && ptrs.size === 1) { const f = farmAt(p0.x, p0.y); if (f) { startMovingFarm(f, p0.x, p0.y); movingFarm.id = e.pointerId; tap = null; card(); } }
+    else if (!placing && !movingFarm && !drag && ptrs.size === 1) { const f = farmAt(p0.x, p0.y); if (f) { startMovingFarm(f, p0.x, p0.y); movingFarm.id = e.pointerId; /* keep tap so a quick tap can collect instead of moving */ card(); } }
     else if (movingFarm && ptrs.size === 1) { movingFarm.id = e.pointerId; movingFarm.held = true; movingFarm.q = p0; }
     if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinchD = Math.hypot(a.x - b.x, a.y - b.y); }
   });
@@ -55,7 +55,7 @@
     const q = pt(e);
     if (drag && drag.id === e.pointerId) { dragTo(q); p.x = q.x; p.y = q.y; return; }
     if (placing && placing.id === e.pointerId) { placing.q = q; const s = slotAt(q.x, q.y); if (s) { const cols = fCols(placing.rot), rows = fRows(placing.rot); placing.c = clampI(s.c - (placing.offC || 0), 0, WORLD_W / CELL - cols); placing.r = clampI(s.r - (placing.offR || 0), 0, WORLD_H / CELL - rows); barKey = '#'; rebuildFarm(placing); } p.x = q.x; p.y = q.y; return; }
-    if (movingFarm && movingFarm.id === e.pointerId) { movingFarm.q = q; const s = slotAt(q.x, q.y); if (s) { setMovingFarmPos(s.c - movingFarm.offC, s.r - movingFarm.offR); barKey = '#'; rebuildFarm(movingFarm.farm); } p.x = q.x; p.y = q.y; return; }
+    if (movingFarm && movingFarm.id === e.pointerId) { if (!movingFarm.notified) { movingFarm.notified = true; toast('Drag your farm to a new spot, then tap \u2713'); } movingFarm.q = q; const s = slotAt(q.x, q.y); if (s) { setMovingFarmPos(s.c - movingFarm.offC, s.r - movingFarm.offR); barKey = '#'; rebuildFarm(movingFarm.farm); } p.x = q.x; p.y = q.y; return; }
     if (tap && (ptrs.size > 1 || Math.hypot(q.x - tap.x, q.y - tap.y) > 9)) tap.ok = false;
     if (ptrs.size === 1) { cpx -= (q.x - p.x) / zoom; cpy -= (q.y - p.y) / zoom; }
     p.x = q.x; p.y = q.y;
@@ -72,7 +72,14 @@
     const wasTap = e.type === 'pointerup' && tap && tap.ok && ptrs.size === 1 && performance.now() - tap.t < 500;
     const at = wasTap ? pt(e) : null;
     ptrs.delete(e.pointerId); if (!ptrs.size) { canvas.classList.remove('drag'); tap = null; }
-    if (at) { if (drag) moveHere(at.x, at.y); else select(at.x, at.y); }   // while moving/placing, tapping any tile sends it there
+    if (at) {
+      if (movingFarm) {
+        // quick tap on a farm: collect if ripe, otherwise don't enter move mode
+        const f = movingFarm.farm; endMovingFarm(false);
+        if (f && farmState(f) === 'ready') collectFarm(f);
+      } else if (drag) moveHere(at.x, at.y);
+      else select(at.x, at.y);
+    }
   };
 
   
