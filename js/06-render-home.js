@@ -1,3 +1,31 @@
+  // ---------- cabin image (procedural fallback so game works without external asset) ----------
+  const HOME = (() => {
+    const cv = document.createElement('canvas'); cv.width = 96; cv.height = 96;
+    const g = cv.getContext('2d');
+    const R = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
+    // ground shadow/base
+    R(16, 74, 64, 10, 'rgba(0,0,0,.18)');
+    // walls
+    R(20, 40, 56, 36, '#d9b07a'); R(20, 40, 56, 4, '#e8c796');
+    R(22, 46, 52, 28, '#d2a56a');
+    // log lines
+    g.fillStyle = '#b88952';
+    for (let y = 48; y < 74; y += 6) R(22, y, 52, 2, '#b88952');
+    // roof
+    g.fillStyle = '#6b3f2a'; g.beginPath(); g.moveTo(12, 44); g.lineTo(48, 14); g.lineTo(84, 44); g.closePath(); g.fill();
+    g.fillStyle = '#7a4931'; g.beginPath(); g.moveTo(16, 43); g.lineTo(48, 17); g.lineTo(80, 43); g.closePath(); g.fill();
+    R(46, 14, 4, 30, 'rgba(0,0,0,.08)');
+    // door
+    R(42, 54, 14, 22, '#5a3523'); R(44, 56, 10, 18, '#6b402b');
+    g.fillStyle = '#f2cf63'; g.fillRect(52, 65, 2, 2);
+    // window
+    R(26, 52, 10, 10, '#8fd3ff'); R(30, 52, 2, 10, '#d9b07a'); R(26, 56, 10, 2, '#d9b07a');
+    R(60, 52, 10, 10, '#8fd3ff'); R(64, 52, 2, 10, '#d9b07a'); R(60, 56, 10, 2, '#d9b07a');
+    // outline
+    g.strokeStyle = 'rgba(45,28,18,.45)'; g.lineWidth = 2; g.strokeRect(20, 40, 56, 36);
+    const img = new Image(); img.src = cv.toDataURL('image/png'); return img;
+  })();
+
   // ---------- render ----------
   let started = false;
 
