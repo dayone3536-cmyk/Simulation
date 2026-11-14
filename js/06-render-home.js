@@ -79,6 +79,18 @@
 
 
   // valid spot = the whole 3x3 block is inside the clearing and not on a tree (the cabin's own slots don't count)
+  // which picture is standing on the home slot right now (cabin or upgraded manor)
+  function homeArtNow() {
+    if (typeof currentHomeImage === 'function') { const im = currentHomeImage(); if (im && (im.naturalWidth || im.width)) return im; }
+    return HOME;
+  }
+  function homeArtAspect() {
+    const a = homeArtNow(), w = a.naturalWidth || a.width || 420, h = a.naturalHeight || a.height || 339;
+    return h / w;
+  }
+  function homeArtScale() {                       // the upgraded manor stands a little taller than the old cabin
+    return (typeof homeLevel === 'number' && homeLevel > 0) ? 1.12 : 1;
+  }
   function homeOK(c, r, ignoreOcc) {
     const x0 = c * CELL, y0 = r * CELL, x1 = (c + HOME_N) * CELL, y1 = (r + HOME_N) * CELL;
     if (x0 < clearing.x0 || y0 < clearing.y0 || x1 > clearing.x1 || y1 > clearing.y1) return false;
@@ -88,18 +100,22 @@
   function homeRect(c, r) {
     const bx = (c + HOME_N) * CELL, by = (r + HOME_N) * CELL;
     const hx = (projX(bx, by) - cpx) * zoom + cw / 2, hy = (projY(bx, by) - cpy) * zoom + ch / 2;
-    const w = HOME_N * 2 * CELL * IX * 1.12 * zoom, h = w * HOME.naturalHeight / HOME.naturalWidth;
+    const w = HOME_N * 2 * CELL * IX * 1.12 * zoom * homeArtScale(), h = w * homeArtAspect();
     return { x: hx - w * .51, y: hy - h * .985, w, h };
   }
   let homeCtx = null;
   function hitHome(sx, sy) {                       // did the finger land on the cabin (painted pixels or its base)?
-    if (!HOME.naturalWidth) return false;
+    const art = homeArtNow(), aw = art.naturalWidth || art.width, ah = art.naturalHeight || art.height;
+    if (!aw || !ah) return false;
     const s = slotAt(sx, sy), pos = drag || home;
     if (s && s.c >= pos.c - 1 && s.c < pos.c + HOME_N + 1 && s.r >= pos.r - 1 && s.r < pos.r + HOME_N + 1) return true;   // a generous 1-tile margin around the footprint
     const R = homeRect(pos.c, pos.r); if (drag) R.y -= 10 * zoom;
     if (sx < R.x || sx > R.x + R.w || sy < R.y || sy > R.y + R.h) return false;
-    if (!homeCtx) { const cv = document.createElement('canvas'); cv.width = HOME.naturalWidth; cv.height = HOME.naturalHeight; homeCtx = cv.getContext('2d', { willReadFrequently: true }); homeCtx.drawImage(HOME, 0, 0); }
-    const u = Math.floor((sx - R.x) / R.w * HOME.naturalWidth), v = Math.floor((sy - R.y) / R.h * HOME.naturalHeight);
+    if (!homeCtx || homeCtx.__art !== art) {
+      const cv = document.createElement('canvas'); cv.width = aw; cv.height = ah;
+      homeCtx = cv.getContext('2d', { willReadFrequently: true }); homeCtx.drawImage(art, 0, 0); homeCtx.__art = art;
+    }
+    const u = Math.floor((sx - R.x) / R.w * aw), v = Math.floor((sy - R.y) / R.h * ah);
     return homeCtx.getImageData(u, v, 1, 1).data[3] > 40;
   }
   // ---------- moving the cabin ----------
@@ -229,13 +245,16 @@
   });
   function homeRectP(c, r) {                       // where the cabin picture goes, in projected space (no camera)
     const bx = (c + HOME_N) * CELL, by = (r + HOME_N) * CELL;
-    const w = HOME_N * 2 * CELL * IX * 1.12, h = w * HOME.naturalHeight / HOME.naturalWidth;
+    const w = HOME_N * 2 * CELL * IX * 1.12 * homeArtScale(), h = w * homeArtAspect();
     return { x: projX(bx, by) - w * .51, y: projY(bx, by) - h * .985, w, h };
   }
   let homeSpr = null, homeShadowG = null, homeShadowOn = false, overOn = false;
   function updateHome(time) {
-    if (!(HOME.complete && HOME.naturalWidth)) return;
-    if (!homeSpr) { homeShadowG = homeL.addChild(new PX.Graphics()); homeSpr = homeL.addChild(new PX.Sprite(PX.Texture.from(HOME))); }
+    const art = homeArtNow();
+    if (!(art && (art.naturalWidth || art.width))) return;
+    const tex = (typeof homeSpriteTexture === 'function' && homeSpriteTexture()) || PX.Texture.from(HOME);
+    if (!homeSpr) { homeShadowG = homeL.addChild(new PX.Graphics()); homeSpr = homeL.addChild(new PX.Sprite(tex)); }
+    else if (tex && homeSpr.texture !== tex) homeSpr.texture = tex;
     updateVillagers(time);
     moveTick();
     updateVillagerSprites(time);

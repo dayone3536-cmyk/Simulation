@@ -47,21 +47,78 @@
     <div id="coinfx"></div>
   </div>
   <div id="movebar"><button class="no" id="mvNo" aria-label="Cancel move" data-ic="cross"></button><div id="mvMsg"></div><button class="rot" id="mvRot" aria-label="Rotate" title="Rotate">&#x27F3;</button><button class="ok" id="mvOk" aria-label="Place" data-ic="check"></button></div>
+  <div id="homepanel" aria-hidden="true">
+    <div class="th">
+      <span class="hi"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M6 22L24 7l18 15v20a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2z" fill="#c99a4b" stroke="#4a2c0e" stroke-width="2" stroke-linejoin="round"/><path d="M6 22L24 7l18 15" fill="none" stroke="#ffe9c0" stroke-width="2.5" stroke-linecap="round"/><rect x="19" y="29" width="10" height="15" rx="1" fill="#5a3a1c" stroke="#3a220c" stroke-width="1.5"/><rect x="13" y="25" width="6" height="6" fill="#ffd36b" stroke="#4a2c0e" stroke-width="1.2"/><rect x="29" y="25" width="6" height="6" fill="#ffd36b" stroke="#4a2c0e" stroke-width="1.2"/></svg></span>
+      <div class="tt"><div class="bt" id="homeName">Cozy Cabin</div><div id="homeSub">Level 1 · 10 villagers</div></div>
+      <button id="homeClose" class="x" type="button" aria-label="Close" data-ic="cross"></button>
+    </div>
+    <div id="homeLevels">
+      <div class="hcard current">
+        <div class="hprev"><img id="homePrev1" alt="Cozy Cabin"></div>
+        <div class="hname" id="homeNowName">Cozy Cabin</div>
+        <div class="hpop"><span class="ico" data-ic="villager"></span><span id="homeNowPop">10</span></div>
+        <div class="htag">Current</div>
+      </div>
+      <div class="harrow" aria-hidden="true">&#x279C;</div>
+      <div class="hcard next">
+        <div class="hprev"><img id="homePrev2" alt="Timber Manor"></div>
+        <div class="hname">Timber Manor</div>
+        <div class="hpop"><span class="ico" data-ic="villager"></span><span>20</span></div>
+        <div class="htag">Upgrade</div>
+      </div>
+    </div>
+    <div id="homeUpgradeCard">
+      <div class="hinfo">
+        <div class="hlabel">Upgrade to Timber Manor</div>
+        <div class="hbenefit"><span class="ico" data-ic="villager"></span> Population cap +10</div>
+      </div>
+      <button id="homeUpgradeBtn" type="button"><span class="ico" data-ic="coin"></span><span id="homeUpgradeCost">100</span></button>
+    </div>
+    <div id="homeProgressWrap">
+      <div class="hpl"><span id="homeProgressLabel">Building your manor…</span><b id="homeProgressTime">0:30</b></div>
+      <div class="hpb"><i id="homeProgressFill"></i></div>
+      <div id="homeProgressNote">Villagers are hard at work. You can keep playing.</div>
+    </div>
+    <div id="homeMaxed">
+      <div class="hmax"><span class="ico" data-ic="check"></span> Fully upgraded</div>
+      <div class="hmaxnote">Your manor houses a thriving village of 20.</div>
+    </div>
+    <div id="homeNote">A grander home raises your village's population cap.</div>
+  </div>
+  <div id="homeCelebrate" aria-hidden="true">
+    <div class="hcIcon"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4l5 10 11 1.6-8 7.7 2 11-10-5.3-10 5.3 2-11-8-7.7L19 14z" fill="#ffe27a" stroke="#8a5608" stroke-width="1.8" stroke-linejoin="round"/><circle cx="24" cy="24" r="18" fill="none" stroke="#ffd36b" stroke-width="1.2" opacity=".6"/></svg></div>
+    <div class="hcText"><b>Manor Complete!</b><span>Your population has grown to 20</span></div>
+  </div>
 </div>
-<div id="hint">Drag to look around, pinch to zoom, tap your cabin to move it</div>
+<div id="homeFlash"></div>
+<div id="hint">Drag to look around · pinch to zoom · tap your home to manage it · drag your home to move it</div>
 <script>
   window.addEventListener('error', function(e){ var h=document.getElementById('hint'); if(h){ h.textContent='Error: '+(e.message||e.error||'unknown'); h.style.opacity=1; h.style.color='#ffb0a8'; } });
   window.addEventListener('unhandledrejection', function(e){ var h=document.getElementById('hint'); if(h){ var r=e.reason; h.textContent='Error: '+(r&&r.message||r||'unknown'); h.style.opacity=1; h.style.color='#ffb0a8'; } });
 </script>
 
 <script src="js/01-config-renderer.js"></script>
+
 <script src="js/02-icons-hud-rng.js"></script>
+
 <script src="js/03-atlases-world.js"></script>
+
 <script src="js/04-selection.js"></script>
+
 <script src="js/05-camera-input.js"></script>
+
 <script src="js/06-render-home.js"></script>
+
+
 <script src="js/07-villagers.js"></script>
+
 <script src="js/08-farms.js"></script>
+
 <script src="js/09-farm-loop-bootstrap.js"></script>
+
+<script src="js/10-home-upgrade.js"></script>
+
 </body>
+
 </html>
