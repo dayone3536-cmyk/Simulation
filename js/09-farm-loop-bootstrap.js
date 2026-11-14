@@ -341,5 +341,5 @@
     requestAnimationFrame(frame);
     window.game = { setStat, setPopulation, villagers, occ, slot, cam: () => ({ cpx, cpy, zoom }), spawn, clearing, trees, farms, gold: () => gold, setGold, placing: () => placing, WORLD_W, WORLD_H, CELL, projX, projY, unprojX, unprojY };   // hooks for the next step
   };
-  [...BLK, ...TRE].forEach(a => a.im.onload = ready);
+  [...BLK, ...TRE].forEach(a => { a.im.onload = ready; if (a.im.complete && a.im.naturalWidth) ready(); });
 
