@@ -293,6 +293,7 @@
   function card() { infoEl.style.display = 'none'; }   // no slot pop-up: building lives behind the Build button
   function select(sx, sy) {
     if (placing) { placeTo(sx, sy); return; }          // while choosing a farm spot, a tap moves the ghost
+    if (movingFarm) { moveFarmTo(sx, sy); return; }    // while moving a farm, a tap sends it there
     if (tapFarm(sx, sy)) return;
     sel = slotAt(sx, sy); selT = performance.now(); card();
   }
@@ -366,7 +367,10 @@
     const p0 = ptrs.get(e.pointerId);
     tap = ptrs.size === 1 ? { x: p0.x, y: p0.y, t: performance.now(), ok: true } : null;   // a tap = short press, barely moved
     if (drag && drag.id !== e.pointerId) { drag.id = null; drag.held = false; }                // a second finger lets go of the cabin (it stays selected)
-    if (!placing && ptrs.size === 1 && hitHome(p0.x, p0.y)) { const pos = drag || home, s = slotAt(p0.x, p0.y) || { c: pos.c + 1, r: pos.r + 1 }; drag = { id: e.pointerId, c: pos.c, r: pos.r, oc: s.c - pos.c, or: s.r - pos.r, ok: drag ? drag.ok : true, held: true, q: p0 }; tap = null; sel = null; card(); }
+    if (movingFarm && movingFarm.id !== e.pointerId) { movingFarm.id = null; movingFarm.held = false; }
+    if (!placing && !movingFarm && ptrs.size === 1 && hitHome(p0.x, p0.y)) { const pos = drag || home, s = slotAt(p0.x, p0.y) || { c: pos.c + 1, r: pos.r + 1 }; drag = { id: e.pointerId, c: pos.c, r: pos.r, oc: s.c - pos.c, or: s.r - pos.r, ok: drag ? drag.ok : true, held: true, q: p0 }; tap = null; sel = null; card(); }
+    else if (!placing && !movingFarm && !drag && ptrs.size === 1) { const f = farmAt(p0.x, p0.y); if (f) { startMovingFarm(f, p0.x, p0.y); movingFarm.id = e.pointerId; tap = null; card(); } }
+    else if (movingFarm && ptrs.size === 1) { movingFarm.id = e.pointerId; movingFarm.held = true; movingFarm.q = p0; }
     if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinchD = Math.hypot(a.x - b.x, a.y - b.y); }
   });
   canvas.addEventListener('pointermove', e => {
@@ -374,6 +378,7 @@
     const p = ptrs.get(e.pointerId); if (!p) return;
     const q = pt(e);
     if (drag && drag.id === e.pointerId) { dragTo(q); p.x = q.x; p.y = q.y; return; }
+    if (movingFarm && movingFarm.id === e.pointerId) { movingFarm.q = q; const s = slotAt(q.x, q.y); if (s) { setMovingFarmPos(s.c - movingFarm.offC, s.r - movingFarm.offR); barKey = '#'; rebuildFarm(movingFarm.farm); } p.x = q.x; p.y = q.y; return; }
     if (tap && (ptrs.size > 1 || Math.hypot(q.x - tap.x, q.y - tap.y) > 9)) tap.ok = false;
     if (ptrs.size === 1) { cpx -= (q.x - p.x) / zoom; cpy -= (q.y - p.y) / zoom; }
     p.x = q.x; p.y = q.y;
@@ -385,10 +390,11 @@
   });
   const up = e => {
     if (drag && drag.id === e.pointerId) { drag.id = null; drag.held = false; }   // letting go does NOT drop it: the cabin stays selected until you press the tick
+    if (movingFarm && movingFarm.id === e.pointerId) { movingFarm.id = null; movingFarm.held = false; }
     const wasTap = e.type === 'pointerup' && tap && tap.ok && ptrs.size === 1 && performance.now() - tap.t < 500;
     const at = wasTap ? pt(e) : null;
     ptrs.delete(e.pointerId); if (!ptrs.size) { canvas.classList.remove('drag'); tap = null; }
-    if (at) { if (drag) moveHere(at.x, at.y); else select(at.x, at.y); }   // while moving, tapping any tile sends the cabin there
+    if (at) { if (drag) moveHere(at.x, at.y); else select(at.x, at.y); }   // while moving, tapping any tile sends the cabin/farm there
   };
 
   
@@ -529,19 +535,19 @@
     }
     return edge ? 'edge' : '';
   }
-  // the big grid: every tile near the cabin is tinted green (free) or red (tree / outside the clearing), drawn on the ground UNDER the trees
+  // the big grid: every tile near the moving building is tinted green (free) or red (blocked), drawn on the ground UNDER the trees
   let gridKey = '';
   function updateMoveGrid(time) {
-    const src = drag || placing;
+    const src = drag || placing || movingFarm;
     if (!src) { if (gridKey) { gridG.clear(); footG.clear(); gridKey = ''; } return; }
-    const isFarm = !!placing, cols = isFarm ? fCols(placing.rot) : HOME_N, rows = isFarm ? fRows(placing.rot) : HOME_N;
+    const isFarm = !!placing || !!movingFarm, rot = isFarm ? src.rot : 0, cols = isFarm ? fCols(rot) : HOME_N, rows = isFarm ? fRows(rot) : HOME_N;
     const freeAt = isFarm ? farmTileOK : tileFree;
     const worldCols = WORLD_W / CELL, worldRows = WORLD_H / CELL, pad = 5, pulse = .5 + .5 * Math.sin(time * 4);
     const c0 = Math.max(0, src.c - pad), c1 = Math.min(worldCols - 1, src.c + cols - 1 + pad);
     const r0 = Math.max(0, src.r - pad), r1 = Math.min(worldRows - 1, src.r + rows - 1 + pad);
     const inFoot = (c, r) => c >= src.c && c < src.c + cols && r >= src.r && r < src.r + rows;
     const key = src.c + ',' + src.r + ',' + cols + ',' + rows + ',' + zoom.toFixed(2);
-    if (key !== gridKey) {                           // the big grid only changes when the building moves a tile (or you zoom), so it is not redrawn every frame
+    if (key !== gridKey) {
       gridKey = key; gridG.clear();
       for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) {
         if (inFoot(c, r)) continue;
@@ -550,7 +556,7 @@
         gridG.beginFill(free ? 0x50e664 : 0xf0463c, free ? .20 : .13); gridG.drawPolygon(ringPts(c, r, 1)); gridG.endFill();
       }
     }
-    footG.clear();                                   // the footprint pulses, so it is drawn fresh
+    footG.clear();
     for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
       const c = src.c + i, r = src.r + j, col = freeAt(c, r) ? 0x50e664 : 0xf0463c;
       footG.lineStyle({ width: 2.2 / zoom, color: col, alpha: .95, join: 'round' });
@@ -579,15 +585,21 @@
       if (q.y < m) dy = -(m - q.y) / m; else if (q.y > ch - m) dy = (q.y - (ch - m)) / m;
       if (dx || dy) { cpx += dx * 9 / zoom; cpy += dy * 9 / zoom; clampCam(); dragTo(q); }
     }
-    const pos = drag || placing;
-    const valid = placing ? farmSpotOK(placing.c, placing.r, placing.rot) : drag ? drag.ok : true;
-    const key = !pos ? '' : placing ? (valid ? 'pok' : 'pbad') : (drag.ok ? 'ok' : blockReason(drag) || 'edge');
+    if (movingFarm && movingFarm.held && movingFarm.q) {
+      const m = 70, q = movingFarm.q; let dx = 0, dy = 0;
+      if (q.x < m) dx = -(m - q.x) / m; else if (q.x > cw - m) dx = (q.x - (cw - m)) / m;
+      if (q.y < m) dy = -(m - q.y) / m; else if (q.y > ch - m) dy = (q.y - (ch - m)) / m;
+      if (dx || dy) { cpx += dx * 9 / zoom; cpy += dy * 9 / zoom; clampCam(); const s = slotAt(q.x, q.y); if (s) { setMovingFarmPos(s.c - movingFarm.offC, s.r - movingFarm.offR); barKey = '#'; rebuildFarm(movingFarm.farm); } }
+    }
+    const fm = placing || movingFarm, pos = drag || fm;
+    const valid = fm ? farmSpotOK(fm.c, fm.r, fm.rot) : drag ? drag.ok : true;
+    const key = !pos ? '' : fm ? (valid ? 'pok' : 'pbad') : (drag.ok ? 'ok' : blockReason(drag) || 'edge');
     if (key === barKey) return;
     barKey = key;
     mvBar.style.display = pos ? 'flex' : 'none'; mvBar.classList.toggle('bad', !!pos && !valid);
-    mvBar.classList.toggle('placing', !!placing);
+    mvBar.classList.toggle('placing', !!fm);
     mvMsg.innerHTML = !pos ? ''
-      : placing ? (valid ? 'Looks good!<small>Tap the map to move \u00B7 \u27F3 rotates \u00B7 \u2713 confirms</small>'
+      : fm ? (valid ? (placing ? 'Looks good!<small>Drag or tap the map to move \u00B7 \u27F3 rotates \u00B7 \u2713 confirms</small>' : 'Looks good!<small>Drag or tap the map to move \u00B7 \u27F3 rotates \u00B7 \u2713 places</small>')
         : 'Can\u2019t build here<small>Move to a free spot \u00B7 \u27F3 rotates</small>')
       : key === 'ok' ? 'Looks good!<small>Tap \u2713 to place it here</small>'
       : key === 'tree' ? 'A tree is in the way<small>Red tiles are blocked. Drag or tap a green spot</small>'
@@ -606,13 +618,13 @@
     }
     drag = null; barKey = '#';                      // cross = cabin goes back to where it was
   }
-  document.getElementById('mvOk').addEventListener('click', () => { if (placing) endPlacing(true); else endDrag(true); });
-  document.getElementById('mvNo').addEventListener('click', () => { if (placing) endPlacing(false); else endDrag(false); });
+  document.getElementById('mvOk').addEventListener('click', () => { if (placing) endPlacing(true); else if (movingFarm) endMovingFarm(true); else endDrag(true); });
+  document.getElementById('mvNo').addEventListener('click', () => { if (placing) endPlacing(false); else if (movingFarm) endMovingFarm(false); else endDrag(false); });
   mvRot.addEventListener('click', () => rotateFarm());
   window.addEventListener('keydown', e => {
-    if (placing) {
-      if (e.key === 'Enter') endPlacing(true);
-      else if (e.key === 'Escape') endPlacing(false);
+    if (placing || movingFarm) {
+      if (e.key === 'Enter') { if (placing) endPlacing(true); else endMovingFarm(true); }
+      else if (e.key === 'Escape') { if (placing) endPlacing(false); else endMovingFarm(false); }
       else if (e.key === 'r' || e.key === 'R') rotateFarm();
       return;
     }
@@ -638,12 +650,13 @@
       if (drag) { homeShadowG.beginFill(0x000000, .18); homeShadowG.drawEllipse(R.x + R.w * .5, R.y + R.h * .8, R.w * .38, R.h * .16); homeShadowG.endFill(); }
     }
   }
-  // everything drawn on top of the trees and the cabin: the cabin's green / red footprint, and the selected slot's outline + corner arrows
+  // everything drawn on top of the trees and the cabin: footprints and selection outline
   function updateOverlay(time) {
-    if (!sel && !drag && !placing) { if (overOn) { overG.clear(); overOn = false; } return; }
+    const fm = placing || movingFarm;
+    if (!sel && !drag && !fm) { if (overOn) { overG.clear(); overOn = false; } return; }
     overOn = true; overG.clear();
-    if (drag || placing) {
-      const isFarm = !!placing, pos = drag || placing, ok = isFarm ? farmSpotOK(pos.c, pos.r, pos.rot) : pos.ok;
+    if (drag || fm) {
+      const isFarm = !!fm, pos = drag || fm, ok = isFarm ? farmSpotOK(pos.c, pos.r, pos.rot) : pos.ok;
       const cols = isFarm ? fCols(pos.rot) : HOME_N, rows = isFarm ? fRows(pos.rot) : HOME_N;
       const rgb = ok ? 0x50e664 : 0xf0463c, x0 = pos.c * CELL, y0 = pos.r * CELL, x1 = (pos.c + cols) * CELL, y1 = (pos.r + rows) * CELL;
       const P = [projX(x0, y0), projY(x0, y0), projX(x1, y0), projY(x1, y0), projX(x1, y1), projY(x1, y1), projX(x0, y1), projY(x0, y1)];
@@ -898,7 +911,7 @@
   const WSTEM = ['#c48a22', '#d09a2c', '#b87f1e'], WHEAD = ['#f7d04f', '#ffe066', '#ecb93a'];
   const STEM_S = .25;                              // stalk pictures are baked at 4x, so draw them at a quarter size
   const stalks = [], tufts = [], rocks = [];
-  let farms = [], placing = null, wheatCount = 0;   // farms = [{ t0, c, r, rot }]; placing = a preview while buying another farm
+  let farms = [], placing = null, movingFarm = null, wheatCount = 0;   // farms = [{ t0, c, r, rot }]; placing = preview for a new farm; movingFarm = dragging an existing farm
   (function buildFarmData() {
     let sd = 20260; const rnd = () => { sd = (sd * 1664525 + 1013904223) >>> 0; return sd / 4294967296; };   // own random numbers: the farm looks the same every visit
     for (let y = 5; y < FH - 2; y += 12) for (let x = 6; x < FW - 2; x += 12) for (let k = 0; k < 2; k++)
@@ -936,11 +949,24 @@
     if (x0 < clearing.x0 || y0 < clearing.y0 || x0 + CELL > clearing.x1 || y0 + CELL > clearing.y1) return false;
     return !occ.get(slot(c, r));
   }
-  function farmSpotOK(c, r, rot) {
+  function farmSpotOK(c, r, rot, ignore) {       // ignore = farm being moved (its own current tiles don't block)
     const cols = fCols(rot), rows = fRows(rot);
     if (c < 0 || r < 0 || c + cols > WORLD_W / CELL || r + rows > WORLD_H / CELL) return false;
-    for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) if (!farmTileOK(c + i, r + j)) return false;
+    for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+      const cc = c + i, rr = r + j;
+      const x0 = cc * CELL, y0 = rr * CELL;
+      if (x0 < clearing.x0 || y0 < clearing.y0 || x0 + CELL > clearing.x1 || y0 + CELL > clearing.y1) return false;
+      const o = occ.get(slot(cc, rr)); if (o && o !== ignore) return false;
+    }
     return true;
+  }
+  function farmAt(sx, sy) {
+    const s = slotAt(sx, sy);
+    for (const f of farms) {
+      const b = farmBounds(f), c0 = Math.floor(b.x0 / CELL), r0 = Math.floor(b.y0 / CELL), c1 = Math.ceil(b.x1 / CELL), r1 = Math.ceil(b.y1 / CELL);
+      if (s && s.c >= c0 && s.c < c1 && s.r >= r0 && s.r < r1) return f;
+    }
+    return null;
   }
   function eachFarmSlot(src, fn) {
     if (!src) return;
@@ -1060,11 +1086,12 @@
   }
   function updateFarm(time) {
     const list = placing ? [...farms, placing] : farms;
+    const movingF = movingFarm ? movingFarm.farm : null;
     for (const f of list) {
       if (!f.flat || !f.stand) continue;
       const vis = farmVisible(f);
       f.stand.visible = f.flat.visible = vis;
-      f.stand.alpha = f.flat.alpha = (f === placing) ? .82 : 1;
+      f.stand.alpha = f.flat.alpha = (f === placing || f === movingF) ? .82 : 1;
       if (!vis || (fc & 1)) continue;                // wind sways at 30 updates a second
       const hf = f.hf == null ? 1 : f.hf, tint = f.tint == null ? 0xffffff : f.tint;
       const vl = cpx - cw / 2 / zoom - 20 / zoom, vr = cpx + cw / 2 / zoom + 20 / zoom, vt = cpy - ch / 2 / zoom - 20 / zoom, vb = cpy + ch / 2 / zoom + 60;
@@ -1136,7 +1163,7 @@
     else { btn.textContent = 'Build \u00B7 ' + FARM_COST + ' gold'; btn.disabled = false; }
   }
   function startPlacing() {
-    if (placing) return;
+    if (placing || movingFarm) return;
     if (gold < FARM_COST) { toast('You need ' + FARM_COST + ' gold'); return; }
     const spot = findFarmSpot(0);
     placing = { c: spot.c, r: spot.r, rot: spot.rot };
@@ -1153,15 +1180,52 @@
     placing.r = clampI(s.r - Math.floor(rows / 2), 0, WORLD_H / CELL - rows);
     barKey = '#'; rebuildFarm(placing);
   }
+  function activeFarmMove() { return placing || movingFarm; }
   function rotateFarm() {
-    if (!placing) return;
-    const oldC = fCols(placing.rot), oldR = fRows(placing.rot);
-    const cx = placing.c + oldC / 2, cy = placing.r + oldR / 2;
-    placing.rot ^= 1;
-    const cols = fCols(placing.rot), rows = fRows(placing.rot);
-    placing.c = clampI(Math.round(cx - cols / 2), 0, WORLD_W / CELL - cols);
-    placing.r = clampI(Math.round(cy - rows / 2), 0, WORLD_H / CELL - rows);
-    barKey = '#'; rebuildFarm(placing);
+    const fm = activeFarmMove(); if (!fm) return;
+    const oldC = fCols(fm.rot), oldR = fRows(fm.rot);
+    const cx = fm.c + oldC / 2, cy = fm.r + oldR / 2;
+    fm.rot ^= 1;
+    const cols = fCols(fm.rot), rows = fRows(fm.rot);
+    fm.c = clampI(Math.round(cx - cols / 2), 0, WORLD_W / CELL - cols);
+    fm.r = clampI(Math.round(cy - rows / 2), 0, WORLD_H / CELL - rows);
+    if (movingFarm) { movingFarm.farm.c = fm.c; movingFarm.farm.r = fm.r; movingFarm.farm.rot = fm.rot; movingFarm.ok = farmSpotOK(fm.c, fm.r, fm.rot); rebuildFarm(movingFarm.farm); }
+    else rebuildFarm(fm);
+    barKey = '#';
+  }
+  function setMovingFarmPos(c, r) {
+    const m = movingFarm; if (!m) return;
+    const cols = fCols(m.rot), rows = fRows(m.rot);
+    m.c = clampI(c, 0, WORLD_W / CELL - cols); m.r = clampI(r, 0, WORLD_H / CELL - rows);
+    m.farm.c = m.c; m.farm.r = m.r; m.farm.rot = m.rot;
+    m.ok = farmSpotOK(m.c, m.r, m.rot);
+  }
+  function moveFarmTo(sx, sy) {
+    if (!movingFarm) return;
+    const s = slotAt(sx, sy); if (!s) return;
+    setMovingFarmPos(s.c - Math.floor(fCols(movingFarm.rot) / 2), s.r - Math.floor(fRows(movingFarm.rot) / 2));
+    barKey = '#'; rebuildFarm(movingFarm.farm);
+  }
+  function startMovingFarm(f, sx, sy) {
+    if (!f || placing || movingFarm || drag) return;
+    const s = slotAt(sx, sy) || { c: f.c, r: f.r };
+    eachFarmSlot(f, (c, r) => { const o = occ.get(slot(c, r)); if (o && o.type === 'farm') occ.delete(slot(c, r)); });
+    movingFarm = { farm: f, c: f.c, r: f.r, rot: f.rot, oc: f.c, or: f.r, orot: f.rot, offC: s.c - f.c, offR: s.r - f.r, ok: true, held: true, id: null, q: { x: sx, y: sy } };
+    sel = null; hov = null; tap = null; barKey = '#';
+    rebuildFarm(f);
+    toast('Drag your farm to a new spot, then tap \u2713');
+  }
+  function endMovingFarm(commit) {
+    if (!movingFarm) return;
+    const m = movingFarm, f = m.farm;
+    if (commit) {
+      if (!farmSpotOK(m.c, m.r, m.rot)) { mvBar.classList.remove('shake'); void mvBar.offsetWidth; mvBar.classList.add('shake'); return; }
+      f.c = m.c; f.r = m.r; f.rot = m.rot;
+    } else {
+      f.c = m.oc; f.r = m.or; f.rot = m.orot;
+    }
+    claimFarmSlots(f); rebuildFarm(f); saveFarms();
+    movingFarm = null; barKey = '#';
   }
   function endPlacing(commit) {
     if (!placing) return;
@@ -1181,7 +1245,7 @@
     }
   }
   buildBtn.addEventListener('click', renderBuild);
-  document.getElementById('farmBuy').addEventListener('click', () => { if (!placing) startPlacing(); });
+  document.getElementById('farmBuy').addEventListener('click', () => { if (!placing && !movingFarm) startPlacing(); });
   if (farms.length || wheatCount) setStat('wheat', ICON.wheat, 'Wheat', wheatCount);
 
   // ---- on the map: green progress bar with the time (Clash-style), then a wheat bubble to tap ----
@@ -1210,13 +1274,14 @@
   function updateFarmUI(time) {
     refreshWheatHud();
     const canShow = !placing;
+    const movingF = movingFarm ? movingFarm.farm : null;
     for (const f of farms) {
       const ui = ensureFarmUI(f);
       const st = farmState(f), p = farmProgress(f);
       const hf = .22 + .78 * Math.min(1, p / .85), m = Math.max(0, Math.min(1, (p - .35) / .5));   // young wheat is short and green, it turns golden as it ripens
       f.hf = hf;
       f.tint = (Math.round(lerp(.6, 1, m) * 255) << 16) | (Math.round(lerp(.93, 1, m) * 255) << 8) | Math.round(lerp(.36, 1, m) * 255);
-      const show = canShow && farmVisible(f);
+      const show = canShow && farmVisible(f) && f !== movingF;
       ui.barBox.visible = show && st === 'growing'; ui.bubble.visible = show && st === 'ready';
       const [fx, fy] = farmCenter(f);
       if (ui.barBox.visible) {
@@ -1252,12 +1317,10 @@
     t.anchor.set(.5); t.scale.set(.5); t.resolution = 2; farmUIL.addChild(t); floaters.push({ t0: performance.now(), txt: t, x: fx, y: fy });
     toast('Collected ' + WHEAT_PER_HARVEST + ' wheat');
   }
-  function tapFarm(sx, sy) {                                                  // tap a ripe field (or its bubble) to collect
-    if (placing) return false;
+  function tapFarm(sx, sy) {                                                  // tap a ripe farm's harvest bubble to collect
+    if (placing || movingFarm) return false;
     for (const f of farms) {
       if (farmState(f) !== 'ready') continue;
-      const b = farmBounds(f), c0 = Math.floor(b.x0 / CELL), r0 = Math.floor(b.y0 / CELL), c1 = Math.ceil(b.x1 / CELL), r1 = Math.ceil(b.y1 / CELL);
-      for (const q of [slotAt(sx, sy), slotAt(sx, sy + 24 * zoom)]) if (q && q.c >= c0 && q.c < c1 && q.r >= r0 && q.r < r1) { collectFarm(f); return true; }
       const [fx, fy] = farmCenter(f);
       const bx = (fx - cpx) * zoom + cw / 2, by = (fy - 80 - cpy) * zoom + ch / 2;
       if (Math.hypot(sx - bx, sy - by) < 34 * zoom) { collectFarm(f); return true; }
