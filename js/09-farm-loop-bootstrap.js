@@ -83,7 +83,7 @@
   const MKT_BASE = 5, MKT_MIN = 2, MKT_MAX = 9;   // gold you get for 10 food
   const MKT_EVERY_MS = 40000;                     // the price changes every 40 seconds
   const MKT_BIG_SALE = 50;                        // selling this much at once pushes the price down a notch
-  const market = { p: MKT_BASE, hist: [5, 5, 5, 5, 5, 5], next: Date.now() + MKT_EVERY_MS, note: 'The merchant is setting up his stall.' };
+  const market = { p: MKT_BASE, hist: [5, 5, 5, 5, 5, 5], next: Date.now() + MKT_EVERY_MS, note: 'The merchant straightens his cloak and opens the stall.' };
   try {
     const m = JSON.parse(localStorage.getItem('market') || 'null');
     if (m && Number.isFinite(m.p)) {
@@ -99,16 +99,19 @@
     if (Date.now() < market.next) return false;
     market.next = Date.now() + MKT_EVERY_MS;
     const r = Math.random(); let d, note;
-    if (r < .12) { d = 2; note = 'A caravan is in town. Everyone wants bread!'; }
-    else if (r < .24) { d = -2; note = 'Every field is full. Wheat is cheap today.'; }
+    if (r < .1) { d = 2; note = 'A royal caravan rolls in \u2014 everyone is desperate for bread!'; }
+    else if (r < .2) { d = -2; note = 'Granaries overflow across the realm. Wheat is dirt cheap.'; }
+    else if (r < .28) { d = 1; note = 'Travelers from the capital are paying well for supplies.'; }
+    else if (r < .36) { d = -1; note = 'A rival farmer undercuts the stall. Prices dip.'; }
     else {
       const pull = market.p > MKT_BASE + 2 ? -1 : market.p < MKT_BASE - 2 ? 1 : 0;   // prices drift back toward normal
       d = [-1, 0, 0, 1][Math.floor(Math.random() * 4)] + pull; d = Math.max(-1, Math.min(1, d));
-      note = d > 0 ? 'Demand is rising.' : d < 0 ? 'Prices are easing.' : 'The market is calm.';
+      note = d > 0 ? 'Word spreads \u2014 demand is climbing.' : d < 0 ? 'The crowd thins and prices ease.' : 'A steady day at the market square.';
     }
     market.p = Math.max(MKT_MIN, Math.min(MKT_MAX, market.p + d));
     market.hist.push(market.p); if (market.hist.length > 8) market.hist.shift();
     market.note = note; saveMarket();
+    if (tradeBtn) { tradeBtn.classList.remove('pulse'); void tradeBtn.offsetWidth; tradeBtn.classList.add('pulse'); }
     return true;
   }
   const tradeBtn = document.getElementById('tradebtn'), tradePanel = document.getElementById('tradepanel');
@@ -132,29 +135,33 @@
     const extra = Math.max(0, have - reserve);
     elGold.textContent = p;
     elMood.textContent = market.note;
-    elTrend.textContent = p > prev ? '\u25B2 up' : p < prev ? '\u25BC down' : '\u2022 steady';
+    elTrend.textContent = p > prev ? '\u25B2 Rising' : p < prev ? '\u25BC Falling' : '\u2022 Steady';
     elTrend.className = p > prev ? 'up' : p < prev ? 'down' : '';
-    elTag.textContent = p >= 7 ? 'Great price. Sell now!' : p === 6 ? 'Good price' : p === 5 ? 'Fair price' : p === 4 ? 'A bit low' : 'Low price. Maybe wait?';
+    elTag.textContent = p >= 8 ? 'Excellent price \u2014 strike now!' : p === 7 ? 'Great price. Sell now!' : p === 6 ? 'Good price' : p === 5 ? 'Fair price' : p === 4 ? 'A bit low' : 'Poor price \u2014 better to wait';
     elTag.className = p >= 7 ? 'great' : p <= 3 ? 'poor' : '';
     const left = Math.max(0, Math.ceil((market.next - Date.now()) / 1000));
-    elTimer.textContent = 'New price in ' + left + 's';
+    elTimer.textContent = 'Price shifts in ' + left + 's';
     drawSpark();
-    elHave.textContent = 'You have ' + have + ' food';
-    sell10.disabled = have < 10 || goldFor(10) < 1;
-    sell50.disabled = have < 50;
-    sellX.disabled = goldFor(extra) < 1;
-    sellXn.textContent = extra > 0 ? extra : '0';
-    elNote.textContent = 'Your villagers eat ' + need + ' food every 20 seconds. \u201CExtra\u201D keeps enough for ' + reserve + '.';
+    elHave.textContent = 'Granary: ' + have + ' food';
+    const g10 = goldFor(10), g50 = goldFor(50), gX = goldFor(extra);
+    sell10.disabled = have < 10 || g10 < 1;
+    sell50.disabled = have < 50 || g50 < 1;
+    sellX.disabled = gX < 1;
+    sell10.innerHTML = '<small>Sell 10</small>+' + g10 + 'g';
+    sell50.innerHTML = '<small>Sell 50</small>+' + g50 + 'g';
+    sellX.innerHTML = '<small>Sell extra (' + (extra > 0 ? extra : 0) + ')</small>+' + gX + 'g';
+    elNote.textContent = 'Villagers eat ' + need + ' food / 20s. Keep at least ' + reserve + ' in reserve.';
+    if (tradePanel) tradePanel.classList.toggle('great-deal', p >= 7);
   }
   function coinBurst(n) {
     if (!elFx || !ICON.coin) return;
-    const count = Math.max(5, Math.min(14, n + 4));
+    const count = Math.max(6, Math.min(18, n + 5));
     for (let i = 0; i < count; i++) {
       const d = document.createElement('div'); d.className = 'cf'; d.innerHTML = ICON.coin;
-      d.style.setProperty('--dx', (Math.random() * 120 - 60).toFixed(0) + 'px');
-      d.style.setProperty('--dy', (-70 - Math.random() * 70).toFixed(0) + 'px');
+      d.style.setProperty('--dx', (Math.random() * 160 - 80).toFixed(0) + 'px');
+      d.style.setProperty('--dy', (-80 - Math.random() * 90).toFixed(0) + 'px');
       d.style.setProperty('--rot', (Math.random() * 360 - 180).toFixed(0) + 'deg');
-      d.style.animationDelay = (i * 35) + 'ms';
+      d.style.animationDelay = (i * 28) + 'ms';
       elFx.appendChild(d); setTimeout(() => d.remove(), 1500);
     }
     const gb = document.getElementById('goldbar');
@@ -172,11 +179,12 @@
     refreshWheatHud();
     if (food >= MKT_BIG_SALE && market.p > MKT_MIN) {          // dump a lot on the merchant and he pays less next time
       market.p--; market.hist[market.hist.length - 1] = market.p;
-      market.note = 'You flooded the stall. The price dipped.'; saveMarket();
+      market.note = 'You flooded the stall \u2014 the merchant lowers his offer.'; saveMarket();
     }
     coinBurst(gain);
     renderTrade();
-    toast('Sold ' + food + ' food for ' + gain + ' gold');
+    const deal = market.p >= 7 ? ' Excellent deal!' : market.p <= 3 ? ' Tough bargain.' : '';
+    toast('Sold ' + food + ' food for ' + gain + ' gold.' + deal);
   }
   function setTradeOpen(open) {
     tradeOpen = !!open;
