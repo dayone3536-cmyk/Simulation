@@ -138,3 +138,25 @@
   #buildpanel .bt, #stats h4 { font: 700 15px Georgia, 'Times New Roman', serif; letter-spacing: .04em; text-transform: none; color: #ffe9c0; }
   #buildpanel .bm b { font-family: Georgia, serif; }
   @media (prefers-reduced-motion: reduce) { #coinfx .cf, #tradebtn.hot::after, #goldbar.bump { animation: none; } }
+
+  /* compact trade panel: fits a phone held sideways, scrolls if it still doesn't */
+  #tradepanel { width: 262px; padding: 10px 12px 12px; border-radius: 18px; max-height: calc(100% - 128px - env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain; }
+  #tradepanel .th { margin-bottom: 6px; gap: 8px; }
+  #tradepanel .ti { width: 34px; height: 34px; }
+  #tradepanel .ti svg { width: 24px; height: 24px; }
+  #tradepanel .bt { font-size: 15px; }
+  #tradeMood { min-height: 0; font-size: 11px; }
+  #tradepanel .x { width: 30px; height: 30px; padding: 7px; }
+  #priceCard { padding: 6px 10px 6px; border-radius: 13px; }
+  #priceCard .pi { width: 24px; height: 24px; }
+  #priceCard .pr b { font-size: 21px; }
+  #priceCard .arrow { font-size: 15px; margin: 0 2px; }
+  #trend { font-size: 11px; padding: 2px 7px; }
+  #spark { height: 20px; margin: 3px 0 1px; }
+  #priceCard .pm { font-size: 11px; }
+  #tradeGet { margin: 6px 2px 6px; font-size: 12px; }
+  .sellrow { gap: 6px; }
+  .sellrow button { min-height: 44px; font-size: 17px; border-radius: 12px; }
+  .sellrow button small { font-size: 9px; }
+  #tradeNote { margin-top: 6px; font-size: 10px; }
+  #tradebtn { min-width: 76px; height: 44px; padding: 0 14px; }
