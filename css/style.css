@@ -103,6 +103,10 @@
   #priceTag.poor { color: #ff9d8f; }
   #priceTimer { font-variant-numeric: tabular-nums; opacity: .8; }
   #tradeGet { margin: 10px 2px 8px; font: 700 13px system-ui, sans-serif; color: #ffe9c0; text-align: center; }
+  #harvestReady { display: none; width: 100%; align-items: center; justify-content: center; gap: 8px; margin: 0 0 8px; min-height: 42px; padding: 8px 10px; border: 1.5px solid #7fbe4a; border-radius: 14px; cursor: pointer; color: #f4ffe9; font: 800 13px system-ui, sans-serif; background: linear-gradient(#4f8f2f, #2f611a); box-shadow: 0 3px 0 #1f4312, 0 0 14px rgba(120,220,90,.18), inset 0 1px 0 rgba(220,255,200,.25); -webkit-tap-highlight-color: transparent; transition: transform .12s ease, filter .15s ease; }
+  #harvestReady .ico { width: 22px; height: 22px; flex: none; filter: drop-shadow(0 1px 2px rgba(0,0,0,.4)); }
+  #harvestReady:hover { filter: brightness(1.07); }
+  #harvestReady:active { transform: translateY(2px); box-shadow: 0 1px 0 #1f4312; }
   .sellrow { display: grid; grid-template-columns: 1fr 1fr 1.35fr; gap: 8px; }
   .sellrow button { min-height: 54px; border: 0; border-radius: 14px; padding: 6px 4px; font: 800 18px Georgia, serif; color: #fff3d6; background: linear-gradient(#6a4b2a, #4a321a); box-shadow: 0 3px 0 #2a1a0a, inset 0 1px 0 rgba(255,235,180,.3); cursor: pointer; -webkit-tap-highlight-color: transparent; line-height: 1.05; transition: transform .12s ease, filter .15s ease; }
   .sellrow button small { display: block; font: 700 10px system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; opacity: .85; margin-bottom: 2px; }
