@@ -1,0 +1,150 @@
+name: OpenCode overnight tasks
+
+on:
+  schedule:
+    # 19:00 UTC = 00:30 India time. GitHub cron is always UTC.
+    - cron: '0 19 * * *'
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'Task id under tasks/ (leave empty to run every scheduled task)'
+        required: false
+        type: string
+      force:
+        description: 'Run even if the result branch already exists'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: opencode-night
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      count: ${{ steps.plan.outputs.count }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: plan
+        env:
+          TASK_FILTER: ${{ inputs.task }}
+          FORCE: ${{ inputs.force }}
+        run: python3 .github/scripts/plan_tasks.py
+
+  run:
+    needs: plan
+    if: needs.plan.outputs.count != '0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - name: Check out base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.base }}
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install OpenCode
+        run: npm install --global @opencode/cli
+
+      - name: Prepare result branch
+        env:
+          BRANCH: ${{ matrix.branch }}
+        run: |
+          git config user.name "opencode-bot"
+          git config user.email "opencode-bot@users.noreply.github.com"
+          git checkout -B "$BRANCH"
+
+      - name: Write CI-only OpenCode config
+        run: |
+          cat > opencode.json <<'JSON'
+          {
+            "$schema": "https://opencode.ai/config.json",
+            "model": "opencode/deepseek-v4.1-flash-free",
+            "permissions": [
+              { "action": "shell", "resource": "git push *", "effect": "deny" },
+              { "action": "shell", "resource": "git * push *", "effect": "deny" },
+              { "action": "shell", "resource": "gh pr *", "effect": "deny" }
+            ]
+          }
+          JSON
+
+      - name: Run task
+        env:
+          TASK_FILE: ${{ matrix.file }}
+        run: |
+          python3 - "$TASK_FILE" > /tmp/prompt.txt <<'PY'
+          import sys
+          text = open(sys.argv[1], encoding="utf-8").read()
+          if text.startswith("---"):
+              parts = text.split("---", 2)
+              if len(parts) == 3:
+                  text = parts[2]
+          print(text.strip())
+          PY
+
+          # Free models are rate limited, so retry with a fallback model.
+          for model in opencode/deepseek-v4.1-flash-free opencode/flint-40b-free; do
+            echo "::group::opencode run ($model)"
+            if timeout 150m opencode run --standalone --auto --archived \
+                 --model "$model" "$(cat /tmp/prompt.txt)"; then
+              echo "::endgroup::"
+              exit 0
+            fi
+            echo "::endgroup::"
+            echo "Model $model failed, trying the fallback model."
+          done
+          echo "All models failed." >&2
+          exit 1
+
+      - name: Commit and push result branch
+        id: save
+        env:
+          BRANCH: ${{ matrix.branch }}
+          TASK_ID: ${{ matrix.id }}
+        run: |
+          # Never commit the CI-only config over the real repo config.
+          git checkout -- opencode.json 2>/dev/null || rm -f opencode.json
+
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes were produced."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git commit -m "opencode($TASK_ID): automated task run"
+          git push --force origin "HEAD:refs/heads/$BRANCH"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Open pull request
+        if: steps.save.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ matrix.branch }}
+          BASE: ${{ matrix.base }}
+          TASK_ID: ${{ matrix.id }}
+        run: |
+          gh pr create \
+            --base "$BASE" \
+            --head "$BRANCH" \
+            --title "opencode: $TASK_ID" \
+            --body "Automated overnight run by OpenCode. Review the diff before merging." \
+            || echo "PR already exists (or PR creation is disabled); branch $BRANCH is still pushed."
