@@ -7,7 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/pixi.js@7.4.2/dist/pixi.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="css/style.css?v=3">
-<link rel="stylesheet" href="css/economy.css?v=1">
+<link rel="stylesheet" href="css/economy.css?v=2">
 </head>
 <body>
 <canvas id="c"></canvas>
@@ -18,7 +18,7 @@
   <div id="topright"><div id="wheatpill" class="pill"><span class="ico" data-ic="wheat"></span><span id="wheatnum">0</span></div><div id="goldbar"><div class="coin" data-ic="coin"></div><div id="goldnum">...</div></div><button id="moreBtn" aria-label="Village details"><i></i><i></i><i></i></button></div>
   <div id="stats"><h4>Village</h4></div>
   <div id="toast"></div>
-  <div id="buildpanel"><div class="bt">Build</div><div class="bcard"><span class="bi" data-ic="wheat"></span><div class="bm"><b>Wheat Farm</b><small id="farmInfo"></small></div><button id="farmBuy"></button></div><div class="bcard"><span class="bi"><svg viewBox="0 0 64 64" aria-hidden="true"><ellipse cx="32" cy="49" rx="22" ry="6" fill="#2a1608" opacity=".3"/><rect x="8" y="34" width="34" height="13" rx="6.5" fill="#8b5a2b" stroke="#3a220c" stroke-width="2.5"/><ellipse cx="11" cy="40.5" rx="5" ry="6.5" fill="#d9a861" stroke="#3a220c" stroke-width="2.5"/><path d="M43 6l12 21-8 4.5L35 10.5z" fill="#c9d2da" stroke="#3f4852" stroke-width="2.2" stroke-linejoin="round"/><path d="M40 11l8 14" stroke="#eef4fb" stroke-width="1.4" opacity=".7"/><path d="M34 30l13-7" stroke="#6b4519" stroke-width="5" stroke-linecap="round"/></svg></span><div class="bm"><b>Lumber Camp</b><small id="campInfo"></small></div><button id="campBuy"></button></div></div>
+  <div id="buildpanel"><div class="bt">Build</div><div class="bcard"><span class="bi" data-ic="wheat"></span><div class="bm"><b>Wheat Farm</b><small id="farmInfo"></small></div><button id="farmBuy"></button></div><div class="bcard"><span class="bi"><svg viewBox="0 0 64 64" aria-hidden="true"><ellipse cx="32" cy="49" rx="22" ry="6" fill="#2a1608" opacity=".3"/><rect x="8" y="34" width="34" height="13" rx="6.5" fill="#8b5a2b" stroke="#3a220c" stroke-width="2.5"/><ellipse cx="11" cy="40.5" rx="5" ry="6.5" fill="#d9a861" stroke="#3a220c" stroke-width="2.5"/><path d="M43 6l12 21-8 4.5L35 10.5z" fill="#c9d2da" stroke="#3f4852" stroke-width="2.2" stroke-linejoin="round"/><path d="M40 11l8 14" stroke="#eef4fb" stroke-width="1.4" opacity=".7"/><path d="M34 30l13-7" stroke="#6b4519" stroke-width="5" stroke-linecap="round"/></svg></span><div class="bm"><b>Lumber Camp</b><small id="campInfo"></small></div><button id="campBuy"></button></div><div class="bcard"><span class="bi"><svg viewBox="0 0 64 64" aria-hidden="true"><ellipse cx="32" cy="53" rx="23" ry="6" fill="#2a1608" opacity=".28"/><rect x="11" y="26" width="42" height="26" rx="4" fill="#8b5a2b" stroke="#3a220c" stroke-width="2.5"/><path d="M7 27L32 9l25 18z" fill="#a8742f" stroke="#3a220c" stroke-width="2.5" stroke-linejoin="round"/><path d="M33 10v17M8 27h48" stroke="#5a3417" stroke-width="1.6" opacity=".65"/><rect x="27" y="35" width="10" height="17" rx="1.5" fill="#4a2c12" stroke="#2e1608" stroke-width="1.8"/><rect x="16" y="33" width="7" height="7" rx="1" fill="#ffd36b" stroke="#4a2c0e" stroke-width="1.2"/><rect x="42" y="33" width="7" height="7" rx="1" fill="#ffd36b" stroke="#4a2c0e" stroke-width="1.2"/><path d="M48 49l9-15" stroke="#6b4519" stroke-width="4.5" stroke-linecap="round"/><path d="M53 37l8-5 4 7-8 5z" fill="#c9d2da" stroke="#3f4852" stroke-width="1.6" stroke-linejoin="round"/><rect x="9" y="50" width="20" height="7" rx="3.5" fill="#7a4a22" stroke="#3a220c" stroke-width="1.6"/><ellipse cx="28" cy="53.5" rx="3.5" ry="4" fill="#c79a5e" stroke="#3a220c" stroke-width="1.2"/></svg></span><div class="bm"><b>Woodcutter Hut</b><small id="hutInfo"></small></div><button id="hutBuy"></button></div></div>
   <button id="buildbtn" aria-label="Build"><svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="bh1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d8dfe8"/><stop offset=".45" stop-color="#9aa8b7"/><stop offset="1" stop-color="#6b7683"/></linearGradient><linearGradient id="bh2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8b5a2b"/><stop offset="1" stop-color="#4a2810"/></linearGradient></defs><g transform="rotate(-35 32 32)"><rect x="26.5" y="30" width="11" height="30" rx="4.5" fill="url(#bh2)" stroke="#2e1608" stroke-width="2"/><rect x="28.5" y="35" width="7" height="2.2" rx="1.1" fill="#c89b63" opacity=".55"/><rect x="28.5" y="41" width="7" height="2.2" rx="1.1" fill="#c89b63" opacity=".45"/><rect x="28.5" y="47" width="7" height="2.2" rx="1.1" fill="#c89b63" opacity=".35"/><rect x="14" y="10" width="36" height="18" rx="5" fill="url(#bh1)" stroke="#3f4852" stroke-width="2.2"/><rect x="14" y="10" width="36" height="6.5" rx="3" fill="#eef4fb" opacity=".45"/><path d="M18 19h10M36 19h10" stroke="#eaf2fb" stroke-width="2.2" stroke-linecap="round" opacity=".55"/><rect x="23.5" y="24" width="17" height="8" rx="2.5" fill="#7e8894" stroke="#3f4852" stroke-width="1.8"/></g></svg>Build</button>
   <button id="tradebtn" aria-label="Trade"><span class="ico" data-ic="coin"></span><span>Market</span></button>
   <div id="tradepanel" aria-hidden="true">
@@ -117,26 +117,28 @@
 
 <script src="js/03-atlases-world.js?v=3"></script>
 
-<script src="js/04-selection.js?v=3"></script>
+<script src="js/04-selection.js?v=4"></script>
 
 <script src="js/05-camera-input.js?v=3"></script>
 
-<script src="js/06-render-home.js?v=3"></script>
+<script src="js/06-render-home.js?v=4"></script>
 
 
 <script src="js/07-villagers.js?v=3"></script>
 
 <script src="js/08-farms.js?v=3"></script>
 
-<script src="js/09-farm-loop-bootstrap.js?v=3"></script>
+<script src="js/09-farm-loop-bootstrap.js?v=4"></script>
 
 <script src="js/10-home-upgrade.js?v=3"></script>
 
-<script src="js/11-wood.js?v=1"></script>
+<script src="js/11-wood.js?v=2"></script>
 
 <script src="js/12-jobs.js?v=1"></script>
 
 <script src="js/13-hearth.js?v=1"></script>
+
+<script src="js/14-woodcutter-hut.js?v=1"></script>
 
 </body>
 
