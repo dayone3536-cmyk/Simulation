@@ -74,7 +74,7 @@
   let homeTimerId = 0, homeTickerId = 0;
   function updateHomeProgressUI(left) {
     const pct = Math.min(100, Math.max(0, (1 - Math.max(0, left) / (HOME_UPGRADE_SEC * 1000)) * 100));
-    if (homeProgressFill) homeProgressFill.style.width = pct.toFixed(1) + '%';
+    if (homeProgressFill) homeProgressFill.style.transform = 'scaleX(' + (pct / 100).toFixed(4) + ')';
     if (homeProgressTime) homeProgressTime.textContent = clockText(left);
   }
   function stopHomeTimer() {
@@ -104,7 +104,6 @@
     const maxed = homeLevel >= 1 && !upgrading;
     homePanel.classList.toggle('upgrading', upgrading);
     homePanel.classList.toggle('maxed', maxed);
-    drawHomeThumbs();
 
     homeNameEl.textContent = homeName();
     if (upgrading) homeSubEl.textContent = 'Level ' + (homeLevel + 1) + ' · Manor under construction';
@@ -132,7 +131,7 @@
     if (homeProgressWrap) homeProgressWrap.setAttribute('aria-hidden', upgrading ? 'false' : 'true');
     if (upgrading) updateHomeProgressUI(homeUpgrading - nowMs);
     else {
-      if (homeProgressFill) homeProgressFill.style.width = '0%';
+      if (homeProgressFill) homeProgressFill.style.transform = 'scaleX(0)';
       if (homeProgressTime) homeProgressTime.textContent = clockText(HOME_UPGRADE_SEC * 1000);
     }
   }
@@ -140,6 +139,7 @@
   function openHomePanel() {
     if (!homePanel) return;
     homePanelOpen = true;
+    drawHomeThumbs();
     homePanel.style.display = 'block';
     homePanel.setAttribute('aria-hidden', 'false');
     if (typeof buildPanel !== 'undefined' && buildPanel) { buildPanel.style.display = 'none'; buildBtn.classList.remove('open'); }
@@ -210,7 +210,7 @@
   const dustSeeds = [];
   for (let i = 0; i < 18; i++) dustSeeds.push({ off: i / 18, dx: ((i * 37) % 17 - 8) / 8, wob: i * 1.7 });
   const sparks = [];
-  let fxFadeUntil = 0, lastFxT = 0, scaffoldOn = false, dustOn = false, progressOn = false, sparkOn = false;
+  let fxFadeUntil = 0, lastFxT = 0, lastFxDraw = -1, scaffoldOn = false, dustOn = false, progressOn = false, sparkOn = false;
 
   function drawScaffold(R, time, alpha) {
     scaffoldG.clear(); scaffoldG.alpha = alpha;
@@ -274,7 +274,8 @@
     }
     progressG.beginFill(0xffcf6a, .22); progressG.drawCircle(cx + bw / 2 - 3, by + bh / 2, 7); progressG.endFill();
     progressT.position.set(cx, by + bh / 2 + .5);
-    progressT.text = clockText(left);
+    const txt = clockText(left);
+    if (progressT.text !== txt) progressT.text = txt;
   }
 
   function spawnHomeSparks() {
@@ -328,12 +329,14 @@
     const R = homeRectP(home.c, home.r);
     updateSmoke(time, R);
     const fade = upgrading ? 1 : (fxFadeUntil > now ? (fxFadeUntil - now) / 750 : 0);
-    if (fade > 0) { drawScaffold(R, time, fade); scaffoldOn = true; }
+    const fxDue = time - lastFxDraw >= 1 / 30 || lastFxDraw < 0;   // construction art only needs 30 redraws a second
+    if (fade > 0) { if (fxDue) drawScaffold(R, time, fade); scaffoldOn = true; }
     else if (scaffoldOn) { scaffoldG.clear(); scaffoldG.alpha = 1; scaffoldOn = false; }
-    if (upgrading) { drawDust(R, time); dustOn = true; }
+    if (upgrading) { if (fxDue) drawDust(R, time); dustOn = true; }
     else if (dustOn) { dustG.clear(); dustOn = false; }
-    if (upgrading) { drawProgress(R, nowMs); progressOn = true; }
+    if (upgrading) { if (fxDue) drawProgress(R, nowMs); progressOn = true; }
     else if (progressOn) { progressL.visible = false; progressG.clear(); progressOn = false; }
+    if (fxDue) lastFxDraw = time;
     updateSparks(time);
     if (homePanelOpen) renderHomePanel(false);
   }
@@ -362,7 +365,7 @@
 
   // handy hooks for the console and future updates
   window.home = {
-    version: 2,
+    version: 3,
     level: () => homeLevel,
     upgrading: () => homeUpgrading > Date.now(),
     open: openHomePanel,

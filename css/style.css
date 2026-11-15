@@ -174,6 +174,7 @@
   /* ---------- home / manor upgrade panel ---------- */
   #homepanel { display: none; position: absolute; right: calc(14px + env(safe-area-inset-right)); bottom: calc(112px + env(safe-area-inset-bottom)); pointer-events: auto;
     width: 300px; max-width: calc(100% - 28px); max-height: calc(100% - 128px - env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain;
+    contain: layout paint style; will-change: transform;
     padding: 12px 12px 11px; border-radius: 22px; border: 1.5px solid #c99a4b; color: #fff3d6; font: 600 14px system-ui, sans-serif; animation: pop2 .2s ease-out;
     background: radial-gradient(120% 70% at 50% 0, rgba(255,226,122,.14), rgba(255,226,122,0) 60%), linear-gradient(#412e1a, #20150a);
     box-shadow: 0 0 0 3px rgba(20,12,4,.55), 0 16px 36px rgba(0,0,0,.62), inset 0 1px 0 rgba(255,235,180,.4), inset 0 0 26px rgba(0,0,0,.35); }
@@ -219,8 +220,8 @@
   .hpl { display: flex; justify-content: space-between; align-items: center; font: 600 11px system-ui, sans-serif; color: #d9c08a; margin-bottom: 6px; }
   .hpl b { font: 800 13px system-ui, sans-serif; color: #ffe27a; font-variant-numeric: tabular-nums; }
   .hpb { height: 12px; border-radius: 99px; background: #2a1a0c; box-shadow: inset 0 2px 4px rgba(0,0,0,.55); overflow: hidden; border: 1px solid rgba(201,154,75,.35); }
-  .hpb i { display: block; height: 100%; width: 0%; border-radius: 99px; background: linear-gradient(90deg, #f0a92b, #ffe27a);
-    box-shadow: 0 0 12px rgba(255,200,60,.55); transition: width .3s linear; position: relative; }
+  .hpb i { display: block; height: 100%; width: 100%; border-radius: 99px; background: linear-gradient(90deg, #f0a92b, #ffe27a);
+    box-shadow: 0 0 12px rgba(255,200,60,.55); transform: scaleX(0); transform-origin: left center; will-change: transform; transition: transform .18s linear; position: relative; }
   .hpb i::after { content: ''; position: absolute; inset: 1px 2px auto; height: 35%; border-radius: 99px; background: rgba(255,255,255,.35); }
   #homeProgressNote { font: 500 10px system-ui, sans-serif; color: #bfa77a; margin-top: 6px; text-align: center; }
   #homeMaxed { display: none; margin-top: 9px; padding: 11px 12px; border-radius: 14px; text-align: center;

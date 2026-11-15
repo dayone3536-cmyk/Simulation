@@ -200,11 +200,13 @@
   }
   // Each villager is painted (by the code above) into its own small canvas, and the GPU moves that picture around.
   // The painting only needs refreshing ~20 times a second (8 when standing still) instead of 60, which is a big saving on old phones.
-  const VW = 100, VH = 96, VS = 1.5, VBASE = 76;     // canvas is VW x VH world units, feet sit VBASE units down from the top, VS = pixels per unit
+  const VW = 100, VH = 96, VS = 1.2, VBASE = 76;     // canvas is VW x VH world units, feet sit VBASE units down from the top, VS = pixels per unit
   function killVSprite(v) { if (v.spr) { v.spr.texture.destroy(true); v.spr.destroy(); } v.spr = null; v.cv = null; v.cx = null; }
   function updateVillagerSprites(time) {
     const vl = cpx - cw / 2 / zoom - 60, vr = cpx + cw / 2 / zoom + 60, vt = cpy - ch / 2 / zoom - 100, vb = cpy + ch / 2 / zoom + 40;
     const hx1 = (home.c + HOME_N) * CELL, hy1 = (home.r + HOME_N) * CELL;
+    let paintBudget = 5;                             // a crowd never melts the frame: at most a few canvas repaints per frame
+    const crowd = population > 12, far = zoom < .5 ? 1.6 : 1;
     for (const v of villagers) {
       const u = projX(v.x, v.y), w = projY(v.x, v.y);
       let spr = v.spr;
@@ -216,6 +218,11 @@
       const front = v.x > hx1 || v.y > hy1 || v.st === 'enter' || v.st === 'exit' || v.st === 'toDoor';   // in front of the cabin, or tucked behind it
       if (v.lay !== front) { (front ? vFront : vBack).addChild(spr); v.lay = front; }
       spr.visible = true; spr.alpha = v.a; spr.position.set(u, w); spr.zIndex = v.x + v.y;
-      if (v.pt < 0 || time - v.pt >= (v.walking || v.wave > 0 || v.wk > .05 ? 1 / 20 : 1 / 8)) { v.pt = time; paintVillager(v, time); spr.texture.baseTexture.update(); }
+      const moving = v.walking || v.wave > 0 || v.wk > .05;
+      const gap = (crowd ? (moving ? 1 / 12 : 1 / 4.5) : (moving ? 1 / 20 : 1 / 8)) * far;
+      const due = v.pt < 0 || time - v.pt >= gap;
+      if (!due) continue;
+      if (v.pt >= 0 && paintBudget <= 0) continue;    // due but over budget: paint it on the next frame
+      paintBudget--; v.pt = time; paintVillager(v, time); spr.texture.baseTexture.update();
     }
   }
