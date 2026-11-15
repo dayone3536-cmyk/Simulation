@@ -4,6 +4,7 @@
     { name: 'Timber Manor', pop: 20 }
   ];
   const HOME_UPGRADE_COST = 100;       // gold
+  const HOME_UPGRADE_WOOD = 30;        // logs
   const HOME_UPGRADE_SEC = 30;         // seconds of construction
   const HOME_LVL_KEY = 'homeLevel', HOME_END_KEY = 'homeUpgradeEnd';
 
@@ -110,19 +111,21 @@
     homeNowName.textContent = homeName();
     homeNowPop.textContent = String(population);
 
-    if (homeUpgradeCost) homeUpgradeCost.textContent = String(HOME_UPGRADE_COST);
+    if (homeUpgradeCost) homeUpgradeCost.textContent = HOME_UPGRADE_COST + 'g + ' + HOME_UPGRADE_WOOD + 'w';
     const poor = gold < HOME_UPGRADE_COST;
+    const poorWood = (typeof woodCount === 'number' ? woodCount : 0) < HOME_UPGRADE_WOOD;
     if (homeUpgradeBtn) {
-      homeUpgradeBtn.disabled = poor || upgrading || maxed;
-      homeUpgradeBtn.title = poor ? ('You need ' + (HOME_UPGRADE_COST - gold) + ' more gold') : '';
+      homeUpgradeBtn.disabled = poor || poorWood || upgrading || maxed;
+      homeUpgradeBtn.title = poor ? ('You need ' + (HOME_UPGRADE_COST - gold) + ' more gold')
+        : poorWood ? ('You need ' + (HOME_UPGRADE_WOOD - (woodCount | 0)) + ' more wood') : '';
     }
     if (homeNote) {
       homeNote.textContent = maxed
         ? 'Maximum level reached. Your village thrives.'
         : upgrading
           ? 'Construction continues while you play.'
-          : poor
-            ? 'You need ' + (HOME_UPGRADE_COST - gold) + ' more gold to start the upgrade.'
+          : (poor || poorWood)
+            ? 'You need ' + (poor ? (HOME_UPGRADE_COST - gold) + ' more gold' : '') + (poor && poorWood ? ' and ' : '') + (poorWood ? (HOME_UPGRADE_WOOD - (woodCount | 0)) + ' more wood' : '') + ' to start the upgrade.'
             : 'A grander home raises your village\u2019s population cap.';
     }
     if (homeProgressWrap) homeProgressWrap.setAttribute('aria-hidden', upgrading ? 'false' : 'true');
@@ -151,7 +154,9 @@
   function startHomeUpgrade() {
     if (!homePanel || homeLevel >= 1 || homeUpgrading > Date.now()) return;
     if (gold < HOME_UPGRADE_COST) { toast('You need ' + HOME_UPGRADE_COST + ' gold to upgrade your home'); renderHomePanel(true); return; }
+    if ((typeof woodCount === 'number' ? woodCount : 0) < HOME_UPGRADE_WOOD) { toast('You need ' + HOME_UPGRADE_WOOD + ' wood to upgrade your home'); renderHomePanel(true); return; }
     if (!spendGold(HOME_UPGRADE_COST)) return;
+    if (typeof spendWood === 'function') spendWood(HOME_UPGRADE_WOOD);
     homeUpgrading = Date.now() + HOME_UPGRADE_SEC * 1000;
     saveHome();
     armHomeTimer();
@@ -165,9 +170,7 @@
     homeLevel = 1;
     homeUpgrading = 0;
     saveHome();
-    const cap = HOME_LEVELS[1].pop;
-    if (population < cap) setPopulation(cap);
-    else setStat('pop', ICON.villager, 'Population', population);
+    setStat('pop', ICON.villager, 'Population', population);   // the cap grows; newcomers arrive by growth and feasts
     drawHomeThumbs();
     renderHomePanel(true);
     if (celebrate) {
@@ -351,8 +354,7 @@
   // ---- resume / apply saved level ----
   if (homeLevel >= 1) {
     saveHome();
-    if (population < HOME_LEVELS[1].pop) setPopulation(HOME_LEVELS[1].pop);
-    else setStat('pop', ICON.villager, 'Population', population);
+    setStat('pop', ICON.villager, 'Population', population);   // housing cap only: villagers arrive over time
   }
   drawHomeThumbs();
   if (homeUpgrading) armHomeTimer();                 // resume a construction that was running before a reload

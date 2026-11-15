@@ -1,11 +1,16 @@
   // ---------- the farm loop: buy it in the Build menu, villagers plant it, wait for the green bar, tap the bubble to collect the wheat ----------
   const FARM_COST = 50;            // gold to build it
+  const FARM_WOOD_COST = 10;       // logs to build it: expanding food needs cutters too
   const FIRST_FARM_GROW_SEC = 5;   // the very first crop the player ever plants ripens in 5 seconds
   const FARM_GROW_SEC = 15;        // every crop after that takes 15 seconds to ripen
   const WHEAT_PER_HARVEST = 10;    // wheat you get each time you collect
   const WORKERS = 4;               // villagers who walk out and work the fields
+  const CAMP_COST = 60, CAMP_WOOD = 20;
   let farmsBuilt = 0;              // how many farms the player has ever built (only the first crop is quick)
+  let lumberCamp = 0;
   try { farmsBuilt = parseInt(localStorage.getItem('farmsBuilt'), 10) || 0; } catch (e) {}
+  try { lumberCamp = localStorage.getItem('lumberCamp') === '1' ? 1 : 0; } catch (e) {}
+  const saveCamp = () => { try { localStorage.setItem('lumberCamp', lumberCamp ? '1' : '0'); } catch (e) {} };
   try {
     const saved = JSON.parse(localStorage.getItem('farms') || 'null');
     const old = saved ? null : JSON.parse(localStorage.getItem('farm') || 'null');   // older saves had a single farm
@@ -21,10 +26,15 @@
     if (farmsBuilt < farms.length) farmsBuilt = farms.length;
     const w = parseInt(localStorage.getItem('wheat'), 10); if (w > 0) wheatCount = w;
   } catch (e) {}
+  const farmCrewMul = f => (typeof farmCrewSpeed === 'function' ? farmCrewSpeed(f) : 1);   // 12-jobs: 1 farmer per farm = full speed
   const farmGrowSec = f => (f && f.fast) ? FIRST_FARM_GROW_SEC : FARM_GROW_SEC;   // only the very first crop ever is quick
-  const farmState = f => !f ? 'none' : (Date.now() - f.t0 >= farmGrowSec(f) * 1000 ? 'ready' : 'growing');
-  const farmProgress = f => f ? Math.min(1, (Date.now() - f.t0) / (farmGrowSec(f) * 1000)) : 0;
+  const farmState = f => !f ? 'none' : (Date.now() - f.t0 >= farmGrowSec(f) * 1000 / farmCrewMul(f) ? 'ready' : 'growing');
+  const farmProgress = f => f ? Math.min(1, (Date.now() - f.t0) / (farmGrowSec(f) * 1000 / farmCrewMul(f))) : 0;
   const saveFarms = () => { try { localStorage.setItem('farms', JSON.stringify(farms.map(f => ({ t0: f.t0, fast: f.fast ? 1 : 0, c: f.c, r: f.r, rot: f.rot })))); localStorage.setItem('wheat', wheatCount); localStorage.setItem('farmsBuilt', farmsBuilt); } catch (e) {} };
+  // a brand-new village starts with a small granary, so the first farm can be earned with wood instead of a hard food race
+  try {
+    if (!farms.length && wheatCount === 0 && localStorage.getItem('wheat') === null) { wheatCount = 20; saveFarms(); }
+  } catch (e) {}
 
   const toastEl = document.getElementById('toast'); let toastT = 0;
   function toast(msg) { toastEl.textContent = msg; toastEl.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => toastEl.classList.remove('on'), 2200); }
@@ -218,15 +228,29 @@
   function focusFarm(f) { if (!f) return; const ctr = farmCenter(f); cpx = ctr[0]; cpy = ctr[1]; clampCam(); }
   function renderBuild() {
     const btn = document.getElementById('farmBuy'), info = document.getElementById('farmInfo');
+    const haveWood = typeof woodCount === 'number' ? woodCount : 0;
     const nextGrow = farmsBuilt === 0 ? FIRST_FARM_GROW_SEC : FARM_GROW_SEC;
-    info.textContent = 'Ready in ' + nextGrow + 's \u00B7 ' + WHEAT_PER_HARVEST + ' wheat each time';
-    if (placing) { btn.textContent = 'Placing\u2026'; btn.disabled = true; }
-    else if (gold < FARM_COST) { btn.textContent = 'Need ' + FARM_COST + ' gold'; btn.disabled = true; }
-    else { btn.textContent = 'Build \u00B7 ' + FARM_COST + ' gold'; btn.disabled = false; }
+    info.textContent = 'Ready in ' + nextGrow + 's \u00B7 ' + WHEAT_PER_HARVEST + ' wheat \u00B7 ' + FARM_WOOD_COST + ' wood';
+    if (placing) { btn.textContent = 'Placing\u2026'; btn.disabled = true; btn.title = ''; }
+    else if (gold < FARM_COST) { btn.textContent = 'Need ' + FARM_COST + ' gold'; btn.disabled = true; btn.title = 'Sell wheat at the market for gold'; }
+    else if (haveWood < FARM_WOOD_COST) { btn.textContent = 'Need ' + FARM_WOOD_COST + ' wood'; btn.disabled = true; btn.title = 'Assign villagers as woodcutters in the villagers menu'; }
+    else { btn.textContent = 'Build \u00B7 ' + FARM_COST + 'g + ' + FARM_WOOD_COST + 'w'; btn.disabled = false; btn.title = ''; }
+    renderCamp();
+  }
+  function renderCamp() {
+    const btn = document.getElementById('campBuy'), info = document.getElementById('campInfo');
+    if (!btn || !info) return;
+    if (lumberCamp) { info.textContent = '+2 cutters \u00B7 forest-edge drop-off \u00B7 +20% chop'; btn.textContent = 'Built'; btn.disabled = true; btn.title = ''; return; }
+    const haveWood = typeof woodCount === 'number' ? woodCount : 0;
+    info.textContent = '+2 cutters \u00B7 forest-edge drop-off \u00B7 +20% chop';
+    if (gold < CAMP_COST) { btn.textContent = 'Need ' + CAMP_COST + ' gold'; btn.disabled = true; btn.title = 'Sell wheat at the market for gold'; }
+    else if (haveWood < CAMP_WOOD) { btn.textContent = 'Need ' + CAMP_WOOD + ' wood'; btn.disabled = true; btn.title = 'Assign villagers as woodcutters in the villagers menu'; }
+    else { btn.textContent = 'Build \u00B7 ' + CAMP_COST + 'g + ' + CAMP_WOOD + 'w'; btn.disabled = false; btn.title = ''; }
   }
   function startPlacing() {
     if (placing || movingFarm) return;
     if (gold < FARM_COST) { toast('You need ' + FARM_COST + ' gold'); return; }
+    if ((typeof woodCount === 'number' ? woodCount : 0) < FARM_WOOD_COST) { toast('You need ' + FARM_WOOD_COST + ' wood'); return; }
     const spot = findFarmSpot(0);
     placing = { c: spot.c, r: spot.r, rot: spot.rot };
     sel = null; hov = null; drag = null; tap = null; barKey = '#';
@@ -293,7 +317,10 @@
     const p = placing;
     if (commit) {
       if (!farmSpotOK(p.c, p.r, p.rot)) { mvBar.classList.remove('shake'); void mvBar.offsetWidth; mvBar.classList.add('shake'); return; }
+      if (gold < FARM_COST) { toast('You need ' + FARM_COST + ' gold'); return; }
+      if ((typeof woodCount === 'number' ? woodCount : 0) < FARM_WOOD_COST) { toast('You need ' + FARM_WOOD_COST + ' wood'); return; }
       if (!spendGold(FARM_COST)) return;
+      if (typeof spendWood === 'function') spendWood(FARM_WOOD_COST);
       const f = { t0: Date.now(), fast: farmsBuilt === 0, c: p.c, r: p.r, rot: p.rot };   // only the very first farm gets one quick crop
       farmsBuilt++;
       destroyFarmVisual(p);
@@ -308,6 +335,8 @@
   }
   buildBtn.addEventListener('click', () => { setTradeOpen(false); renderBuild(); });
   document.getElementById('farmBuy').addEventListener('click', () => { if (!placing && !movingFarm) startPlacing(); });
+  const campBuyEl = document.getElementById('campBuy');
+  if (campBuyEl) campBuyEl.addEventListener('click', () => { if (typeof buildLumberCamp === 'function') buildLumberCamp(); });
   if (farms.length || wheatCount) setStat('wheat', ICON.wheat, 'Wheat', wheatCount);
 
   // ---- on the map: green progress bar with the time (Clash-style), then a wheat bubble to tap ----
