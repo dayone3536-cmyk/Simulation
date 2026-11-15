@@ -69,6 +69,30 @@
 
   const clockText = ms => { const sec = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); };
 
+  // ---- the construction clock: a real timer, independent of the render loop ----
+  let homeTimerId = 0, homeTickerId = 0;
+  function updateHomeProgressUI(left) {
+    const pct = Math.min(100, Math.max(0, (1 - Math.max(0, left) / (HOME_UPGRADE_SEC * 1000)) * 100));
+    if (homeProgressFill) homeProgressFill.style.width = pct.toFixed(1) + '%';
+    if (homeProgressTime) homeProgressTime.textContent = clockText(left);
+  }
+  function stopHomeTimer() {
+    if (homeTimerId) { clearTimeout(homeTimerId); homeTimerId = 0; }
+    if (homeTickerId) { clearInterval(homeTickerId); homeTickerId = 0; }
+  }
+  function armHomeTimer() {
+    stopHomeTimer();
+    if (!homeUpgrading) return;
+    const tick = () => {
+      const left = homeUpgrading - Date.now();
+      if (!homeUpgrading || left <= 0) { stopHomeTimer(); finishHomeUpgrade(true); return; }
+      updateHomeProgressUI(left);
+    };
+    tick();
+    homeTickerId = setInterval(tick, 200);
+    homeTimerId = setTimeout(tick, Math.max(0, homeUpgrading - Date.now()) + 50);
+  }
+
   function renderHomePanel(force) {
     if (!homePanel) return;
     const now = performance.now();
@@ -103,11 +127,8 @@
             : 'A grander home raises your village\u2019s population cap.';
     }
     if (homeProgressWrap) homeProgressWrap.setAttribute('aria-hidden', upgrading ? 'false' : 'true');
-    if (upgrading) {
-      const left = Math.max(0, homeUpgrading - nowMs), pct = Math.min(100, Math.max(0, (1 - left / (HOME_UPGRADE_SEC * 1000)) * 100));
-      if (homeProgressFill) homeProgressFill.style.width = pct.toFixed(1) + '%';
-      if (homeProgressTime) homeProgressTime.textContent = clockText(left);
-    } else {
+    if (upgrading) updateHomeProgressUI(homeUpgrading - nowMs);
+    else {
       if (homeProgressFill) homeProgressFill.style.width = '0%';
       if (homeProgressTime) homeProgressTime.textContent = clockText(HOME_UPGRADE_SEC * 1000);
     }
@@ -133,12 +154,14 @@
     if (!spendGold(HOME_UPGRADE_COST)) return;
     homeUpgrading = Date.now() + HOME_UPGRADE_SEC * 1000;
     saveHome();
+    armHomeTimer();
     renderHomePanel(true);
     toast('Manor under construction \u2014 ready in ' + HOME_UPGRADE_SEC + 's');
   }
 
   function finishHomeUpgrade(celebrate) {
     if (homeLevel >= 1) return;
+    stopHomeTimer();
     homeLevel = 1;
     homeUpgrading = 0;
     saveHome();
@@ -329,13 +352,19 @@
     else setStat('pop', ICON.villager, 'Population', population);
   }
   drawHomeThumbs();
+  if (homeUpgrading) armHomeTimer();                 // resume a construction that was running before a reload
   if (finishedWhileAway) setTimeout(() => { try { toast('Your manor finished while you were away'); } catch (e) {} }, 1600);
+  const finishIfDue = () => { if (homeUpgrading && Date.now() >= homeUpgrading) finishHomeUpgrade(true); };
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) finishIfDue(); });
+  window.addEventListener('focus', finishIfDue);
 
   // handy hooks for the console and future updates
   window.home = {
+    version: 2,
     level: () => homeLevel,
     upgrading: () => homeUpgrading > Date.now(),
     open: openHomePanel,
     close: closeHomePanel,
-    upgrade: startHomeUpgrade
+    upgrade: startHomeUpgrade,
+    finishNow: () => finishHomeUpgrade(true)
   };
