@@ -450,8 +450,10 @@
   }
 
   let loaded = 0;
+  const bootTotal = BLK.length + TRE.length;
   const ready = () => {
-    if (++loaded < BLK.length + TRE.length || started) return; started = true;
+    if (window.BootScreen) window.BootScreen.progress(loaded / bootTotal);
+    if (++loaded < bootTotal || started) return; started = true;
     const mm = PX.MIPMAP_MODES ? { mipmap: PX.MIPMAP_MODES.ON } : undefined;      // smooth when zoomed out
     [...BLK, ...TRE].forEach(a => { a.tex = PX.Texture.from(a.im, mm); });
     shadowTex = radialTex('20,70,6', .42, 64); glowTex = radialTex('255,225,120', .9, 64);
@@ -464,6 +466,7 @@
     zoom = Math.min(cw / dw, ch / dh);
     cpx = projX(spawn.x, spawn.y); cpy = projY(spawn.x, spawn.y); clampCam();
     requestAnimationFrame(frame);
+    if (window.BootScreen) window.BootScreen.done();
     window.game = { setStat, setPopulation, villagers, occ, slot, cam: () => ({ cpx, cpy, zoom }), spawn, clearing, trees, farms, gold: () => gold, setGold, placing: () => placing, WORLD_W, WORLD_H, CELL, projX, projY, unprojX, unprojY };   // hooks for the next step
   };
   [...BLK, ...TRE].forEach(a => { a.im.onload = ready; if (a.im.complete && a.im.naturalWidth) ready(); });
