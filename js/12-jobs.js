@@ -56,7 +56,7 @@
     return (0.5 + 0.5 * crew) * buff * hungry;
   }
 
-  // ---- the forest is cleared: the camp is the woodcutter's home ----
+  // ---- the forest is cleared: the huts are the woodcutters' home ----
   let campG = null;
   function drawLumberCamp() {
     if (!lumberCamp || campG) return;
@@ -88,14 +88,14 @@
   }
   function buildLumberCamp() {
     if (typeof lumberCamp === 'undefined' || lumberCamp) return false;
-    if (gold < CAMP_COST) { toast('You need ' + CAMP_COST + ' gold for the lumber camp'); return false; }
-    if ((typeof woodCount === 'number' ? woodCount : 0) < CAMP_WOOD) { toast('You need ' + CAMP_WOOD + ' wood for the lumber camp'); return false; }
+    if (gold < CAMP_COST) { toast('You need ' + CAMP_COST + ' gold for the woodcutter huts'); return false; }
+    if ((typeof woodCount === 'number' ? woodCount : 0) < CAMP_WOOD) { toast('You need ' + CAMP_WOOD + ' wood for the woodcutter huts'); return false; }
     if (!spendGold(CAMP_COST)) return false;
     if (typeof spendWood === 'function') spendWood(CAMP_WOOD);
     lumberCamp = 1; saveCamp(); drawLumberCamp();
     if (typeof renderBuild === 'function') renderBuild();
     renderJobs();
-    toast('Lumber Camp built! Logs are dropped here and two more cutters can work');
+    toast('Woodcutter Huts built! Logs are dropped here and two more cutters can work');
     return true;
   }
 
@@ -153,12 +153,12 @@
       if (farmN) farmN.textContent = nFarm; if (woodN) woodN.textContent = nWood; if (idleN) idleN.textContent = nIdle;
       const farmSub = document.getElementById('jpFarmSub'); if (farmSub) farmSub.textContent = nFarms ? nFarm + ' of ' + nFarms + ' farms staffed' : 'No farms yet';
       const woodSub = document.getElementById('jpWoodSub');
-      if (woodSub) woodSub.textContent = nWood + ' of ' + cap + ' slots' + (cap < 4 ? ' · a camp adds 2' : ' · camp built');
+      if (woodSub) woodSub.textContent = nWood + ' of ' + cap + ' slots' + (cap < 4 ? ' · huts add 2' : ' · huts built');
       const sub = document.getElementById('jpSub'); if (sub) sub.textContent = population + ' villagers';
       const note = document.getElementById('jpNote');
       if (note) note.textContent = (nWood === 0 && nIdle === 0) ? 'No idle hands \u2014 take a farmer off the fields to cut wood.'
         : (nFarms && nFarm < nFarms) ? 'Farms without a farmer grow at half speed.'
-        : (nWood >= cap ? 'Build a Lumber Camp to hire more woodcutters.' : '');
+        : (nWood >= cap ? 'Build Woodcutter Huts to hire more woodcutters.' : '');
     }
     if (jpFarmMinus) jpFarmMinus.disabled = nFarm <= 0;
     if (jpFarmPlus) jpFarmPlus.disabled = nIdle <= 0;
@@ -170,7 +170,7 @@
   function bumpRole(role, dir) {
     applyJobs();
     if (dir > 0) {
-      if (role === ROLE_WOOD && countRole(ROLE_WOOD) >= cutterCap()) { toast('Build a Lumber Camp to hire more woodcutters'); return; }
+      if (role === ROLE_WOOD && countRole(ROLE_WOOD) >= cutterCap()) { toast('Build Woodcutter Huts to hire more woodcutters'); return; }
       const idx = roles.indexOf(ROLE_IDLE);
       if (idx < 0) { toast('Everyone already has a job'); return; }
       roles[idx] = role;
