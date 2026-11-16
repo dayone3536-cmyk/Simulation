@@ -1,6 +1,5 @@
   // ---------- the farm loop: buy it in the Build menu, villagers plant it, wait for the green bar, tap the bubble to collect the wheat ----------
-  const FARM_COST = 50;            // gold to build it
-  const FARM_WOOD_COST = 10;       // logs to build it: expanding food needs cutters too
+  const FARM_COST = 50;            // gold to build it — food is bought with coin, not logs
   const FIRST_FARM_GROW_SEC = 5;   // the very first crop the player ever plants ripens in 5 seconds
   const FARM_GROW_SEC = 15;        // every crop after that takes 15 seconds to ripen
   const WHEAT_PER_HARVEST = 10;    // wheat you get each time you collect
@@ -31,7 +30,7 @@
   const farmState = f => !f ? 'none' : (Date.now() - f.t0 >= farmGrowSec(f) * 1000 / farmCrewMul(f) ? 'ready' : 'growing');
   const farmProgress = f => f ? Math.min(1, (Date.now() - f.t0) / (farmGrowSec(f) * 1000 / farmCrewMul(f))) : 0;
   const saveFarms = () => { try { localStorage.setItem('farms', JSON.stringify(farms.map(f => ({ t0: f.t0, fast: f.fast ? 1 : 0, c: f.c, r: f.r, rot: f.rot })))); localStorage.setItem('wheat', wheatCount); localStorage.setItem('farmsBuilt', farmsBuilt); } catch (e) {} };
-  // a brand-new village starts with a small granary, so the first farm can be earned with wood instead of a hard food race
+  // a brand-new village starts with a small granary, so there is something to sell while the first crop grows
   try {
     if (!farms.length && wheatCount === 0 && localStorage.getItem('wheat') === null) { wheatCount = 20; saveFarms(); }
   } catch (e) {}
@@ -94,11 +93,11 @@
     }
   }
 
-  // ---- market: sell food to a merchant. The price moves over time, so timing your sales is the fun part ----
+  // ---- market: sell food for gold. The rate is always quoted for 10 food, and the +/- buttons pick the amount ----
   const MKT_BASE = 5, MKT_MIN = 2, MKT_MAX = 9;   // gold you get for 10 food
-  const MKT_EVERY_MS = 40000;                     // the price changes every 40 seconds
-  const MKT_BIG_SALE = 50;                        // selling this much at once pushes the price down a notch
-  const market = { p: MKT_BASE, hist: [5, 5, 5, 5, 5, 5], next: Date.now() + MKT_EVERY_MS, note: 'The merchant straightens his cloak and opens the stall.' };
+  const MKT_EVERY_MS = 40000;                     // the rate changes every 40 seconds
+  const QTY_STEP = 10;                            // one tap of +/- moves this much food
+  const market = { p: MKT_BASE, hist: [5, 5, 5, 5, 5, 5], next: Date.now() + MKT_EVERY_MS, note: 'Sell food for gold.' };
   try {
     const m = JSON.parse(localStorage.getItem('market') || 'null');
     if (m && Number.isFinite(m.p)) {
@@ -130,49 +129,53 @@
     return true;
   }
   const tradeBtn = document.getElementById('tradebtn'), tradePanel = document.getElementById('tradepanel');
-  const elMood = document.getElementById('tradeMood'), elGold = document.getElementById('priceGold'), elTrend = document.getElementById('trend');
-  const elSpark = document.getElementById('spark'), elTag = document.getElementById('priceTag'), elTimer = document.getElementById('priceTimer');
+  const elMood = document.getElementById('tradeMood'), elGold = document.getElementById('priceGold');
+  const elTag = document.getElementById('priceTag'), elTimer = document.getElementById('priceTimer');
   const elHave = document.getElementById('tradeGet'), elNote = document.getElementById('tradeNote'), elFx = document.getElementById('coinfx');
-  const sell10 = document.getElementById('sell10'), sell50 = document.getElementById('sell50'), sellX = document.getElementById('sellX'), sellXn = document.getElementById('sellXn');
+  const qtyNum = document.getElementById('qtyNum'), qtyMinus = document.getElementById('qtyMinus'), qtyPlus = document.getElementById('qtyPlus');
+  const sellBtn = document.getElementById('sellBtn'), sellBtnTxt = document.getElementById('sellBtnTxt'), sellBtnGold = document.getElementById('sellBtnGold');
   const harvestReadyBtn = document.getElementById('harvestReady'), harvestReadyTxt = document.getElementById('harvestReadyTxt');
-  let tradeOpen = false;
-  function drawSpark() {
-    if (!elSpark) return;
-    const h = market.hist, n = h.length, pts = h.map((v, i) => [n > 1 ? i / (n - 1) * 96 + 2 : 50, 25 - (v - MKT_MIN) / (MKT_MAX - MKT_MIN) * 22]);
-    const line = pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' '), last = pts[pts.length - 1];
-    elSpark.innerHTML = '<polyline points="' + line + '" fill="none" stroke="#c99a4b" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' +
-      '<circle cx="' + last[0].toFixed(1) + '" cy="' + last[1].toFixed(1) + '" r="2.6" fill="#ffe27a" stroke="#7a4a08" stroke-width=".8"/>';
+  let tradeOpen = false, tradeQty = QTY_STEP;
+  function refreshTradeQty() {
+    const max = Math.max(0, wheatCount | 0);
+    if (max <= 0) { tradeQty = 0; return; }
+    if (tradeQty < 1) tradeQty = Math.min(QTY_STEP, max);
+    if (tradeQty > max) tradeQty = max;
   }
   function renderTrade() {
     if (tradeBtn) tradeBtn.classList.toggle('hot', market.p >= 7);
     if (!tradePanel || !tradeOpen) return;
-    const have = wheatCount | 0, p = market.p, prev = market.hist.length > 1 ? market.hist[market.hist.length - 2] : p;
+    const have = Math.max(0, wheatCount | 0), p = market.p;
     const need = Math.max(1, Math.ceil(population / 2)), reserve = need * 2;
-    const extra = Math.max(0, have - reserve);
     const readyCount = farms.filter(f => farmState(f) === 'ready').length;
     elGold.textContent = p;
     elMood.textContent = market.note;
-    elTrend.textContent = p > prev ? '\u25B2 Rising' : p < prev ? '\u25BC Falling' : '\u2022 Steady';
-    elTrend.className = p > prev ? 'up' : p < prev ? 'down' : '';
-    elTag.textContent = p >= 8 ? 'Excellent price \u2014 strike now!' : p === 7 ? 'Great price. Sell now!' : p === 6 ? 'Good price' : p === 5 ? 'Fair price' : p === 4 ? 'A bit low' : 'Poor price \u2014 better to wait';
+    elTag.textContent = p >= 8 ? 'Excellent price' : p === 7 ? 'Great price' : p === 6 ? 'Good price' : p === 5 ? 'Fair price' : p === 4 ? 'A bit low' : 'Poor price';
     elTag.className = p >= 7 ? 'great' : p <= 3 ? 'poor' : '';
     const left = Math.max(0, Math.ceil((market.next - Date.now()) / 1000));
-    elTimer.textContent = 'Price shifts in ' + left + 's';
-    drawSpark();
-    elHave.textContent = 'Granary: ' + have + ' food';
+    elTimer.textContent = 'shifts in ' + left + 's';
+    elHave.textContent = have ? 'You have ' + have + ' food' : 'Your granary is empty';
+    refreshTradeQty();
+    const qty = tradeQty, gain = goldFor(qty), canSell = qty > 0 && qty <= have && gain >= 1;
+    qtyNum.textContent = qty;
+    qtyMinus.disabled = have <= 0 || qty <= Math.min(QTY_STEP, have);
+    qtyPlus.disabled = qty >= have;
+    sellBtn.disabled = !canSell;
+    sellBtnTxt.textContent = qty > 0 ? 'Sell ' + qty + ' food' : 'Sell food';
+    sellBtnGold.textContent = qty > 0 ? '+' + gain + ' gold' : '+0 gold';
     if (harvestReadyBtn) {
       harvestReadyBtn.style.display = readyCount > 0 ? 'flex' : 'none';
       if (harvestReadyTxt) harvestReadyTxt.textContent = 'Harvest ' + readyCount + ' ready farm' + (readyCount === 1 ? '' : 's') + ' (+' + (readyCount * WHEAT_PER_HARVEST) + ' food)';
     }
-    const g10 = goldFor(10), g50 = goldFor(50), gX = goldFor(extra);
-    sell10.disabled = have < 10 || g10 < 1;
-    sell50.disabled = have < 50 || g50 < 1;
-    sellX.disabled = gX < 1;
-    sell10.innerHTML = '<small>Sell 10</small>+' + g10 + 'g';
-    sell50.innerHTML = '<small>Sell 50</small>+' + g50 + 'g';
-    sellX.innerHTML = '<small>Sell extra (' + (extra > 0 ? extra : 0) + ')</small>+' + gX + 'g';
-    elNote.textContent = 'Villagers eat ' + need + ' food / 20s. Keep at least ' + reserve + ' in reserve.';
+    elNote.textContent = 'Villagers eat ' + need + ' food every 20s \u2014 keep at least ' + reserve + ' in reserve.';
     if (tradePanel) tradePanel.classList.toggle('great-deal', p >= 7);
+  }
+  function bumpTradeQty(dir) {
+    const max = Math.max(0, wheatCount | 0);
+    if (max <= 0) return;
+    if (dir > 0) tradeQty = tradeQty >= max ? max : Math.min(max, Math.ceil((tradeQty + 1) / QTY_STEP) * QTY_STEP);
+    else tradeQty = tradeQty <= QTY_STEP ? Math.min(QTY_STEP, max) : Math.floor((tradeQty - 1) / QTY_STEP) * QTY_STEP;
+    renderTrade();
   }
   function coinBurst(n) {
     if (!elFx || !ICON.coin) return;
@@ -198,10 +201,7 @@
     saveFarms();
     setStat('wheat', ICON.wheat, 'Wheat', wheatCount);
     refreshWheatHud();
-    if (food >= MKT_BIG_SALE && market.p > MKT_MIN) {          // dump a lot on the merchant and he pays less next time
-      market.p--; market.hist[market.hist.length - 1] = market.p;
-      market.note = 'You flooded the stall \u2014 the merchant lowers his offer.'; saveMarket();
-    }
+    tradeQty = Math.min(QTY_STEP, Math.max(0, wheatCount | 0));
     coinBurst(gain);
     renderTrade();
     const deal = market.p >= 7 ? ' Excellent deal!' : market.p <= 3 ? ' Tough bargain.' : '';
@@ -216,9 +216,9 @@
   if (tradeBtn) tradeBtn.addEventListener('click', () => setTradeOpen(!tradeOpen));
   const tradeCancel = document.getElementById('tradeCancel');
   if (tradeCancel) tradeCancel.addEventListener('click', () => setTradeOpen(false));
-  if (sell10) sell10.addEventListener('click', () => sellFood(10));
-  if (sell50) sell50.addEventListener('click', () => sellFood(50));
-  if (sellX) sellX.addEventListener('click', () => sellFood(Math.max(0, (wheatCount | 0) - Math.max(1, Math.ceil(population / 2)) * 2)));
+  if (qtyMinus) qtyMinus.addEventListener('click', () => bumpTradeQty(-1));
+  if (qtyPlus) qtyPlus.addEventListener('click', () => bumpTradeQty(1));
+  if (sellBtn) sellBtn.addEventListener('click', () => sellFood(tradeQty));
   if (harvestReadyBtn) harvestReadyBtn.addEventListener('click', harvestAllReady);
   setInterval(() => { tickMarket(); renderTrade(); }, 1000);
   renderTrade();
@@ -228,13 +228,11 @@
   function focusFarm(f) { if (!f) return; const ctr = farmCenter(f); cpx = ctr[0]; cpy = ctr[1]; clampCam(); }
   function renderBuild() {
     const btn = document.getElementById('farmBuy'), info = document.getElementById('farmInfo');
-    const haveWood = typeof woodCount === 'number' ? woodCount : 0;
     const nextGrow = farmsBuilt === 0 ? FIRST_FARM_GROW_SEC : FARM_GROW_SEC;
-    info.textContent = 'Ready in ' + nextGrow + 's \u00B7 ' + WHEAT_PER_HARVEST + ' wheat \u00B7 ' + FARM_WOOD_COST + ' wood';
+    info.textContent = 'Ready in ' + nextGrow + 's \u00B7 ' + WHEAT_PER_HARVEST + ' wheat';
     if (placing) { btn.textContent = 'Placing\u2026'; btn.disabled = true; btn.title = ''; }
-    else if (gold < FARM_COST) { btn.textContent = 'Need ' + FARM_COST + ' gold'; btn.disabled = true; btn.title = 'Sell wheat at the market for gold'; }
-    else if (haveWood < FARM_WOOD_COST) { btn.textContent = 'Need ' + FARM_WOOD_COST + ' wood'; btn.disabled = true; btn.title = 'Assign villagers as woodcutters in the villagers menu'; }
-    else { btn.textContent = 'Build \u00B7 ' + FARM_COST + 'g + ' + FARM_WOOD_COST + 'w'; btn.disabled = false; btn.title = ''; }
+    else if (gold < FARM_COST) { btn.textContent = 'Need ' + FARM_COST + ' gold'; btn.disabled = true; btn.title = 'Sell food at the market for gold'; }
+    else { btn.textContent = 'Build \u00B7 ' + FARM_COST + 'g'; btn.disabled = false; btn.title = ''; }
     renderCamp();
   }
   function renderCamp() {
@@ -243,14 +241,13 @@
     if (lumberCamp) { info.textContent = '+2 cutters \u00B7 forest-edge drop-off \u00B7 +20% chop'; btn.textContent = 'Built'; btn.disabled = true; btn.title = ''; return; }
     const haveWood = typeof woodCount === 'number' ? woodCount : 0;
     info.textContent = '+2 cutters \u00B7 forest-edge drop-off \u00B7 +20% chop';
-    if (gold < CAMP_COST) { btn.textContent = 'Need ' + CAMP_COST + ' gold'; btn.disabled = true; btn.title = 'Sell wheat at the market for gold'; }
+    if (gold < CAMP_COST) { btn.textContent = 'Need ' + CAMP_COST + ' gold'; btn.disabled = true; btn.title = 'Sell food at the market for gold'; }
     else if (haveWood < CAMP_WOOD) { btn.textContent = 'Need ' + CAMP_WOOD + ' wood'; btn.disabled = true; btn.title = 'Assign villagers as woodcutters in the villagers menu'; }
     else { btn.textContent = 'Build \u00B7 ' + CAMP_COST + 'g + ' + CAMP_WOOD + 'w'; btn.disabled = false; btn.title = ''; }
   }
   function startPlacing() {
     if (placing || movingFarm) return;
     if (gold < FARM_COST) { toast('You need ' + FARM_COST + ' gold'); return; }
-    if ((typeof woodCount === 'number' ? woodCount : 0) < FARM_WOOD_COST) { toast('You need ' + FARM_WOOD_COST + ' wood'); return; }
     const spot = findFarmSpot(0);
     placing = { c: spot.c, r: spot.r, rot: spot.rot };
     sel = null; hov = null; drag = null; tap = null; barKey = '#';
@@ -318,9 +315,7 @@
     if (commit) {
       if (!farmSpotOK(p.c, p.r, p.rot)) { mvBar.classList.remove('shake'); void mvBar.offsetWidth; mvBar.classList.add('shake'); return; }
       if (gold < FARM_COST) { toast('You need ' + FARM_COST + ' gold'); return; }
-      if ((typeof woodCount === 'number' ? woodCount : 0) < FARM_WOOD_COST) { toast('You need ' + FARM_WOOD_COST + ' wood'); return; }
       if (!spendGold(FARM_COST)) return;
-      if (typeof spendWood === 'function') spendWood(FARM_WOOD_COST);
       const f = { t0: Date.now(), fast: farmsBuilt === 0, c: p.c, r: p.r, rot: p.rot };   // only the very first farm gets one quick crop
       farmsBuilt++;
       destroyFarmVisual(p);

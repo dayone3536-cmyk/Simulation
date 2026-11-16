@@ -80,7 +80,7 @@
   function woodRate() {
     let r = 1;
     if (typeof workerRateMul === 'function') r *= workerRateMul();
-    if (typeof lumberCamp !== 'undefined' && lumberCamp) r *= 1.2;   // sharp camp axes
+    if (typeof lumberCamp !== 'undefined' && lumberCamp) r *= 1.2;   // sharp hut axes
     if (typeof wheatCount === 'number' && wheatCount <= 0) r *= .6;   // hungry hands are slow, never idle forever
     return Math.max(.2, r);
   }
@@ -123,7 +123,7 @@
     if (typeof villagers === 'undefined') return;
     tickWoodFx(); drawWoodPile();
     const doorX = (home.c + 1.4) * CELL, stepY = (home.r + HOME_N + .55) * CELL;
-    // a built camp is a forward depot: logs are dropped at the forest edge, not hauled all the way home
+    // built huts are a forward depot: logs are dropped at the forest edge, not hauled all the way home
     const campDrop = typeof lumberCamp !== 'undefined' && lumberCamp;
     const dropX = campDrop ? clearing.x1 - 190 : doorX;
     const dropY = campDrop ? clearing.y0 + 178 : stepY;
