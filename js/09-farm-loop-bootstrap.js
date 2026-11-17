@@ -234,6 +234,7 @@
     else if (gold < FARM_COST) { btn.textContent = 'Need ' + FARM_COST + ' gold'; btn.disabled = true; btn.title = 'Sell food at the market for gold'; }
     else { btn.textContent = 'Build \u00B7 ' + FARM_COST + 'g'; btn.disabled = false; btn.title = ''; }
     renderCamp();
+    if (typeof renderWoodHutBuild === 'function') renderWoodHutBuild();   // 14: the hut card sits beside the camp
   }
   function renderCamp() {
     const btn = document.getElementById('campBuy'), info = document.getElementById('campInfo');
@@ -457,6 +458,7 @@
     shadowTex = radialTex('20,70,6', .42, 64); glowTex = radialTex('255,225,120', .9, 64);
     growForest();
     buildGround(); buildTrees(); farms.forEach(rebuildFarm);
+    if (typeof initWoodHutWorld === 'function') initWoodHutWorld();   // 14: apply the saved hut grove to the fresh forest
     syncVillagers();
     resize();
     // whole clearing diamond fits on screen

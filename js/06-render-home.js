@@ -62,15 +62,21 @@
     const vl = cpx - cw / 2 / zoom, vr = cpx + cw / 2 / zoom, vt = cpy - ch / 2 / zoom, vb = cpy + ch / 2 / zoom;
     for (const g of groundChunks) g.box.visible = !(g.x1 < vl || g.x0 > vr || g.y1 < vt || g.y0 > vb);
   }
+  // one tree's map sprites. buildTrees() uses it for the forest, and 14-woodcutter-hut
+  // uses it again when a tree in the hut's grove grows back.
+  function buildTreeSprite(t) {
+    const tr = TRE[t.v];
+    if (!tr || !shadowTex || t.spr) return;
+    const tex = tr.tex;
+    if (!tex) return;
+    t.px = projX(t.x, t.y); t.py = projY(t.x, t.y);
+    t.sx0 = t.flip * tr.w * t.s * .9 / tex.width; t.sy0 = tr.h * t.s * .9 / tex.height;
+    const s = new PX.Sprite(tex); s.anchor.set(.5, 1); s.position.set(t.px, t.py + 4 * t.s); s.scale.set(t.sx0, t.sy0); s.visible = false;
+    const sh = new PX.Sprite(shadowTex), w = tr.w * t.s * .75; sh.anchor.set(.5); sh.position.set(t.px, t.py - 2); sh.scale.set(w / shadowTex.width, w * .42 / shadowTex.height); sh.visible = false;
+    t.spr = s; t.shd = sh; shadowL.addChild(sh); treeL.addChild(s);
+  }
   function buildTrees() {
-    for (const t of trees) {
-      const tr = TRE[t.v], tex = tr.tex;
-      t.px = projX(t.x, t.y); t.py = projY(t.x, t.y);
-      t.sx0 = t.flip * tr.w * t.s * .9 / tex.width; t.sy0 = tr.h * t.s * .9 / tex.height;
-      const s = new PX.Sprite(tex); s.anchor.set(.5, 1); s.position.set(t.px, t.py + 4 * t.s); s.scale.set(t.sx0, t.sy0); s.visible = false;
-      const sh = new PX.Sprite(shadowTex), w = tr.w * t.s * .75; sh.anchor.set(.5); sh.position.set(t.px, t.py - 2); sh.scale.set(w / shadowTex.width, w * .42 / shadowTex.height); sh.visible = false;
-      t.spr = s; t.shd = sh; shadowL.addChild(sh); treeL.addChild(s);
-    }
+    for (const t of trees) buildTreeSprite(t);
   }
   let glowSpr = null, glowTree = null;
   function updateTrees(time, now) {

@@ -21,7 +21,7 @@
   const woodNum = document.getElementById('woodnum');
   let woodKey = '';
   function refreshWoodHud() {
-    const show = woodCount > 0 || (typeof lumberCamp !== 'undefined' && lumberCamp);
+    const show = woodCount > 0 || (typeof lumberCamp !== 'undefined' && lumberCamp) || (typeof woodHut !== 'undefined' && woodHut.owned);
     const key = woodCount + '|' + (show ? 1 : 0);
     if (key === woodKey) return; woodKey = key;
     if (woodPill) woodPill.style.display = show ? 'flex' : 'none';
@@ -89,6 +89,7 @@
     let best = null, bs = Infinity;
     for (const t of trees) {
       if (t.claim || t.dying) continue;
+      if (typeof hutTreeAllowed === 'function' && !hutTreeAllowed(t)) continue;   // 14: a built hut owns a small grove
       const d = (t.x - v.x) ** 2 + (t.y - v.y) ** 2;
       const h = (t.x - hx) ** 2 + (t.y - hy) ** 2;
       const s = d * .55 + h * .45;
@@ -101,6 +102,7 @@
     occ.delete(slot(t.c, t.r));
     setTimeout(() => { const k = trees.indexOf(t); if (k >= 0) trees.splice(k, 1); dropTree(t); }, 430);
     addWood(WOOD_PER_TREE);
+    if (typeof onHutTreeFelled === 'function') onHutTreeFelled(t);   // 14: remember the stump and regrow time
     woodFloat('+' + WOOD_PER_TREE + ' wood', t.x, t.y);
     v.cut = null;
   }
@@ -125,8 +127,9 @@
     const doorX = (home.c + 1.4) * CELL, stepY = (home.r + HOME_N + .55) * CELL;
     // built huts are a forward depot: logs are dropped at the forest edge, not hauled all the way home
     const campDrop = typeof lumberCamp !== 'undefined' && lumberCamp;
-    const dropX = campDrop ? clearing.x1 - 190 : doorX;
-    const dropY = campDrop ? clearing.y0 + 178 : stepY;
+    let dropX = campDrop ? clearing.x1 - 190 : doorX;
+    let dropY = campDrop ? clearing.y0 + 178 : stepY;
+    if (typeof hutDropPoint === 'function') { const hp = hutDropPoint(); if (hp) { dropX = hp.x; dropY = hp.y; } }   // 14: the hut is the drop-off
     for (const v of villagers) {
       if (v.role !== 'woodcutter') {
         if (v.cut) { v.cut.claim = null; v.cut = null; }
@@ -145,7 +148,7 @@
           const t = findTreeFor(v);
           if (!t) {
             v.ti = 3;
-            if (!woodEmptyWarned) { woodEmptyWarned = 1; toast('The woods around your village are clear'); }
+            if (!woodEmptyWarned) { woodEmptyWarned = 1; toast(typeof hutEmptyMessage === 'function' ? hutEmptyMessage() : 'The woods around your village are clear'); }
           } else {
             v.cut = t; t.claim = v; v.st = 'toTree';
             if (v.carry0 === undefined) v.carry0 = v.carry;
