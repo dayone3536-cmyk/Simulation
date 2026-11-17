@@ -1,88 +1,87 @@
   // ---------- boot / loading screen ----------
-  // The game decodes a few megabytes of base64 art before the first frame. This overlay is in the HTML from the
-  // very first paint, so the player sees a proper Clash-style loading bar with tips instead of a bare green screen.
+  // A quiet title card over the forest: a hairline ember trail instead of a chunky web progress bar.
+  // The game decodes several megabytes of base64 art before the first frame, so this is on screen from the first paint.
   (function () {
     const bootEl = document.getElementById('boot');
     if (!bootEl) return;
-    const fill = document.getElementById('bootFill');
-    const pctEl = document.getElementById('bootPct');
+    const pctEl = document.getElementById('bootNum');
     const labelEl = document.getElementById('bootLabel');
-    const barEl = document.getElementById('bootBar');
     const tipText = document.getElementById('bootTipText');
 
     const TIPS = [
-      'Tap a ripe farm\u2019s wheat bubble to harvest it.',
-      'Sell spare food at the Market \u2014 prices change every 40 seconds.',
-      'Villagers eat food every 20 seconds. Keep your granary stocked.',
-      'Build Woodcutter Huts to grow your population.',
-      'Hold a feast at your home for a village-wide boost.',
-      'Drag your home to move it, and tap it to manage upgrades.',
-      'The first crop on your very first farm ripens in just 5 seconds.',
-      'Pinch to zoom out and see the whole clearing.',
-      'A farmer on each farm keeps the crops growing at full speed.',
-      'Sell when the Market says \u201cExcellent price\u201d for the best deal.'
+      'Tap a ripe field to gather its wheat.',
+      'The market shifts its price every forty seconds.',
+      'Your villagers eat every twenty seconds \u2014 keep the granary full.',
+      'Woodcutter huts make room for more villagers.',
+      'A feast at your home lifts the whole village.',
+      'Drag your home to move it. Tap it to manage it.',
+      'The first field ripens in five seconds.',
+      'Pinch to see the whole clearing.',
+      'One farmer per field keeps the crops growing briskly.',
+      'Sell when the market calls it an excellent price.'
     ];
 
     const start = performance.now();
-    const MIN_SHOW_MS = 1400;     // never blink away so fast that it looks broken
+    const MIN_SHOW_MS = 1600;
     let shown = 0, target = 0, finished = false, last = start, lastPct = -1, lastLabel = '', tipIndex = 0;
 
     function stageFor(p) {
-      if (p < 30) return 'Waking the forest\u2026';
-      if (p < 62) return 'Planting the fields\u2026';
-      if (p < 90) return 'Bringing the villagers home\u2026';
-      return 'Almost ready\u2026';
+      if (p < 26) return 'Waking the village';
+      if (p < 58) return 'Raising the cabins';
+      if (p < 86) return 'Bringing the villagers in';
+      return 'Stoking the hearth';
     }
 
     function render() {
-      if (fill) fill.style.width = shown.toFixed(1) + '%';
+      bootEl.style.setProperty('--boot-p', shown.toFixed(2) + '%');
       const pct = Math.max(0, Math.min(100, Math.round(shown)));
-      if (pct !== lastPct && pctEl) { lastPct = pct; pctEl.textContent = pct + '%'; }
+      if (pct !== lastPct && pctEl) { lastPct = pct; pctEl.textContent = pct; }
       const label = stageFor(shown);
       if (label !== lastLabel && labelEl) { lastLabel = label; labelEl.textContent = label; }
-      if (barEl) barEl.classList.toggle('filling', shown > 1 && !finished);
     }
 
     function fadeOut() {
       if (finished) return;
       finished = true;
       bootEl.classList.add('boot-out');
-      setTimeout(() => bootEl.remove(), 700);
+      setTimeout(() => bootEl.remove(), 950);
     }
 
     function tick(now) {
       const dt = Math.min(.1, (now - last) / 1000);
       last = now;
       if (!finished) {
-        if (target < 90) target = Math.min(90, target + dt * 2.3);   // gentle trickle while the art decodes
-        shown += (target - shown) * (1 - Math.exp(-dt * 7));
+        if (target < 90) target = Math.min(90, target + dt * 2.1);
+        shown += (target - shown) * (1 - Math.exp(-dt * 6.5));
         render();
-        if (target >= 100 && now - start >= MIN_SHOW_MS) {
-          if (shown > 99.2) { shown = 100; render(); fadeOut(); }
+        if (target >= 100 && shown > 99.4 && now - start >= MIN_SHOW_MS) {
+          shown = 100;
+          render();
+          bootEl.classList.add('is-done');
+          setTimeout(fadeOut, 260);
         }
       }
       if (!finished) requestAnimationFrame(tick);
     }
 
-    function nextTip() {
+    function swapTip() {
       if (!tipText) return;
-      tipText.classList.add('swap');
+      tipText.classList.add('is-swapping');
       setTimeout(() => {
         tipIndex = (tipIndex + 1) % TIPS.length;
         tipText.textContent = TIPS[tipIndex];
-        tipText.classList.remove('swap');
-      }, 280);
+        tipText.classList.remove('is-swapping');
+      }, 400);
     }
 
     if (tipText) tipText.textContent = TIPS[0];
-    const tipTimer = setInterval(() => { if (!finished) nextTip(); else clearInterval(tipTimer); }, 3800);
+    const tipTimer = setInterval(() => { if (!finished) swapTip(); else clearInterval(tipTimer); }, 6000);
 
     window.BootScreen = {
-      // real loading progress, 0..1 — keeps the bar honest without ever going backwards
       progress: function (f) {
         if (finished) return;
         const p = Math.max(0, Math.min(1, Number(f) || 0)) * 100;
-        if (p > target) target = Math.max(target, Math.min(99, p));
+        if (p > target) target = Math.min(99, p);
       },
       done: function () {
         if (!finished) target = 100;

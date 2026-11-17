@@ -8,53 +8,32 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="css/style.css?v=4">
 <link rel="stylesheet" href="css/economy.css?v=1">
-<link rel="stylesheet" href="css/boot.css?v=1">
+<link rel="stylesheet" href="css/boot.css?v=2">
 </head>
 <body>
 <div id="boot" role="status" aria-live="polite" aria-label="Loading Forest Village">
-  <svg class="boot-pines back" viewBox="0 0 1200 260" preserveAspectRatio="none" aria-hidden="true">
-    <polygon points="40,110 98,225 -18,225" fill="#144610"/>
-    <polygon points="140,86 199,205 -1,205" fill="#144610"/>
-    <polygon points="250,118 306,225 194,225" fill="#144610"/>
-    <polygon points="360,72 422,205 298,205" fill="#144610"/>
-    <polygon points="470,108 527,218 413,218" fill="#144610"/>
-    <polygon points="580,84 640,210 520,210" fill="#144610"/>
-    <polygon points="700,122 755,225 645,225" fill="#144610"/>
-    <polygon points="820,92 879,212 761,212" fill="#144610"/>
-    <polygon points="930,120 986,225 874,225" fill="#144610"/>
-    <polygon points="1040,80 1102,210 978,210" fill="#144610"/>
-    <polygon points="1150,112 1208,225 1092,225" fill="#144610"/>
-  </svg>
-  <svg class="boot-pines" viewBox="0 0 1200 260" preserveAspectRatio="none" aria-hidden="true">
-    <polygon points="90,60 170,240 -10,240" fill="#082105"/>
-    <polygon points="230,108 300,250 160,250" fill="#082105"/>
-    <polygon points="370,40 455,235 285,235" fill="#082105"/>
-    <polygon points="520,96 592,250 448,250" fill="#082105"/>
-    <polygon points="660,52 742,240 578,240" fill="#082105"/>
-    <polygon points="805,110 876,250 734,250" fill="#082105"/>
-    <polygon points="945,64 1025,245 865,245" fill="#082105"/>
-    <polygon points="1090,100 1165,250 1015,250" fill="#082105"/>
-    <polygon points="1190,70 1200,250 1130,250" fill="#082105"/>
-  </svg>
-  <div class="boot-panel">
-    <div class="boot-crest" aria-hidden="true">
-      <svg viewBox="0 0 64 64">
-        <path d="M32 7 18 29h8L12 47h40L38 29h8z" fill="#7ac24a" stroke="#2f5e18" stroke-width="2" stroke-linejoin="round"/>
-        <path d="M32 16 22 32h6l-8 11h24l-8-11h6z" fill="#a4dd6b" opacity=".55"/>
-        <rect x="28" y="47" width="8" height="11" rx="2" fill="#8b5a2b" stroke="#4a2810" stroke-width="2"/>
-      </svg>
-    </div>
+  <div class="boot-frame" aria-hidden="true"></div>
+  <div class="boot-glow" aria-hidden="true"></div>
+  <div class="boot-inner">
+    <svg class="boot-sigil" viewBox="0 0 26 30" aria-hidden="true">
+      <path d="M13 28V8"/>
+      <path d="M13 8.5c-3.6-.3-6.1-2.6-6.6-6.2 3.6.3 6.1 2.6 6.6 6.2z"/>
+      <path d="M13 8.5c3.6-.3 6.1-2.6 6.6-6.2-3.6.3-6.1 2.6-6.6 6.2z"/>
+      <path d="M13 14c-3.4-.3-5.8-2.5-6.2-5.9 3.4.3 5.8 2.5 6.2 5.9z"/>
+      <path d="M13 14c3.4-.3 5.8-2.5 6.2-5.9-3.4.3-5.8 2.5-6.2 5.9z"/>
+      <path d="M13 19.5c-3-.2-5.2-2.2-5.6-5.3 3 .2 5.2 2.2 5.6 5.3z"/>
+      <path d="M13 19.5c3-.2 5.2-2.2 5.6-5.3-3 .2-5.2 2.2-5.6 5.3z"/>
+    </svg>
     <h1 class="boot-title">Forest Village</h1>
     <p class="boot-sub">Gather &middot; Build &middot; Grow</p>
-    <div id="bootBar" class="boot-bar" aria-hidden="true">
-      <div class="boot-track"><div id="bootFill" class="boot-fill"></div></div>
-      <span class="spark"></span>
+    <div class="boot-meter">
+      <div class="boot-meta"><span id="bootLabel">Waking the village</span><b id="bootPct"><span id="bootNum">0</span><i>%</i></b></div>
+      <div id="bootBar" class="boot-trail" aria-hidden="true"><i class="boot-fill"></i></div>
     </div>
-    <div class="boot-status"><span id="bootLabel">Waking the forest&hellip;</span><b id="bootPct">0%</b></div>
   </div>
-  <div class="boot-tip"><span class="boot-tip-badge">TIP</span><span class="boot-tip-text" id="bootTipText"></span></div>
+  <p class="boot-tip"><span class="boot-diamond" aria-hidden="true"></span><span id="bootTipText"></span></p>
 </div>
-<script src="js/00-boot.js?v=1"></script>
+<script src="js/00-boot.js?v=2"></script>
 <canvas id="c"></canvas>
 <div id="vignette"></div>
 <div id="info"></div>

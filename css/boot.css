@@ -1,80 +1,91 @@
-  /* ---------- boot / loading screen: dark forest with a Clash-style progress bar and rotating tips ---------- */
-  #boot { position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    overflow: hidden; user-select: none; -webkit-tap-highlight-color: transparent; text-align: center;
-    background: radial-gradient(130% 100% at 50% 28%, #337426 0%, #24601b 38%, #153f10 68%, #0a2307 100%);
-    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
-    animation: bootFailsafe .5s ease 14s forwards; }
-  #boot::before { content: ''; position: absolute; inset: -20%; pointer-events: none; opacity: .5;
+  /* ---------- boot screen: a quiet, candlelit title card rather than a web loader ---------- */
+  #boot { --boot-p: 0%; position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center;
+    overflow: hidden; user-select: none; -webkit-tap-highlight-color: transparent; text-align: center; background: #071505;
+    font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Times New Roman', serif;
+    animation: bootFailsafe .6s ease 16s forwards; }
+  #boot::before { content: ''; position: absolute; inset: -12%; pointer-events: none;
     background:
-      repeating-linear-gradient(45deg, rgba(255,255,255,.045) 0 1px, transparent 1px 74px),
-      repeating-linear-gradient(-45deg, rgba(0,0,0,.09) 0 1px, transparent 1px 74px); }
+      radial-gradient(115% 80% at 50% 42%, rgba(43,96,32,.58) 0%, rgba(20,50,15,.88) 46%, rgba(5,16,4,1) 100%),
+      #071505; }
   #boot::after { content: ''; position: absolute; inset: 0; pointer-events: none;
-    background: radial-gradient(ellipse at center, transparent 52%, rgba(4,20,2,.62) 100%); }
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.4'/%3E%3C/svg%3E");
+    background-size: 160px 160px; opacity: .16; mix-blend-mode: soft-light; }
 
-  .boot-pines { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: min(30vh, 230px); pointer-events: none; opacity: .55; }
-  .boot-pines.back { height: min(38vh, 290px); opacity: .3; }
+  .boot-frame { position: absolute; inset: 13px; border: 1px solid rgba(201,154,75,.16); pointer-events: none;
+    background:
+      linear-gradient(rgba(201,154,75,.34), rgba(201,154,75,.34)) right -1px top -1px / 26px 1px no-repeat,
+      linear-gradient(rgba(201,154,75,.34), rgba(201,154,75,.34)) right -1px top -1px / 1px 26px no-repeat,
+      linear-gradient(rgba(201,154,75,.34), rgba(201,154,75,.34)) left -1px bottom -1px / 26px 1px no-repeat,
+      linear-gradient(rgba(201,154,75,.34), rgba(201,154,75,.34)) left -1px bottom -1px / 1px 26px no-repeat; }
+  .boot-frame::before, .boot-frame::after { content: ''; position: absolute; width: 26px; height: 26px; border-color: rgba(201,154,75,.34); border-style: solid; }
+  .boot-frame::before { left: -1px; top: -1px; border-width: 1px 0 0 1px; }
+  .boot-frame::after { right: -1px; bottom: -1px; border-width: 0 1px 1px 0; }
 
-  .boot-panel { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; padding: 0 18px; }
+  .boot-glow { position: absolute; left: 50%; top: 47%; width: min(80vw, 660px); aspect-ratio: 1; transform: translate(-50%, -50%);
+    pointer-events: none; background: radial-gradient(circle, rgba(255,170,70,.1) 0%, rgba(255,170,70,0) 62%);
+    animation: bootBreathe 9s ease-in-out infinite; }
 
-  .boot-crest { width: 78px; height: 78px; margin-bottom: 14px; display: flex; align-items: center; justify-content: center;
-    border-radius: 50%; border: 3px solid #c99a4b;
-    background: radial-gradient(circle at 38% 28%, #6b4a26, #33200d 62%, #1a0f05);
-    box-shadow: 0 0 0 4px rgba(10,5,0,.45), 0 8px 20px rgba(0,0,0,.55), inset 0 2px 0 rgba(255,235,180,.35), 0 0 26px rgba(255,210,90,.28); }
-  .boot-crest svg { width: 46px; height: 46px; filter: drop-shadow(0 2px 2px rgba(0,0,0,.5)); }
+  .boot-inner { position: relative; z-index: 2; width: min(86vw, 344px); padding: 0 4px; }
 
-  .boot-title { margin: 0; font: 900 clamp(32px, 8.5vw, 58px)/1 Georgia, 'Times New Roman', serif; letter-spacing: .05em; text-transform: uppercase;
-    background: linear-gradient(#fffbe0 4%, #ffe888 32%, #ffc94a 55%, #de9116 78%, #a75d06 100%);
-    -webkit-background-clip: text; background-clip: text; color: transparent;
-    filter: drop-shadow(0 2px 0 rgba(58,32,5,.9)) drop-shadow(0 6px 14px rgba(0,0,0,.5)); }
-  .boot-sub { margin: 8px 0 0; font: 700 12px system-ui, sans-serif; letter-spacing: .22em; text-transform: uppercase; color: rgba(244,239,226,.68);
-    text-shadow: 0 1px 3px rgba(0,0,0,.6); }
+  .boot-sigil { width: 26px; height: 30px; margin: 0 auto 20px; display: block; opacity: .85; }
+  .boot-sigil path { stroke: #c9a25e; stroke-width: .62; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 
-  .boot-bar { position: relative; width: min(76vw, 460px); height: 34px; margin-top: 26px; padding: 6px; border-radius: 999px;
-    background: linear-gradient(#5e3f1d, #2a1a09); border: 2px solid #c99a4b;
-    box-shadow: 0 0 0 3px rgba(8,4,0,.55), 0 10px 24px rgba(0,0,0,.55), inset 0 2px 4px rgba(0,0,0,.65), inset 0 -1px 0 rgba(255,225,150,.28); }
-  .boot-track { position: relative; width: 100%; height: 100%; border-radius: 999px; overflow: hidden; background: #0f1c07;
-    box-shadow: inset 0 3px 7px rgba(0,0,0,.8), inset 0 -1px 0 rgba(255,255,255,.06); }
-  .boot-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 999px;
-    background: linear-gradient(#c3f77d 0%, #7ad93f 38%, #47b227 66%, #2f8319 100%);
-    box-shadow: inset 0 2px 0 rgba(255,255,255,.55), inset 0 -2px 0 rgba(0,0,0,.28), 0 0 14px rgba(130,235,85,.5);
-    transition: width .1s linear; }
-  .boot-fill::before { content: ''; position: absolute; left: 7px; right: 7px; top: 2px; height: 34%; border-radius: 999px;
-    background: linear-gradient(rgba(255,255,255,.6), rgba(255,255,255,0)); }
-  .boot-fill::after { content: ''; position: absolute; inset: 0; border-radius: 999px; opacity: .55;
-    background: linear-gradient(100deg, transparent 20%, rgba(255,255,255,.55) 46%, transparent 68%);
-    background-size: 220% 100%; animation: bootSheen 2.1s linear infinite; }
-  .boot-bar .spark { position: absolute; right: -3px; top: 50%; width: 16px; height: 16px; margin-top: -8px; border-radius: 50%;
-    background: radial-gradient(#fffce0, #ffd45e 45%, rgba(255,180,30,0) 72%); opacity: 0; transition: opacity .25s; }
-  .boot-bar.filling .spark { opacity: 1; }
+  .boot-title { margin: 0; font: 400 clamp(19px, 4.6vw, 27px)/1.1 Georgia, 'Iowan Old Style', 'Palatino Linotype', serif;
+    letter-spacing: .24em; text-indent: .24em; text-transform: uppercase; color: #f0d9a6;
+    text-shadow: 0 2px 12px rgba(0,0,0,.55), 0 0 30px rgba(255,200,110,.09); }
+  .boot-sub { margin: 12px 0 0; font: 400 9px/1 Georgia, serif; letter-spacing: .46em; text-indent: .46em; text-transform: uppercase;
+    color: rgba(240,217,166,.4); }
 
-  .boot-status { width: min(76vw, 460px); margin-top: 10px; display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
-    color: #f6ecd2; font: 700 13px system-ui, sans-serif; text-shadow: 0 1px 3px rgba(0,0,0,.7); }
-  .boot-status span { opacity: .85; }
-  .boot-status b { color: #ffe27a; font: 800 15px system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+  .boot-meter { margin-top: 46px; }
+  .boot-meta { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px;
+    font: 400 10px/1 Georgia, serif; letter-spacing: .18em; text-transform: uppercase; }
+  .boot-meta span { color: rgba(238,226,198,.52); transition: opacity .35s ease; }
+  .boot-meta b { font: 400 12px/1 Georgia, serif; letter-spacing: .06em; color: #e8c27a; font-variant-numeric: tabular-nums;
+    text-shadow: 0 0 10px rgba(232,194,122,.25); }
+  .boot-meta b i { font-style: normal; font-size: .74em; opacity: .5; margin-left: 1px; }
 
-  .boot-tip { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom)); z-index: 2;
-    display: flex; align-items: center; gap: 10px; width: min(90vw, 600px); padding: 10px 15px; box-sizing: border-box;
-    border-radius: 15px; border: 1px solid rgba(201,154,75,.4); background: linear-gradient(rgba(20,12,4,.55), rgba(20,12,4,.35));
-    box-shadow: 0 6px 18px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,235,180,.15);
-    color: #ffeec9; font: 600 13px/1.35 system-ui, sans-serif; text-align: left; }
-  .boot-tip-badge { flex: none; padding: 3px 8px; border-radius: 999px; color: #3a2405; font: 800 10px system-ui, sans-serif; letter-spacing: .09em;
-    background: linear-gradient(#ffe27a, #f0a92b); box-shadow: 0 1px 0 #9a6410; }
-  .boot-tip-text { transition: opacity .28s ease; }
-  .boot-tip-text.swap { opacity: 0; }
+  .boot-trail { position: relative; height: 2px; border-radius: 2px; background: rgba(236,225,196,.13);
+    box-shadow: 0 1px 0 rgba(255,255,255,.035), inset 0 1px 0 rgba(0,0,0,.55); }
+  .boot-fill { position: absolute; left: 0; top: 0; bottom: 0; width: var(--boot-p); border-radius: 2px;
+    background: linear-gradient(90deg, rgba(201,154,75,.22) 0%, #cfa15c 55%, #edc987 88%, #fff0c6 100%);
+    box-shadow: 0 0 10px rgba(232,194,122,.4); }
+  .boot-fill::after { content: ''; position: absolute; right: -2px; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%;
+    background: radial-gradient(circle, #fffbea 0 26%, #ffd685 44%, rgba(255,170,60,0) 72%);
+    box-shadow: 0 0 12px 3px rgba(255,192,96,.5); animation: bootEmber 2.4s ease-in-out infinite; }
 
-  #boot.boot-out { opacity: 0; visibility: hidden; transition: opacity .55s ease, visibility 0s linear .55s; pointer-events: none; }
+  #boot.is-done .boot-fill::after { animation: bootFlare .6s ease-out forwards; }
+  #boot.is-done .boot-fill { box-shadow: 0 0 22px rgba(255,214,140,.65); }
 
-  @keyframes bootSheen { from { background-position: 160% 0; } to { background-position: -60% 0; } }
+  .boot-tip { position: absolute; left: 50%; bottom: calc(34px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 2;
+    display: flex; align-items: center; justify-content: center; gap: 11px; width: max-content; max-width: min(84vw, 560px);
+    margin: 0; font: italic 400 13px/1.45 Georgia, 'Iowan Old Style', serif; letter-spacing: .01em;
+    color: rgba(242,229,203,.68); text-shadow: 0 1px 4px rgba(0,0,0,.6); }
+  .boot-diamond { flex: none; width: 4px; height: 4px; transform: rotate(45deg); border: 1px solid rgba(201,154,75,.6); }
+  .boot-tip span:last-child { transition: opacity .4s ease; }
+  .boot-tip span.is-swapping { opacity: 0; }
+
+  #boot.boot-out { opacity: 0; visibility: hidden; transition: opacity .7s ease, visibility 0s linear .7s; pointer-events: none; }
+
+  @keyframes bootEmber { 50% { box-shadow: 0 0 17px 4px rgba(255,196,100,.66); opacity: .85; } }
+  @keyframes bootBreathe { 50% { opacity: .62; transform: translate(-50%, -50%) scale(1.06); } }
+  @keyframes bootFlare { 0% { box-shadow: 0 0 12px 3px rgba(255,192,96,.5); } 45% { box-shadow: 0 0 26px 8px rgba(255,226,170,.85); } 100% { box-shadow: 0 0 12px 3px rgba(255,192,96,.3); opacity: .5; } }
   @keyframes bootFailsafe { to { opacity: 0; visibility: hidden; pointer-events: none; } }
 
+  @media (max-width: 520px) {
+    .boot-title { letter-spacing: .18em; text-indent: .18em; }
+    .boot-meter { margin-top: 38px; }
+    .boot-tip { font-size: 12px; bottom: calc(26px + env(safe-area-inset-bottom)); }
+  }
+  @media (max-height: 430px) {
+    .boot-sigil { margin-bottom: 12px; width: 20px; height: 24px; }
+    .boot-meter { margin-top: 26px; }
+    .boot-sub { margin-top: 9px; }
+    .boot-tip { bottom: calc(20px + env(safe-area-inset-bottom)); }
+    .boot-frame { inset: 9px; }
+  }
   @media (prefers-reduced-motion: reduce) {
-    .boot-fill::after { animation: none; opacity: .3; }
+    .boot-fill::after { animation: none; }
+    .boot-glow { animation: none; }
     #boot { animation: none; }
     #boot.boot-out { transition: opacity .2s ease; }
-  }
-  @media (max-height: 420px) {
-    .boot-crest { width: 58px; height: 58px; margin-bottom: 8px; }
-    .boot-crest svg { width: 34px; height: 34px; }
-    .boot-bar { margin-top: 16px; }
-    .boot-pines { height: 130px; }
   }
