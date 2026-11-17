@@ -12,8 +12,32 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="css/style.css?v=5">
 <link rel="stylesheet" href="css/economy.css?v=3">
+<link rel="stylesheet" href="css/boot.css?v=2">
 </head>
 <body>
+<div id="boot" role="status" aria-live="polite" aria-label="Loading Forest Village">
+  <div class="boot-frame" aria-hidden="true"></div>
+  <div class="boot-glow" aria-hidden="true"></div>
+  <div class="boot-inner">
+    <svg class="boot-sigil" viewBox="0 0 26 30" aria-hidden="true">
+      <path d="M13 28V8"/>
+      <path d="M13 8.5c-3.6-.3-6.1-2.6-6.6-6.2 3.6.3 6.1 2.6 6.6 6.2z"/>
+      <path d="M13 8.5c3.6-.3 6.1-2.6 6.6-6.2-3.6.3-6.1 2.6-6.6 6.2z"/>
+      <path d="M13 14c-3.4-.3-5.8-2.5-6.2-5.9 3.4.3 5.8 2.5 6.2 5.9z"/>
+      <path d="M13 14c3.4-.3 5.8-2.5 6.2-5.9-3.4.3-5.8 2.5-6.2 5.9z"/>
+      <path d="M13 19.5c-3-.2-5.2-2.2-5.6-5.3 3 .2 5.2 2.2 5.6 5.3z"/>
+      <path d="M13 19.5c3-.2 5.2-2.2 5.6-5.3-3 .2-5.2 2.2-5.6 5.3z"/>
+    </svg>
+    <h1 class="boot-title">Forest Village</h1>
+    <p class="boot-sub">Gather &middot; Build &middot; Grow</p>
+    <div class="boot-meter">
+      <div class="boot-meta"><span id="bootLabel">Waking the village</span><b id="bootPct"><span id="bootNum">0</span><i>%</i></b></div>
+      <div id="bootBar" class="boot-trail" aria-hidden="true"><i class="boot-fill"></i></div>
+    </div>
+  </div>
+  <p class="boot-tip"><span class="boot-diamond" aria-hidden="true"></span><span id="bootTipText"></span></p>
+</div>
+<script src="js/00-boot.js?v=2"></script>
 <canvas id="c"></canvas>
 <div id="vignette"></div>
 <div id="info"></div>

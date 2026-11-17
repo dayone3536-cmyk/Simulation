@@ -1,0 +1,91 @@
+  /* ---------- boot screen: a quiet, candlelit title card rather than a web loader ---------- */
+  #boot { --boot-p: 0%; position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center;
+    overflow: hidden; user-select: none; -webkit-tap-highlight-color: transparent; text-align: center; background: #071505;
+    font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Times New Roman', serif;
+    animation: bootFailsafe .6s ease 16s forwards; }
+  #boot::before { content: ''; position: absolute; inset: -12%; pointer-events: none;
+    background:
+      radial-gradient(115% 80% at 50% 42%, rgba(43,96,32,.58) 0%, rgba(20,50,15,.88) 46%, rgba(5,16,4,1) 100%),
+      #071505; }
+  #boot::after { content: ''; position: absolute; inset: 0; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.4'/%3E%3C/svg%3E");
+    background-size: 160px 160px; opacity: .16; mix-blend-mode: soft-light; }
+
+  .boot-frame { position: absolute; inset: 13px; border: 1px solid rgba(201,154,75,.16); pointer-events: none;
+    background:
+      linear-gradient(rgba(201,154,75,.34), rgba(201,154,75,.34)) right -1px top -1px / 26px 1px no-repeat,
+      linear-gradient(rgba(201,154,75,.34), rgba(201,154,75,.34)) right -1px top -1px / 1px 26px no-repeat,
+      linear-gradient(rgba(201,154,75,.34), rgba(201,154,75,.34)) left -1px bottom -1px / 26px 1px no-repeat,
+      linear-gradient(rgba(201,154,75,.34), rgba(201,154,75,.34)) left -1px bottom -1px / 1px 26px no-repeat; }
+  .boot-frame::before, .boot-frame::after { content: ''; position: absolute; width: 26px; height: 26px; border-color: rgba(201,154,75,.34); border-style: solid; }
+  .boot-frame::before { left: -1px; top: -1px; border-width: 1px 0 0 1px; }
+  .boot-frame::after { right: -1px; bottom: -1px; border-width: 0 1px 1px 0; }
+
+  .boot-glow { position: absolute; left: 50%; top: 47%; width: min(80vw, 660px); aspect-ratio: 1; transform: translate(-50%, -50%);
+    pointer-events: none; background: radial-gradient(circle, rgba(255,170,70,.1) 0%, rgba(255,170,70,0) 62%);
+    animation: bootBreathe 9s ease-in-out infinite; }
+
+  .boot-inner { position: relative; z-index: 2; width: min(86vw, 344px); padding: 0 4px; }
+
+  .boot-sigil { width: 26px; height: 30px; margin: 0 auto 20px; display: block; opacity: .85; }
+  .boot-sigil path { stroke: #c9a25e; stroke-width: .62; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+  .boot-title { margin: 0; font: 400 clamp(19px, 4.6vw, 27px)/1.1 Georgia, 'Iowan Old Style', 'Palatino Linotype', serif;
+    letter-spacing: .24em; text-indent: .24em; text-transform: uppercase; color: #f0d9a6;
+    text-shadow: 0 2px 12px rgba(0,0,0,.55), 0 0 30px rgba(255,200,110,.09); }
+  .boot-sub { margin: 12px 0 0; font: 400 9px/1 Georgia, serif; letter-spacing: .46em; text-indent: .46em; text-transform: uppercase;
+    color: rgba(240,217,166,.4); }
+
+  .boot-meter { margin-top: 46px; }
+  .boot-meta { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px;
+    font: 400 10px/1 Georgia, serif; letter-spacing: .18em; text-transform: uppercase; }
+  .boot-meta span { color: rgba(238,226,198,.52); transition: opacity .35s ease; }
+  .boot-meta b { font: 400 12px/1 Georgia, serif; letter-spacing: .06em; color: #e8c27a; font-variant-numeric: tabular-nums;
+    text-shadow: 0 0 10px rgba(232,194,122,.25); }
+  .boot-meta b i { font-style: normal; font-size: .74em; opacity: .5; margin-left: 1px; }
+
+  .boot-trail { position: relative; height: 2px; border-radius: 2px; background: rgba(236,225,196,.13);
+    box-shadow: 0 1px 0 rgba(255,255,255,.035), inset 0 1px 0 rgba(0,0,0,.55); }
+  .boot-fill { position: absolute; left: 0; top: 0; bottom: 0; width: var(--boot-p); border-radius: 2px;
+    background: linear-gradient(90deg, rgba(201,154,75,.22) 0%, #cfa15c 55%, #edc987 88%, #fff0c6 100%);
+    box-shadow: 0 0 10px rgba(232,194,122,.4); }
+  .boot-fill::after { content: ''; position: absolute; right: -2px; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%;
+    background: radial-gradient(circle, #fffbea 0 26%, #ffd685 44%, rgba(255,170,60,0) 72%);
+    box-shadow: 0 0 12px 3px rgba(255,192,96,.5); animation: bootEmber 2.4s ease-in-out infinite; }
+
+  #boot.is-done .boot-fill::after { animation: bootFlare .6s ease-out forwards; }
+  #boot.is-done .boot-fill { box-shadow: 0 0 22px rgba(255,214,140,.65); }
+
+  .boot-tip { position: absolute; left: 50%; bottom: calc(34px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 2;
+    display: flex; align-items: center; justify-content: center; gap: 11px; width: max-content; max-width: min(84vw, 560px);
+    margin: 0; font: italic 400 13px/1.45 Georgia, 'Iowan Old Style', serif; letter-spacing: .01em;
+    color: rgba(242,229,203,.68); text-shadow: 0 1px 4px rgba(0,0,0,.6); }
+  .boot-diamond { flex: none; width: 4px; height: 4px; transform: rotate(45deg); border: 1px solid rgba(201,154,75,.6); }
+  .boot-tip span:last-child { transition: opacity .4s ease; }
+  .boot-tip span.is-swapping { opacity: 0; }
+
+  #boot.boot-out { opacity: 0; visibility: hidden; transition: opacity .7s ease, visibility 0s linear .7s; pointer-events: none; }
+
+  @keyframes bootEmber { 50% { box-shadow: 0 0 17px 4px rgba(255,196,100,.66); opacity: .85; } }
+  @keyframes bootBreathe { 50% { opacity: .62; transform: translate(-50%, -50%) scale(1.06); } }
+  @keyframes bootFlare { 0% { box-shadow: 0 0 12px 3px rgba(255,192,96,.5); } 45% { box-shadow: 0 0 26px 8px rgba(255,226,170,.85); } 100% { box-shadow: 0 0 12px 3px rgba(255,192,96,.3); opacity: .5; } }
+  @keyframes bootFailsafe { to { opacity: 0; visibility: hidden; pointer-events: none; } }
+
+  @media (max-width: 520px) {
+    .boot-title { letter-spacing: .18em; text-indent: .18em; }
+    .boot-meter { margin-top: 38px; }
+    .boot-tip { font-size: 12px; bottom: calc(26px + env(safe-area-inset-bottom)); }
+  }
+  @media (max-height: 430px) {
+    .boot-sigil { margin-bottom: 12px; width: 20px; height: 24px; }
+    .boot-meter { margin-top: 26px; }
+    .boot-sub { margin-top: 9px; }
+    .boot-tip { bottom: calc(20px + env(safe-area-inset-bottom)); }
+    .boot-frame { inset: 9px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .boot-fill::after { animation: none; }
+    .boot-glow { animation: none; }
+    #boot { animation: none; }
+    #boot.boot-out { transition: opacity .2s ease; }
+  }
