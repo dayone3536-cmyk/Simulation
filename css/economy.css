@@ -1,96 +1,292 @@
-  /* ---------- economy: wood, jobs, hearth (loaded after style.css) ---------- */
-  #woodpill .ico { width: 34px; height: 34px; flex: none; margin: -6px 0 -6px -6px; filter: drop-shadow(0 2px 2px rgba(0,0,0,.45)); }
+/* ==========================================================================
+   Forest Village — economy surfaces: villagers, hearth, hunger, resources
+   ========================================================================== */
 
-  /* villagers button sits left of the market button */
-  #villagebtn { position: absolute; right: calc(208px + env(safe-area-inset-right)); bottom: calc(22px + env(safe-area-inset-bottom)); pointer-events: auto;
-    width: 54px; height: 54px; padding: 0; border: 1.5px solid #c99a4b; border-radius: 18px;
-    background: linear-gradient(#4a341d, #261a0e); box-shadow: 0 0 0 3px rgba(20,12,4,.45), 0 6px 14px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,235,180,.3);
-    color: #fff3d6; cursor: pointer; -webkit-tap-highlight-color: transparent; display: flex; align-items: center; justify-content: center; transition: transform .12s ease, filter .15s ease; }
-  #villagebtn .vb-ico { width: 34px; height: 34px; display: block; filter: drop-shadow(0 2px 2px rgba(0,0,0,.5)); }
-  #villagebtn .vb-ico svg { width: 100%; height: 100%; display: block; }
-  #villagebtn .vb-badge { position: absolute; top: -6px; right: -6px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px;
-    display: none; align-items: center; justify-content: center; background: linear-gradient(#ffe27a, #f0a92b); color: #2a1a05;
-    font: 800 11px system-ui, sans-serif; border: 1.5px solid #6b4519; box-shadow: 0 2px 6px rgba(0,0,0,.5); }
-  #villagebtn:active, #villagebtn.open { transform: translateY(1px); background: linear-gradient(#5a4126, #3b2a18); }
-  #villagebtn.open { border-color: #ffd36b; }
+#woodpill .ico { width: 38px; height: 38px; flex: none; filter: drop-shadow(0 2px 2px rgba(0,0,0,.5)); }
+#woodpill .pill-copy > span { color: var(--ink); }
 
-  /* jobs sheet (same frame language as the market) */
-  #jobspanel { display: none; position: absolute; right: calc(14px + env(safe-area-inset-right)); bottom: calc(112px + env(safe-area-inset-bottom)); pointer-events: auto;
-    width: 292px; max-width: calc(100% - 28px); max-height: calc(100% - 128px - env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain;
-    padding: 12px 13px 11px; border-radius: 22px; border: 1.5px solid #c99a4b; color: #fff3d6; font: 600 14px system-ui, sans-serif; animation: pop2 .2s ease-out;
-    background: radial-gradient(120% 70% at 50% 0, rgba(255,226,122,.13), rgba(255,226,122,0) 60%), linear-gradient(#412e1a, #20150a);
-    box-shadow: 0 0 0 3px rgba(20,12,4,.55), 0 16px 36px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,235,180,.4), inset 0 0 26px rgba(0,0,0,.35); }
-  #jobspanel::-webkit-scrollbar { width: 6px; }
-  #jobspanel::-webkit-scrollbar-thumb { background: rgba(201,154,75,.5); border-radius: 99px; }
-  .jp-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
-  .jp-title { font: 700 17px Georgia, 'Times New Roman', serif; color: #ffe9c0; }
-  .jp-sub { flex: 1; font: italic 500 11px Georgia, serif; color: #d9c08a; }
-  .jp-x { width: 30px; height: 30px; flex: none; padding: 0; border: 0; border-radius: 50%; background: rgba(255,243,214,.1); color: #fff3d6; font: 700 14px system-ui, sans-serif; cursor: pointer; }
-  .jp-row, .jp-idle { display: flex; align-items: center; gap: 9px; padding: 9px 0; border-top: 1px solid rgba(201,154,75,.22); }
-  .jp-ic { width: 30px; height: 30px; flex: none; display: flex; align-items: center; justify-content: center; filter: drop-shadow(0 2px 2px rgba(0,0,0,.4)); }
-  .jp-ic svg { width: 100%; height: 100%; display: block; }
-  .jp-mid { flex: 1; min-width: 0; line-height: 1.15; }
-  .jp-mid b { font: 700 14px Georgia, serif; color: #ffe9c0; }
-  .jp-mid small { display: block; font: 500 10px system-ui, sans-serif; color: #bfa77a; margin-top: 2px; }
-  .jp-n { min-width: 22px; text-align: center; font: 800 17px system-ui, sans-serif; color: #ffe27a; font-variant-numeric: tabular-nums; }
-  .jp-step { width: 38px; height: 38px; flex: none; border: 0; border-radius: 11px; cursor: pointer; -webkit-tap-highlight-color: transparent;
-    font: 800 20px system-ui, sans-serif; line-height: 1; color: #fff3d6; background: linear-gradient(#6a4b2a, #4a321a); box-shadow: 0 3px 0 #2a1a0a, inset 0 1px 0 rgba(255,235,180,.3); }
-  .jp-step:active { transform: translateY(2px); box-shadow: none; }
-  .jp-step:disabled { filter: grayscale(1); opacity: .4; }
-  #jpNote { min-height: 0; font: 500 10.5px system-ui, sans-serif; color: #ffcf8a; line-height: 1.35; margin: 2px 0 8px; }
-  #jpAuto { width: 100%; min-height: 42px; border: 0; border-radius: 13px; cursor: pointer; -webkit-tap-highlight-color: transparent;
-    font: 800 13px system-ui, sans-serif; color: #2a1a05; background: linear-gradient(#ffe27a, #f0a92b); box-shadow: 0 3px 0 #9a6410, inset 0 1px 0 rgba(255,255,255,.5); }
-  #jpAuto:active { transform: translateY(2px); box-shadow: none; }
+/* ---------- villagers button in the bottom dock ---------- */
+#villagebtn {
+  position: absolute;
+  right: calc(236px + env(safe-area-inset-right));
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  pointer-events: auto;
+  width: 62px; height: 62px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line-mid);
+  border-radius: 20px;
+  background:
+    radial-gradient(120% 120% at 30% 0%, rgba(255, 230, 166, .14), rgba(255, 230, 166, 0) 62%),
+    linear-gradient(180deg, rgba(58, 46, 30, .96), rgba(24, 19, 13, .97));
+  box-shadow:
+    0 1px 0 rgba(255,241,204,.16) inset,
+    0 5px 0 rgba(8, 6, 3, .55),
+    0 16px 26px -12px rgba(0,0,0,.8);
+  color: var(--ink);
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: transform .14s ease, border-color .2s ease, background .2s ease, box-shadow .2s ease;
+}
+#villagebtn .vb-ico { width: 38px; height: 38px; display: block; filter: drop-shadow(0 2px 2px rgba(0,0,0,.5)); }
+#villagebtn .vb-ico svg { width: 100%; height: 100%; display: block; }
+#villagebtn:hover { border-color: var(--line-strong); background: linear-gradient(180deg, rgba(72, 57, 37, .97), rgba(32, 25, 16, .97)); }
+#villagebtn:active, #villagebtn.open { transform: translateY(4px); box-shadow: 0 1px 0 rgba(8,6,3,.55); }
+#villagebtn.open { border-color: var(--gold); }
+#villagebtn .vb-badge {
+  position: absolute; top: -7px; right: -7px;
+  min-width: 22px; height: 22px; padding: 0 6px;
+  display: none; align-items: center; justify-content: center;
+  border: 1px solid #fff0c4;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffe7a4, #e8a52a);
+  box-shadow: 0 0 0 3px rgba(28, 20, 9, .75), 0 2px 8px rgba(0,0,0,.5);
+  color: #2b1c06;
+  font: 800 10.5px/1 var(--font-ui);
+  animation: badgePop .35s cubic-bezier(.2,1.4,.4,1);
+}
+@keyframes badgePop { from { transform: scale(.4); opacity: 0; } }
 
-  /* hunger: loud, persistent, never a lost villager */
-  #hungerbar { position: absolute; left: 50%; top: calc(8px + env(safe-area-inset-top)); transform: translate(-50%, -8px); pointer-events: none;
-    display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 16px; border-radius: 14px; opacity: 0; transition: opacity .3s, transform .3s;
-    background: linear-gradient(#5a241b, #2a0f0a); border: 1.5px solid #ff8a6a; box-shadow: 0 0 0 3px rgba(20,12,4,.5), 0 0 22px rgba(255,90,60,.35), 0 8px 18px rgba(0,0,0,.5); }
-  #hungerbar.on { opacity: 1; transform: translate(-50%, 0); }
-  #hungerbar b { font: 800 12px system-ui, sans-serif; color: #ffd0c2; letter-spacing: .02em; }
-  #hungerbar span { font: 600 10px system-ui, sans-serif; color: #e8b3a4; }
+/* ---------- jobs sheet ---------- */
+#jobspanel {
+  display: none;
+  position: absolute;
+  right: calc(14px + env(safe-area-inset-right));
+  bottom: calc(112px + env(safe-area-inset-bottom));
+  width: 378px;
+  max-width: calc(100% - 28px);
+  max-height: calc(100% - 128px - env(safe-area-inset-bottom));
+  overflow-y: auto; overscroll-behavior: contain;
+  padding: 18px;
+  pointer-events: auto;
+}
+.jp-head { display: flex; align-items: center; gap: 13px; margin-bottom: 14px; }
+.jp-emblem {
+  width: 50px; height: 50px; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(240, 196, 107, .26);
+  border-radius: 17px;
+  background: radial-gradient(circle at 50% 35%, rgba(255, 226, 150, .16), rgba(0,0,0,0) 66%), rgba(8, 7, 4, .28);
+  box-shadow: inset 0 1px 0 rgba(255,241,204,.1);
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,.35));
+}
+.jp-emblem svg { width: 32px; height: 32px; display: block; }
+.jp-copy { flex: 1; min-width: 0; }
+.jp-title { margin-top: 3px; font: 600 22px/1.1 var(--font-display); color: var(--ink); }
+.jp-sub { margin-top: 3px; font: 500 11.5px/1.35 var(--font-ui); color: var(--muted); }
+.jp-x { font: 700 14px/1 var(--font-ui); background: rgba(255, 246, 226, .08); }
 
-  /* well fed */
-  #buffpill { position: absolute; left: calc(14px + env(safe-area-inset-left)); bottom: calc(46px + env(safe-area-inset-bottom)); pointer-events: none;
-    display: none; align-items: center; gap: 7px; padding: 5px 12px 5px 8px; border-radius: 999px;
-    background: linear-gradient(#3b2a18, #261a0e); border: 1.5px solid #9af07c; color: #eaffdf; font: 800 12px system-ui, sans-serif;
-    box-shadow: 0 0 14px rgba(120,220,90,.25), 0 4px 12px rgba(0,0,0,.5); }
-  #buffpill.on { display: flex; }
-  .bf-dot { width: 9px; height: 9px; border-radius: 50%; background: radial-gradient(#eaffdf, #6fd24a); box-shadow: 0 0 8px rgba(140,255,110,.9); }
+.jp-summary {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 10px;
+  margin-bottom: 4px;
+  border: 1px solid rgba(240, 196, 107, .16);
+  border-radius: var(--r-md);
+  background: rgba(10, 8, 5, .24);
+}
+.jp-stat { text-align: center; }
+.jp-stat + .jp-stat { border-left: 1px solid rgba(240, 196, 107, .14); }
+.jp-stat small { display: block; font: 700 8.5px/1 var(--font-ui); letter-spacing: .13em; text-transform: uppercase; color: var(--faint); }
+.jp-stat b { display: block; margin-top: 4px; font: 600 18px/1 var(--font-display); color: var(--gold-bright); font-variant-numeric: tabular-nums; }
 
-  /* hearth card inside the home panel */
-  #hearthCard { margin-top: 9px; padding: 9px 10px 8px; border-radius: 15px;
-    background: linear-gradient(135deg, rgba(255,170,80,.10), rgba(0,0,0,.24)); border: 1px solid rgba(255,180,90,.4); box-shadow: inset 0 0 16px rgba(255,150,60,.07); }
-  .hearth-row { display: flex; align-items: center; gap: 9px; }
-  .hearth-ico { width: 36px; height: 36px; flex: none; display: flex; align-items: center; justify-content: center; border-radius: 50%;
-    background: radial-gradient(#5a4126, #2a1b0c); border: 1.5px solid rgba(255,180,90,.55); box-shadow: inset 0 0 10px rgba(0,0,0,.5); }
-  .hearth-ico svg { width: 26px; height: 26px; display: block; }
-  .hearth-sub { font: 500 10.5px system-ui, sans-serif; color: #d9c08a; margin-top: 2px; line-height: 1.3; }
-  #hearthBtn { display: flex; align-items: center; justify-content: center; gap: 5px; flex: none; min-width: 68px; min-height: 38px; border: 0; border-radius: 12px; padding: 8px 11px;
-    font: 800 14px Georgia, serif; font-variant-numeric: tabular-nums; color: #2a1a05; background: linear-gradient(#ffd36b, #f0a92b);
-    box-shadow: 0 3px 0 #9a6410, inset 0 1px 0 rgba(255,255,255,.5); cursor: pointer; -webkit-tap-highlight-color: transparent; }
-  #hearthBtn:active:not(:disabled) { transform: translateY(2px); box-shadow: none; }
-  #hearthBtn:disabled { filter: grayscale(1); opacity: .45; cursor: default; }
-  #hearthProgress { display: none; height: 8px; margin-top: 8px; border-radius: 99px; background: #2a1a0c; box-shadow: inset 0 2px 4px rgba(0,0,0,.55); overflow: hidden; border: 1px solid rgba(201,154,75,.35); }
-  #hearthProgress i { display: block; height: 100%; width: 0%; border-radius: 99px; background: linear-gradient(90deg, #f0a92b, #ffe27a); box-shadow: 0 0 12px rgba(255,200,60,.55); transition: width .4s linear; }
-  #hearthNote { margin-top: 7px; font: 600 10px system-ui, sans-serif; color: #bfa77a; text-align: center; }
-  #hearthNote b { color: #ffe27a; font-variant-numeric: tabular-nums; }
+.jp-row, .jp-idle {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 13px;
+  margin-top: 9px;
+  border: 1px solid rgba(240, 196, 107, .16);
+  border-radius: var(--r-md);
+  background:
+    radial-gradient(120% 100% at 18% 0%, rgba(255, 232, 175, .055), rgba(255,232,175,0) 60%),
+    rgba(10, 8, 5, .24);
+  box-shadow: inset 0 1px 0 rgba(255,241,204,.05);
+}
+.jp-idle { border-style: dashed; opacity: .9; }
+.jp-ic {
+  width: 42px; height: 42px; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(240, 196, 107, .14);
+  border-radius: 13px;
+  background: rgba(8, 7, 4, .28);
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,.35));
+}
+.jp-ic svg { width: 28px; height: 28px; display: block; }
+.jp-mid { flex: 1; min-width: 0; }
+.jp-mid b { display: block; font: 600 14.5px/1.2 var(--font-display); color: var(--ink); }
+.jp-mid small { display: block; margin-top: 2px; font: 500 10px/1.35 var(--font-ui); color: var(--faint); }
+.jp-meter { height: 4px; margin-top: 7px; border-radius: 99px; background: rgba(0,0,0,.4); overflow: hidden; }
+.jp-meter i { display: block; height: 100%; width: 0%; border-radius: 99px; background: linear-gradient(90deg, #8a5a1b, #f0c46b); transition: width .35s cubic-bezier(.2,.8,.3,1); }
+.jp-idle .jp-meter { display: none; }
 
-  /* feast celebration */
-  #feastBanner { position: absolute; left: 50%; top: calc(96px + env(safe-area-inset-top)); transform: translate(-50%, -18px); display: flex; align-items: center; gap: 12px;
-    padding: 11px 20px 11px 14px; border-radius: 18px; pointer-events: none; opacity: 0; transition: opacity .35s ease, transform .35s cubic-bezier(.2,.8,.3,1); z-index: 7;
-    background: radial-gradient(120% 80% at 20% 0, rgba(255,190,110,.28), rgba(255,190,110,0) 60%), linear-gradient(#4a341d, #24170a);
-    border: 1.5px solid #ffc46b; box-shadow: 0 0 0 3px rgba(20,12,4,.5), 0 0 30px rgba(255,170,60,.4), 0 14px 30px rgba(0,0,0,.55); }
-  #feastBanner.on { opacity: 1; transform: translate(-50%, 0); }
-  .fb-ico { width: 40px; height: 40px; flex: none; filter: drop-shadow(0 0 12px rgba(255,170,60,.7)); }
-  .fb-ico svg { width: 100%; height: 100%; display: block; }
-  .fb-text b { display: block; font: 800 17px Georgia, serif; color: #ffe27a; text-shadow: 0 0 14px rgba(255,180,60,.5); }
-  .fb-text span { display: block; font: 600 12px system-ui, sans-serif; color: #ffe9c0; margin-top: 2px; }
+.jp-stepper {
+  display: flex; align-items: center; gap: 6px; flex: none;
+  padding: 4px;
+  border: 1px solid rgba(240, 196, 107, .14);
+  border-radius: 14px;
+  background: rgba(8, 7, 4, .28);
+}
+.jp-step {
+  width: 38px; height: 38px; flex: none;
+  border: 1px solid rgba(255, 241, 204, .12);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(100, 77, 44, .72), rgba(52, 38, 22, .9));
+  box-shadow: inset 0 1px 0 rgba(255,241,204,.14);
+  color: var(--ink);
+  font: 700 20px/1 var(--font-ui);
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: transform .12s ease, filter .15s ease, opacity .15s ease;
+}
+.jp-step:hover:not(:disabled) { filter: brightness(1.16); }
+.jp-step:active:not(:disabled) { transform: translateY(2px); }
+.jp-step:disabled { opacity: .3; filter: grayscale(1); cursor: default; }
+.jp-n {
+  min-width: 26px; text-align: center;
+  font: 600 20px/1 var(--font-display);
+  color: var(--gold-bright);
+  font-variant-numeric: tabular-nums;
+}
+.jp-idle .jp-n { min-width: 34px; text-align: right; }
+.jp-note, #jpNote {
+  min-height: 0;
+  margin: 10px 2px 10px;
+  font: 500 10.5px/1.45 var(--font-ui);
+  color: #ffcf8a;
+  text-align: center;
+}
+#jpNote:empty { display: none; }
+#jpAuto {
+  width: 100%; min-height: 46px;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+}
 
-  /* build panel: second card gets a divider, and the camp button shares the farm button look */
-  #buildpanel .bcard + .bcard { margin-top: 11px; padding-top: 11px; border-top: 1px solid rgba(201,154,75,.28); }
-  #campBuy { border: 0; border-radius: 10px; padding: 11px 14px; min-width: 96px; font: 800 14px system-ui, sans-serif; color: #2a1a05; background: linear-gradient(#ffe27a, #f0a92b); box-shadow: 0 2px 0 #9a6410; cursor: pointer; }
-  #campBuy:active { transform: translateY(2px); box-shadow: none; }
-  #campBuy:disabled { filter: grayscale(1); opacity: .5; cursor: default; }
+/* ---------- hunger: loud, persistent, never a lost villager ---------- */
+#hungerbar {
+  position: absolute;
+  left: 50%; top: calc(10px + env(safe-area-inset-top));
+  transform: translate(-50%, -8px);
+  pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 8px 18px;
+  border: 1px solid #ff9b7c;
+  border-radius: 15px;
+  opacity: 0;
+  transition: opacity .3s, transform .3s;
+  background: linear-gradient(180deg, #5c251b, #2a0f0a);
+  box-shadow: 0 0 0 3px rgba(20,12,4,.5), 0 0 26px rgba(255,90,60,.32), 0 10px 22px -8px rgba(0,0,0,.7);
+}
+#hungerbar.on { opacity: 1; transform: translate(-50%, 0); }
+#hungerbar b { font: 800 11.5px/1.2 var(--font-ui); color: #ffd3c6; letter-spacing: .02em; }
+#hungerbar span { font: 500 9.5px/1.3 var(--font-ui); color: #e8b3a4; }
 
-  @media (prefers-reduced-motion: reduce) { #feastBanner, #hungerbar, #hearthFill { transition: none; } }
+/* ---------- well fed ---------- */
+#buffpill {
+  position: absolute;
+  left: calc(16px + env(safe-area-inset-left));
+  bottom: calc(52px + env(safe-area-inset-bottom));
+  pointer-events: none;
+  display: none; align-items: center; gap: 8px;
+  padding: 6px 13px 6px 9px;
+  border: 1px solid rgba(154, 240, 124, .55);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(44, 62, 28, .94), rgba(20, 28, 13, .96));
+  box-shadow: 0 0 18px rgba(120,220,90,.18), 0 8px 18px -10px rgba(0,0,0,.7), inset 0 1px 0 rgba(220,255,200,.18);
+  color: #eaffdf;
+  font: 800 11px/1 var(--font-ui);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+}
+#buffpill.on { display: flex; }
+.bf-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f0ffe6, #6fd24a);
+  box-shadow: 0 0 10px rgba(140,255,110,.9);
+  animation: livePulse 1.8s ease-in-out infinite;
+}
+
+/* ---------- hearth card inside the home panel ---------- */
+#hearthCard {
+  margin-top: 12px;
+  padding: 13px 14px 11px;
+  border: 1px solid rgba(255, 180, 90, .4);
+  border-radius: var(--r-lg);
+  background:
+    radial-gradient(120% 100% at 15% 0%, rgba(255, 170, 80, .14), rgba(255,170,80,0) 65%),
+    linear-gradient(180deg, rgba(58, 34, 18, .42), rgba(16, 11, 7, .4));
+  box-shadow: inset 0 1px 0 rgba(255, 210, 160, .1), inset 0 0 26px rgba(255,150,60,.06);
+}
+.hearth-row { display: flex; align-items: center; gap: 12px; }
+.hearth-ico {
+  width: 44px; height: 44px; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(255, 180, 90, .55);
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 40%, rgba(255, 180, 80, .22), rgba(0,0,0,0) 65%), rgba(8, 6, 4, .28);
+  box-shadow: inset 0 0 14px rgba(0,0,0,.4), 0 0 18px rgba(255,150,60,.16);
+}
+.hearth-ico svg { width: 28px; height: 28px; display: block; filter: drop-shadow(0 0 6px rgba(255,160,60,.5)); }
+.hearth-sub { margin-top: 3px; font: 500 10px/1.35 var(--font-ui); color: var(--muted); }
+#hearthBtn {
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  flex: none; min-width: 72px; min-height: 42px;
+  padding: 9px 13px;
+  font: 800 13px/1 var(--font-display);
+}
+#hearthProgress {
+  display: none; height: 7px; margin-top: 10px;
+  border-radius: 99px;
+  background: #1a1108;
+  box-shadow: inset 0 2px 5px rgba(0,0,0,.65);
+  overflow: hidden;
+  border: 1px solid rgba(240, 196, 107, .24);
+}
+#hearthProgress i {
+  display: block; height: 100%; width: 0%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #e28a2c, #ffd98a);
+  box-shadow: 0 0 12px rgba(255, 190, 70, .6);
+  transition: width .4s linear;
+}
+#hearthNote { margin-top: 8px; font: 600 9.5px/1.3 var(--font-ui); color: var(--faint); text-align: center; }
+#hearthNote b { color: var(--gold-bright); font-variant-numeric: tabular-nums; }
+
+/* ---------- feast celebration ---------- */
+#feastBanner {
+  position: absolute;
+  left: 50%; top: calc(96px + env(safe-area-inset-top));
+  transform: translate(-50%, -18px);
+  display: flex; align-items: center; gap: 13px;
+  padding: 12px 20px 12px 15px;
+  border: 1px solid #ffc46b;
+  border-radius: 20px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .35s ease, transform .35s cubic-bezier(.2,.8,.3,1);
+  z-index: 7;
+  background: radial-gradient(120% 80% at 20% 0, rgba(255,190,110,.28), rgba(255,190,110,0) 60%), linear-gradient(#4a341d, #24170a);
+  box-shadow: 0 0 0 3px rgba(20,12,4,.5), 0 0 34px rgba(255,170,60,.34), 0 18px 36px -14px rgba(0,0,0,.8);
+}
+#feastBanner.on { opacity: 1; transform: translate(-50%, 0); }
+.fb-ico { width: 40px; height: 40px; flex: none; filter: drop-shadow(0 0 12px rgba(255,170,60,.7)); }
+.fb-ico svg { width: 100%; height: 100%; display: block; }
+.fb-text b { display: block; font: 600 17px/1.2 var(--font-display); color: var(--gold-bright); text-shadow: 0 0 14px rgba(255,180,60,.45); }
+.fb-text span { display: block; margin-top: 2px; font: 600 11.5px/1.3 var(--font-ui); color: var(--ink-soft); }
+
+/* ---------- responsive ---------- */
+@media (max-width: 760px) {
+  #woodpill .ico { width: 34px; height: 34px; }
+  #villagebtn { width: 56px; height: 56px; border-radius: 18px; }
+  #villagebtn .vb-ico { width: 34px; height: 34px; }
+  #jobspanel { right: calc(10px + env(safe-area-inset-right)); bottom: calc(100px + env(safe-area-inset-bottom)); width: min(378px, calc(100% - 20px)); max-height: calc(100% - 112px - env(safe-area-inset-bottom)); }
+}
+@media (max-height: 540px) {
+  #villagebtn { bottom: calc(16px + env(safe-area-inset-bottom)); width: 56px; height: 56px; }
+  #jobspanel { bottom: calc(92px + env(safe-area-inset-bottom)); max-height: calc(100% - 100px - env(safe-area-inset-bottom)); padding: 14px; }
+  .jp-head { margin-bottom: 10px; }
+  .jp-summary { padding: 8px; }
+  .jp-row, .jp-idle { padding: 9px 10px; margin-top: 7px; }
+  .jp-ic { width: 36px; height: 36px; }
+  .jp-ic svg { width: 24px; height: 24px; }
+  .jp-step { width: 34px; height: 34px; }
+  .jp-n { font-size: 17px; }
+  #jpNote { margin: 7px 0; font-size: 9.5px; }
+  #jpAuto { min-height: 42px; }
+  .hearth-ico { width: 38px; height: 38px; }
+  #hearthCard { padding: 10px; }
+}
