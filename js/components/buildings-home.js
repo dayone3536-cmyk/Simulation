@@ -1,18 +1,58 @@
   // ---------- render ----------
   let started = false;
 
-  // Every square is a real tile sprite from your grass pack. Dark and light tiles alternate
-  // across the whole map, forest included. Sprites are pixel art, so smoothing stays off.
+  // The floor is painted grass now: a flat base per 8x8 chunk, a barely-there checker and a
+  // few deterministic tufts/pebbles. One Graphics per chunk replaces the old wall of atlas
+  // sprites; the chunk boxes still drive cullGround() exactly as before. The grass atlas
+  // itself stays loaded for other parts of the game.
   function buildGround() {
-    const Wd = 2 * CELL * IX, cols = WORLD_W / CELL, rows = WORLD_H / CELL, CK = 8;     // tiles are grouped 8x8 so whole groups off screen cost nothing
+    const cols = WORLD_W / CELL, rows = WORLD_H / CELL, CK = 8;     // tiles are grouped 8x8 so whole groups off screen cost nothing
+    const BASE = 0x5c8b34, CHECK = 0x5f8f37, BLADE = 0x46722a, PEBBLE = 0x7e7b5e;
+    const hash = (a, b) => {                        // same grass every visit: no Math.random, no per-frame work
+      let h = (a * 374761393 + b * 668265263) | 0;
+      h = (h ^ (h >>> 13)) * 1274126177 | 0;
+      return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+    };
     for (let r0 = 0; r0 < rows; r0 += CK) for (let c0 = 0; c0 < cols; c0 += CK) {
-      const box = new PX.Container(); let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-      for (let r = r0; r < Math.min(rows, r0 + CK); r++) for (let c = c0; c < Math.min(cols, c0 + CK); c++) {
-        const b = BLK[(c * 7 + r * 13 + (c * r)) % BLK.length], bw = Wd + 2, bh = bw * b.h / b.w;
-        const x = projX(c * CELL, (r + 1) * CELL) - 1, y = projY(c * CELL, r * CELL) - .5;
-        const s = new PX.Sprite(b.tex); s.position.set(x, y); s.width = bw; s.height = bh; box.addChild(s);
-        x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x + bw); y1 = Math.max(y1, y + bh);
+      const box = new PX.Container(), g = new PX.Graphics(); box.addChild(g);
+      const c1 = Math.min(cols, c0 + CK), r1 = Math.min(rows, r0 + CK);
+      const P = [
+        projX(c0 * CELL, r0 * CELL), projY(c0 * CELL, r0 * CELL),
+        projX(c1 * CELL, r0 * CELL), projY(c1 * CELL, r0 * CELL),
+        projX(c1 * CELL, r1 * CELL), projY(c1 * CELL, r1 * CELL),
+        projX(c0 * CELL, r1 * CELL), projY(c0 * CELL, r1 * CELL)
+      ];
+      let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+      for (let i = 0; i < P.length; i += 2) {
+        x0 = Math.min(x0, P[i]); x1 = Math.max(x1, P[i]);
+        y0 = Math.min(y0, P[i + 1]); y1 = Math.max(y1, P[i + 1]);
       }
+      g.beginFill(BASE); g.drawPolygon(P); g.endFill();       // one solid slab, so the chunk has no internal seams
+      g.beginFill(CHECK);                                     // a very faint checker, not the old tile mosaic
+      for (let r = r0; r < r1; r++) for (let c = c0; c < c1; c++) if (((c + r) & 1) === 0) g.drawPolygon(ringPts(c, r, 1));
+      g.endFill();
+      g.beginFill(PEBBLE, .38);
+      for (let i = 0; i < 2; i++) {
+        const pc = c0 + Math.floor(hash(c0 + 19 * i, r0 + 7) * (c1 - c0));
+        const pr = r0 + Math.floor(hash(c0 + 3, r0 + 31 * i) * (r1 - r0));
+        const px = projX((pc + .2 + .6 * hash(pc, i + 5)) * CELL, (pr + .2 + .6 * hash(pr, i + 9)) * CELL);
+        const py = projY((pc + .2 + .6 * hash(pc, i + 5)) * CELL, (pr + .2 + .6 * hash(pr, i + 9)) * CELL);
+        const s = .7 + .5 * hash(pc + 11, pr + 17);
+        g.drawEllipse(px, py, 2.1 * s, 1.15 * s);
+      }
+      g.endFill();
+      const n = Math.max(4, Math.round((c1 - c0) * (r1 - r0) / 8));   // a handful per chunk, never a carpet
+      g.lineStyle({ width: 1.3, color: BLADE, alpha: .5, cap: 'round' });
+      for (let i = 0; i < n; i++) {
+        const c = c0 + Math.floor(hash(c0 * 131 + i, r0 * 197 + 11) * (c1 - c0));
+        const r = r0 + Math.floor(hash(c0 * 313 + i * 17, r0 * 271 + 7) * (r1 - r0));
+        const fx = c + .15 + .7 * hash(c * 911 + i, r * 53 + 5), fy = r + .15 + .7 * hash(c * 71 + r, i + 23);
+        const px = projX(fx * CELL, fy * CELL), py = projY(fx * CELL, fy * CELL), s = .75 + .5 * hash(c + 13, r + 29);
+        g.moveTo(px - 2.4 * s, py + .6); g.lineTo(px - 3.8 * s, py - 4.0 * s);
+        g.moveTo(px, py + .8); g.lineTo(px + .2 * s, py - 5.0 * s);
+        g.moveTo(px + 2.4 * s, py + .6); g.lineTo(px + 3.6 * s, py - 3.6 * s);
+      }
+      x0 -= 2; y0 -= 8; x1 += 2; y1 += 2;              // room for the little blades just past the chunk edge
       groundL.addChild(box); groundChunks.push({ box, x0, y0, x1, y1 });
     }
   }
