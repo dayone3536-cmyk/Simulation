@@ -10,8 +10,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/pixi.js@7.4.2/dist/pixi.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="stylesheet" href="css/style.css?v=5">
-<link rel="stylesheet" href="css/economy.css?v=3">
+<link rel="stylesheet" href="css/style.css?v=6">
+<link rel="stylesheet" href="css/economy.css?v=4">
 <link rel="stylesheet" href="css/boot.css?v=2">
 </head>
 <body>
@@ -37,7 +37,7 @@
   </div>
   <p class="boot-tip"><span class="boot-diamond" aria-hidden="true"></span><span id="bootTipText"></span></p>
 </div>
-<script src="js/00-boot.js?v=2"></script>
+<script src="js/00-boot.js?v=4"></script>
 <canvas id="c"></canvas>
 <div id="vignette"></div>
 <div id="info"></div>
@@ -46,25 +46,18 @@
   <div id="topright">
     <div id="wheatpill" class="pill"><span class="ico" data-ic="wheat"></span><span class="pill-copy"><small>Wheat</small><span id="wheatnum">0</span></span></div>
     <div id="goldbar"><div class="coin" data-ic="coin"></div><div class="gold-copy"><small>Gold</small><div id="goldnum">...</div></div></div>
-    <button id="moreBtn" aria-label="Village details"><i></i><i></i><i></i></button>
   </div>
-  <div id="stats"><h4>Village</h4></div>
   <div id="toast"></div>
 
   <div id="buildpanel" aria-hidden="true">
     <div class="bp-head">
       <div class="bp-copy"><span class="eyebrow">Construction</span><div class="bt">Build</div></div>
-      <span class="bp-count">3 options</span>
+      <span class="bp-count">2 options</span>
     </div>
     <div class="bcard">
       <span class="bi" data-ic="wheat"></span>
       <div class="bm"><b>Wheat Farm</b><small id="farmInfo"></small></div>
       <button id="farmBuy"></button>
-    </div>
-    <div class="bcard">
-      <span class="bi"><svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="lg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d8a765"/><stop offset="1" stop-color="#8b5a2b"/></linearGradient><linearGradient id="lg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#eef4fb"/><stop offset="1" stop-color="#9aa8b7"/></linearGradient></defs><ellipse cx="32" cy="52" rx="22" ry="6" fill="#2a1608" opacity=".3"/><rect x="8" y="34" width="34" height="13" rx="6.5" fill="url(#lg1)" stroke="#3a220c" stroke-width="2.5"/><ellipse cx="11" cy="40.5" rx="5" ry="6.5" fill="#d9a861" stroke="#3a220c" stroke-width="2.5"/><ellipse cx="11" cy="40.5" rx="2" ry="3" fill="none" stroke="#a8742f" stroke-width="1.4"/><path d="M43 6l12 21-8 4.5L35 10.5z" fill="url(#lg2)" stroke="#3f4852" stroke-width="2.2" stroke-linejoin="round"/><path d="M40 11l8 14" stroke="#eef4fb" stroke-width="1.4" opacity=".7"/><path d="M34 30l13-7" stroke="#6b4519" stroke-width="5" stroke-linecap="round"/></svg></span>
-      <div class="bm"><b>Lumber Camp</b><small id="campInfo"></small></div>
-      <button id="campBuy"></button>
     </div>
     <div class="bcard">
       <span class="bi"><svg viewBox="0 0 64 64" aria-hidden="true"><ellipse cx="32" cy="53" rx="23" ry="6" fill="#2a1608" opacity=".28"/><rect x="11" y="26" width="42" height="26" rx="4" fill="#8b5a2b" stroke="#3a220c" stroke-width="2.5"/><path d="M7 27L32 9l25 18z" fill="#a8742f" stroke="#3a220c" stroke-width="2.5" stroke-linejoin="round"/><path d="M33 10v17M8 27h48" stroke="#5a3417" stroke-width="1.6" opacity=".65"/><rect x="27" y="35" width="10" height="17" rx="1.5" fill="#4a2c12" stroke="#2e1608" stroke-width="1.8"/><rect x="16" y="33" width="7" height="7" rx="1" fill="#ffd36b" stroke="#4a2c0e" stroke-width="1.2"/><rect x="42" y="33" width="7" height="7" rx="1" fill="#ffd36b" stroke="#4a2c0e" stroke-width="1.2"/><path d="M48 49l9-15" stroke="#6b4519" stroke-width="4.5" stroke-linecap="round"/><path d="M53 37l8-5 4 7-8 5z" fill="#c9d2da" stroke="#3f4852" stroke-width="1.6" stroke-linejoin="round"/><rect x="9" y="50" width="20" height="7" rx="3.5" fill="#7a4a22" stroke="#3a220c" stroke-width="1.6"/><ellipse cx="28" cy="53.5" rx="3.5" ry="4" fill="#c79a5e" stroke="#3a220c" stroke-width="1.2"/></svg></span>
@@ -77,126 +70,30 @@
   <button id="tradebtn" aria-label="Open the market"><span class="ico" data-ic="coin"></span><span class="btn-label">Market</span></button>
 
   <div id="tradepanel" aria-hidden="true">
-    <div id="marketHero">
-      <svg class="hero-art" viewBox="0 0 372 116" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-        <defs>
-          <linearGradient id="skyG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5d7d3f"/><stop offset=".55" stop-color="#435f2d"/><stop offset="1" stop-color="#2c3f1e"/></linearGradient>
-          <linearGradient id="woodG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c48d4f"/><stop offset="1" stop-color="#7a4a22"/></linearGradient>
-          <linearGradient id="counterG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9a763"/><stop offset="1" stop-color="#8c5a2b"/></linearGradient>
-          <linearGradient id="awningA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff0cd"/><stop offset="1" stop-color="#e3bd7b"/></linearGradient>
-          <linearGradient id="awningB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d97152"/><stop offset="1" stop-color="#a33f2b"/></linearGradient>
-          <radialGradient id="sunG" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ffe9a8" stop-opacity=".95"/><stop offset="1" stop-color="#ffe9a8" stop-opacity="0"/></radialGradient>
-        </defs>
-        <rect width="372" height="116" fill="url(#skyG)"/>
-        <circle cx="310" cy="34" r="55" fill="url(#sunG)"/>
-        <circle cx="310" cy="34" r="15" fill="#ffe6a0" opacity=".8"/>
-        <path d="M0 84c40-14 82-20 132-14 42 5 70 15 112 13 44-2 82-12 128-6v39H0z" fill="#3a5326" opacity=".8"/>
-        <path d="M0 96c54-12 94-10 140-4 46 6 82 8 126 2 38-5 70-9 106-4v26H0z" fill="#2b3f1c" opacity=".85"/>
-        <ellipse cx="190" cy="106" rx="136" ry="8" fill="#1b2a11" opacity=".55"/>
-        <!-- stall posts -->
-        <rect x="92" y="34" width="7" height="72" rx="3" fill="#5a3a1c"/>
-        <rect x="275" y="34" width="7" height="72" rx="3" fill="#5a3a1c"/>
-        <rect x="94" y="36" width="2" height="68" fill="#b87b43" opacity=".55"/>
-        <rect x="277" y="36" width="2" height="68" fill="#b87b43" opacity=".55"/>
-        <!-- awning -->
-        <path d="M78 40h218l-13 25H91z" fill="#4a2c12"/>
-        <g>
-          <path d="M82 42h27l-3 21H86z" fill="url(#awningA)"/>
-          <path d="M109 42h27l-3 21h-24z" fill="url(#awningB)"/>
-          <path d="M136 42h27l-3 21h-24z" fill="url(#awningA)"/>
-          <path d="M163 42h27l-3 21h-24z" fill="url(#awningB)"/>
-          <path d="M190 42h27l-3 21h-24z" fill="url(#awningA)"/>
-          <path d="M217 42h27l-3 21h-24z" fill="url(#awningB)"/>
-          <path d="M244 42h27l-3 21h-24z" fill="url(#awningA)"/>
-          <path d="M271 42h21l-2 21h-22z" fill="url(#awningB)"/>
-        </g>
-        <path d="M78 40h218l-3 6H81z" fill="#3a210d"/>
-        <path d="M82 62c4 6 9 6 13 0 4 6 9 6 13 0 4 6 9 6 13 0 4 6 9 6 13 0 4 6 9 6 13 0 4 6 9 6 13 0 4 6 9 6 13 0 4 6 9 6 13 0 4 6 9 6 13 0 4 6 9 6 13 0 4 6 9 6 13 0 4 6 9 6 13 0" fill="url(#awningA)"/>
-        <!-- counter -->
-        <rect x="112" y="78" width="150" height="12" rx="4" fill="url(#counterG)" stroke="#4a2c0e" stroke-width="2"/>
-        <rect x="112" y="88" width="150" height="18" rx="4" fill="url(#woodG)" stroke="#4a2c0e" stroke-width="2"/>
-        <path d="M124 90v14M150 90v14M176 90v14M202 90v14M228 90v14M250 90v14" stroke="#5a3417" stroke-width="1.4" opacity=".55"/>
-        <!-- hanging sign -->
-        <path d="M182 30v6M196 30v6" stroke="#3a220c" stroke-width="2"/>
-        <rect x="176" y="34" width="27" height="18" rx="4" fill="#f0cb83" stroke="#4a2c0e" stroke-width="2"/>
-        <circle cx="189.5" cy="43" r="5" fill="#b97c22" stroke="#6b3d08" stroke-width="1.2"/>
-        <path d="M189.5 40v6M187.6 42c.6-.8 3.2-.9 3.7.3" fill="none" stroke="#ffe8a8" stroke-width="1" stroke-linecap="round"/>
-        <!-- sacks of wheat -->
-        <g transform="translate(124 72)">
-          <ellipse cx="0" cy="20" rx="17" ry="4" fill="#1b2a11" opacity=".45"/>
-          <path d="M-13 6c-4 4-5 9-5 12 0 5 4 8 13 8s13-3 13-8c0-3-1-8-5-12z" fill="#c99a5b" stroke="#4a2c0e" stroke-width="2"/>
-          <path d="M-11 6c2 3 4 4 7 4s5-1 7-4l-1.6 5h-10.8z" fill="#8a5a2f" stroke="#4a2c0e" stroke-width="1.4"/>
-          <path d="M-6 14c1 4 1 6 0 9M4 13c-1 4-1 6 0 9" stroke="#f0cb83" stroke-width="1.2" opacity=".5"/>
-        </g>
-        <g transform="translate(152 76)">
-          <ellipse cx="0" cy="16" rx="13" ry="3.5" fill="#1b2a11" opacity=".45"/>
-          <path d="M-10 7c-3 3-4 7-4 9 0 4 3 6 10 6s10-2 10-6c0-2-1-6-4-9z" fill="#b98a4c" stroke="#4a2c0e" stroke-width="2"/>
-          <path d="M-8 7c1.6 2 3 3 5.4 3s3.8-1 5.4-3l-1.2 4h-8.4z" fill="#7a4a22" stroke="#4a2c0e" stroke-width="1.3"/>
-        </g>
-        <!-- barrel -->
-        <g transform="translate(260 84)">
-          <ellipse cx="0" cy="12" rx="12" ry="3" fill="#1b2a11" opacity=".45"/>
-          <path d="M-9 2c-2 3-2 14 0 17 4 3 14 3 18 0 2-3 2-14 0-17z" fill="#9a6432" stroke="#4a2c0e" stroke-width="2"/>
-          <path d="M-9 6h18M-9.5 14h19" stroke="#4a2c0e" stroke-width="1.6" opacity=".7"/>
-        </g>
-        <!-- coin pouch -->
-        <g transform="translate(238 80)">
-          <ellipse cx="0" cy="12" rx="10" ry="3" fill="#1b2a11" opacity=".4"/>
-          <path d="M-6 1c-3 2-5 5-5 8 0 3 2 4 8 4s8-1 8-4c0-3-2-6-5-8z" fill="#d09a45" stroke="#4a2c0e" stroke-width="1.8"/>
-          <path d="M-4 0h8" stroke="#4a2c0e" stroke-width="2" stroke-linecap="round"/>
-          <circle cx="0" cy="7" r="3.2" fill="#ffe38a" stroke="#7a4a08" stroke-width="1"/>
-        </g>
-        <!-- sparkle -->
-        <path d="M330 60l1.8 5.2 5.2 1.8-5.2 1.8L330 74l-1.8-5.2L323 67l5.2-1.8z" fill="#ffe9a8" opacity=".75"/>
-      </svg>
-      <div class="hero-scrim"></div>
+    <div class="tp-head">
+      <div class="tp-copy"><span class="eyebrow">Market</span><div class="bt">Sell wheat</div></div>
       <button id="tradeCancel" class="x" type="button" aria-label="Close" data-ic="cross"></button>
-      <div class="hero-copy">
-        <span class="eyebrow"><span class="live-dot"></span> Open market</span>
-        <div class="bt">The Merchant's Stall</div>
-        <div id="tradeMood">The merchant is setting up his stall.</div>
-      </div>
     </div>
-
     <div class="tp-body">
       <div id="priceCard">
-        <div class="pc-head"><span class="section-label">Today's rate</span><span id="trend">Steady</span></div>
+        <div class="pc-head"><span class="section-label">Today's rate</span><span id="priceTag">Fair price</span></div>
         <div class="pr">
-          <div class="trade-unit"><span class="pi" data-ic="wheat"></span><span class="unit-copy"><small>10 wheat</small><b>10</b></span></div>
-          <span class="arrow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-          <div class="trade-unit gold"><span class="pi" data-ic="coin"></span><span class="unit-copy"><small>gold</small><b id="priceGold">5</b></span></div>
+          <div class="trade-unit"><span class="pi" data-ic="wheat"></span><span class="unit-copy"><small>wheat</small><b>10</b></span></div>
+          <span class="arrow">&rarr;</span>
+          <div class="trade-unit gold"><span class="pi" data-ic="coin"></span><span class="unit-copy"><small>gold</small><b id="priceGold">14</b></span></div>
         </div>
-        <svg id="spark" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"></svg>
-        <div class="pm"><span id="priceTag">Fair price</span><span id="priceTimer"></span></div>
       </div>
-
       <div id="tradeGet"></div>
       <button id="harvestReady" type="button"><span class="ico" data-ic="wheat"></span><span id="harvestReadyTxt">Harvest ready farms</span></button>
-
-      <div class="section-head"><span class="section-label">Choose a trade</span><span class="section-note">Offer locked at today's rate</span></div>
       <div class="sellrow">
-        <button id="sell10" class="offer" type="button">
-          <span class="offer-art"><svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="ow1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f2d27c"/><stop offset="1" stop-color="#c7912c"/></linearGradient></defs><ellipse cx="32" cy="55" rx="17" ry="4" fill="#000" opacity=".22"/><path d="M32 56V22" stroke="#a9772e" stroke-width="3.4" stroke-linecap="round"/><path d="M32 56L23 24" stroke="#b8863a" stroke-width="2.6" stroke-linecap="round"/><path d="M32 56l9-32" stroke="#b8863a" stroke-width="2.6" stroke-linecap="round"/><g fill="url(#ow1)" stroke="#8a5a12" stroke-width="1.4"><ellipse cx="30" cy="19" rx="4" ry="7" transform="rotate(-12 30 19)"/><ellipse cx="34" cy="27" rx="4" ry="7" transform="rotate(12 34 27)"/><ellipse cx="21" cy="24" rx="3.6" ry="6.4" transform="rotate(-32 21 24)"/><ellipse cx="43" cy="24" rx="3.6" ry="6.4" transform="rotate(32 43 24)"/><ellipse cx="18" cy="34" rx="3.2" ry="5.8" transform="rotate(-42 18 34)"/><ellipse cx="46" cy="34" rx="3.2" ry="5.8" transform="rotate(42 46 34)"/></g></svg></span>
-          <span class="offer-qty"><small>Sell</small><b>10</b></span>
-          <span class="offer-gain" id="sell10g">+5g</span>
-        </button>
-        <button id="sell50" class="offer" type="button">
-          <span class="offer-art"><svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="ow2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d8a765"/><stop offset="1" stop-color="#8a5627"/></linearGradient></defs><ellipse cx="32" cy="55" rx="21" ry="4.5" fill="#000" opacity=".22"/><path d="M12 30h40v21a4 4 0 0 1-4 4H16a4 4 0 0 1-4-4z" fill="url(#ow2)" stroke="#3a220c" stroke-width="2.4"/><path d="M12 36h40M12 45h40" stroke="#5a3417" stroke-width="1.6" opacity=".65"/><path d="M12 30l5-9h30l5 9" fill="#b9854a" stroke="#3a220c" stroke-width="2.4" stroke-linejoin="round"/><path d="M20 27l3-5M32 27l0-5M44 27l-3-5" stroke="#f0cb83" stroke-width="1.6" opacity=".5"/><g fill="#f2d27c" stroke="#8a5a12" stroke-width="1.2"><ellipse cx="24" cy="18" rx="3.2" ry="5.6" transform="rotate(-14 24 18)"/><ellipse cx="30" cy="12" rx="3.2" ry="5.6"/><ellipse cx="37" cy="17" rx="3.2" ry="5.6" transform="rotate(14 37 17)"/></g></svg></span>
-          <span class="offer-qty"><small>Sell</small><b>50</b></span>
-          <span class="offer-gain" id="sell50g">+25g</span>
-        </button>
-        <button id="sellX" class="offer main" type="button">
-          <span class="offer-badge">Best</span>
-          <span class="offer-art"><svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="ow3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e3b66f"/><stop offset="1" stop-color="#8a5627"/></linearGradient></defs><ellipse cx="32" cy="56" rx="24" ry="4.5" fill="#000" opacity=".22"/><path d="M10 34h40l-4 15H15z" fill="url(#ow3)" stroke="#3a220c" stroke-width="2.4" stroke-linejoin="round"/><path d="M8 34h44" stroke="#4a2c0e" stroke-width="3" stroke-linecap="round"/><path d="M17 34l-3-8h9l2 8M47 34l3-8h-9l-2 8" fill="#b9854a" stroke="#3a220c" stroke-width="2" stroke-linejoin="round"/><circle cx="19" cy="52" r="6" fill="#5a3417" stroke="#2a1708" stroke-width="2.4"/><circle cx="19" cy="52" r="2" fill="#c99a5b"/><circle cx="47" cy="52" r="6" fill="#5a3417" stroke="#2a1708" stroke-width="2.4"/><circle cx="47" cy="52" r="2" fill="#c99a5b"/><path d="M24 30c1-5 4-8 8-8s7 3 8 8" fill="#e7c477" stroke="#4a2c0e" stroke-width="1.8"/><path d="M28 26c1-3 2.5-4 4-4s3 1 4 4" fill="none" stroke="#8a5a12" stroke-width="1.2" opacity=".6"/></svg></span>
-          <span class="offer-qty"><small>Sell extra</small><b id="sellXn">0</b></span>
-          <span class="offer-gain" id="sellXg">+5g</span>
-        </button>
+        <button id="sell10" class="offer" type="button"><span class="offer-qty"><small>Sell</small><b>10</b></span><span class="offer-gain" id="sell10g">+14g</span></button>
+        <button id="sell50" class="offer" type="button"><span class="offer-qty"><small>Sell</small><b>50</b></span><span class="offer-gain" id="sell50g">+70g</span></button>
+        <button id="sellX" class="offer main" type="button"><span class="offer-qty"><small>Sell all</small><b id="sellXn">0</b></span><span class="offer-gain" id="sellXg">+0g</span></button>
       </div>
       <div id="tradeNote"></div>
       <div id="coinfx"></div>
     </div>
   </div>
-
   <div id="movebar"><button class="no" id="mvNo" aria-label="Cancel move" data-ic="cross"></button><div id="mvMsg"></div><button class="rot" id="mvRot" aria-label="Rotate" title="Rotate">&#x27F3;</button><button class="ok" id="mvOk" aria-label="Place" data-ic="check"></button></div>
 
   <div id="homepanel" aria-hidden="true">
@@ -238,18 +135,6 @@
       <div class="hmaxnote">Your manor has room for a village of 20.</div>
     </div>
     <div id="homeNote">A grander home raises your village's population cap.</div>
-    <div id="hearthCard">
-      <div class="hearth-row">
-        <span class="hearth-ico" id="hearthIco"></span>
-        <div class="hinfo">
-          <div class="hlabel" id="hearthTitle">Hold a feast</div>
-          <div class="hearth-sub" id="hearthSub">Spend food and gold for villagers and a boost</div>
-        </div>
-        <button id="hearthBtn" type="button"><span id="hearthBtnTxt">Feast</span></button>
-      </div>
-      <div id="hearthProgress"><i id="hearthFill"></i></div>
-      <div id="hearthNote">Hearth Spirit <b id="hearthSpirit">0</b> &middot; <span id="hearthTitleTxt">Hamlet</span></div>
-    </div>
   </div>
 
   <div id="homeCelebrate" aria-hidden="true">
@@ -264,34 +149,34 @@
   window.addEventListener('unhandledrejection', function(e){ var h=document.getElementById('hint'); if(h){ var r=e.reason; h.textContent='Error: '+(r&&r.message||r||'unknown'); h.style.opacity=1; h.style.color='#ffb0a8'; } });
 </script>
 
-<script src="js/01-config-renderer.js?v=3"></script>
+<script src="js/01-config-renderer.js?v=5"></script>
 
-<script src="js/02-icons-hud-rng.js?v=3"></script>
+<script src="js/02-icons-hud-rng.js?v=5"></script>
 
 <script src="js/03-atlases-world.js?v=3"></script>
 
-<script src="js/04-selection.js?v=4"></script>
+<script src="js/04-selection.js?v=6"></script>
 
-<script src="js/05-camera-input.js?v=3"></script>
+<script src="js/05-camera-input.js?v=5"></script>
 
-<script src="js/06-render-home.js?v=4"></script>
+<script src="js/06-render-home.js?v=6"></script>
 
 
 <script src="js/07-villagers.js?v=3"></script>
 
-<script src="js/08-farms.js?v=3"></script>
+<script src="js/08-farms.js?v=5"></script>
 
-<script src="js/09-farm-loop-bootstrap.js?v=6"></script>
+<script src="js/09-farm-loop-bootstrap.js?v=8"></script>
 
-<script src="js/10-home-upgrade.js?v=3"></script>
+<script src="js/10-home-upgrade.js?v=4"></script>
 
-<script src="js/11-wood.js?v=3"></script>
+<script src="js/11-wood.js?v=5"></script>
 
-<script src="js/12-jobs.js?v=2"></script>
+<script src="js/12-jobs.js?v=4"></script>
 
-<script src="js/13-hearth.js?v=2"></script>
 
-<script src="js/14-woodcutter-hut.js?v=1"></script>
+
+<script src="js/14-woodcutter-hut.js?v=3"></script>
 
 </body>
 

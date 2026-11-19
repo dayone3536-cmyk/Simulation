@@ -40,18 +40,13 @@
     return Math.abs(ctr[0] - cpx) < cw / 2 / zoom + 340 && Math.abs(ctr[1] - cpy) < ch / 2 / zoom + 340;
   }
   function farmTileOK(c, r) {
-    const x0 = c * CELL, y0 = r * CELL;
-    if (x0 < clearing.x0 || y0 < clearing.y0 || x0 + CELL > clearing.x1 || y0 + CELL > clearing.y1) return false;
     return !occ.get(slot(c, r));
   }
   function farmSpotOK(c, r, rot, ignore) {       // ignore = farm being moved (its own current tiles don't block)
     const cols = fCols(rot), rows = fRows(rot);
     if (c < 0 || r < 0 || c + cols > WORLD_W / CELL || r + rows > WORLD_H / CELL) return false;
     for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
-      const cc = c + i, rr = r + j;
-      const x0 = cc * CELL, y0 = rr * CELL;
-      if (x0 < clearing.x0 || y0 < clearing.y0 || x0 + CELL > clearing.x1 || y0 + CELL > clearing.y1) return false;
-      const o = occ.get(slot(cc, rr)); if (o && o !== ignore) return false;
+      const o = occ.get(slot(c + i, r + j)); if (o && o !== ignore) return false;
     }
     return true;
   }

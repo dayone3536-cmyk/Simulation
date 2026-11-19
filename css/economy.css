@@ -152,10 +152,6 @@
   text-align: center;
 }
 #jpNote:empty { display: none; }
-#jpAuto {
-  width: 100%; min-height: 46px;
-  display: flex; align-items: center; justify-content: center; gap: 7px;
-}
 
 /* ---------- hunger: loud, persistent, never a lost villager ---------- */
 #hungerbar {
@@ -175,98 +171,6 @@
 #hungerbar.on { opacity: 1; transform: translate(-50%, 0); }
 #hungerbar b { font: 800 11.5px/1.2 var(--font-ui); color: #ffd3c6; letter-spacing: .02em; }
 #hungerbar span { font: 500 9.5px/1.3 var(--font-ui); color: #e8b3a4; }
-
-/* ---------- well fed ---------- */
-#buffpill {
-  position: absolute;
-  left: calc(16px + env(safe-area-inset-left));
-  bottom: calc(52px + env(safe-area-inset-bottom));
-  pointer-events: none;
-  display: none; align-items: center; gap: 8px;
-  padding: 6px 13px 6px 9px;
-  border: 1px solid rgba(154, 240, 124, .55);
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(44, 62, 28, .94), rgba(20, 28, 13, .96));
-  box-shadow: 0 0 18px rgba(120,220,90,.18), 0 8px 18px -10px rgba(0,0,0,.7), inset 0 1px 0 rgba(220,255,200,.18);
-  color: #eaffdf;
-  font: 800 11px/1 var(--font-ui);
-  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-}
-#buffpill.on { display: flex; }
-.bf-dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #f0ffe6, #6fd24a);
-  box-shadow: 0 0 10px rgba(140,255,110,.9);
-  animation: livePulse 1.8s ease-in-out infinite;
-}
-
-/* ---------- hearth card inside the home panel ---------- */
-#hearthCard {
-  margin-top: 12px;
-  padding: 13px 14px 11px;
-  border: 1px solid rgba(255, 180, 90, .4);
-  border-radius: var(--r-lg);
-  background:
-    radial-gradient(120% 100% at 15% 0%, rgba(255, 170, 80, .14), rgba(255,170,80,0) 65%),
-    linear-gradient(180deg, rgba(58, 34, 18, .42), rgba(16, 11, 7, .4));
-  box-shadow: inset 0 1px 0 rgba(255, 210, 160, .1), inset 0 0 26px rgba(255,150,60,.06);
-}
-.hearth-row { display: flex; align-items: center; gap: 12px; }
-.hearth-ico {
-  width: 44px; height: 44px; flex: none;
-  display: flex; align-items: center; justify-content: center;
-  border: 1px solid rgba(255, 180, 90, .55);
-  border-radius: 50%;
-  background: radial-gradient(circle at 50% 40%, rgba(255, 180, 80, .22), rgba(0,0,0,0) 65%), rgba(8, 6, 4, .28);
-  box-shadow: inset 0 0 14px rgba(0,0,0,.4), 0 0 18px rgba(255,150,60,.16);
-}
-.hearth-ico svg { width: 28px; height: 28px; display: block; filter: drop-shadow(0 0 6px rgba(255,160,60,.5)); }
-.hearth-sub { margin-top: 3px; font: 500 10px/1.35 var(--font-ui); color: var(--muted); }
-#hearthBtn {
-  display: flex; align-items: center; justify-content: center; gap: 5px;
-  flex: none; min-width: 72px; min-height: 42px;
-  padding: 9px 13px;
-  font: 800 13px/1 var(--font-display);
-}
-#hearthProgress {
-  display: none; height: 7px; margin-top: 10px;
-  border-radius: 99px;
-  background: #1a1108;
-  box-shadow: inset 0 2px 5px rgba(0,0,0,.65);
-  overflow: hidden;
-  border: 1px solid rgba(240, 196, 107, .24);
-}
-#hearthProgress i {
-  display: block; height: 100%; width: 0%;
-  border-radius: 99px;
-  background: linear-gradient(90deg, #e28a2c, #ffd98a);
-  box-shadow: 0 0 12px rgba(255, 190, 70, .6);
-  transition: width .4s linear;
-}
-#hearthNote { margin-top: 8px; font: 600 9.5px/1.3 var(--font-ui); color: var(--faint); text-align: center; }
-#hearthNote b { color: var(--gold-bright); font-variant-numeric: tabular-nums; }
-
-/* ---------- feast celebration ---------- */
-#feastBanner {
-  position: absolute;
-  left: 50%; top: calc(96px + env(safe-area-inset-top));
-  transform: translate(-50%, -18px);
-  display: flex; align-items: center; gap: 13px;
-  padding: 12px 20px 12px 15px;
-  border: 1px solid #ffc46b;
-  border-radius: 20px;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity .35s ease, transform .35s cubic-bezier(.2,.8,.3,1);
-  z-index: 7;
-  background: radial-gradient(120% 80% at 20% 0, rgba(255,190,110,.28), rgba(255,190,110,0) 60%), linear-gradient(#4a341d, #24170a);
-  box-shadow: 0 0 0 3px rgba(20,12,4,.5), 0 0 34px rgba(255,170,60,.34), 0 18px 36px -14px rgba(0,0,0,.8);
-}
-#feastBanner.on { opacity: 1; transform: translate(-50%, 0); }
-.fb-ico { width: 40px; height: 40px; flex: none; filter: drop-shadow(0 0 12px rgba(255,170,60,.7)); }
-.fb-ico svg { width: 100%; height: 100%; display: block; }
-.fb-text b { display: block; font: 600 17px/1.2 var(--font-display); color: var(--gold-bright); text-shadow: 0 0 14px rgba(255,180,60,.45); }
-.fb-text span { display: block; margin-top: 2px; font: 600 11.5px/1.3 var(--font-ui); color: var(--ink-soft); }
 
 /* ---------- woodcutter hut sheet ---------- */
 #hutpanel {
@@ -331,6 +235,19 @@
 #hutNote { margin-top: 12px; font: 500 10.5px/1.45 var(--font-ui); color: #ffcf8a; text-align: center; }
 #hutAway { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(240,196,107,.16); font: 600 10.5px/1.4 var(--font-ui); color: var(--muted); }
 #hutAway:empty { display: none; }
+#hutMove {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; min-height: 44px; margin-top: 14px;
+  border: 1px solid #ffe6a6; border-radius: var(--r-md);
+  background: linear-gradient(180deg, #ffe7a4 0%, #f2c05c 48%, #e2a232 100%);
+  color: #2b1c06;
+  font: 800 13px/1 var(--font-ui);
+  box-shadow: 0 1px 0 rgba(255,255,255,.65) inset, 0 -2px 0 rgba(120,70,8,.35) inset, 0 4px 0 #8f5f13, 0 10px 20px -8px rgba(0,0,0,.7);
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: transform .14s ease, filter .18s ease, box-shadow .18s ease;
+}
+#hutMove:hover { filter: brightness(1.06); }
+#hutMove:active { transform: translateY(3px); box-shadow: 0 1px 0 #8f5f13, inset 0 2px 6px rgba(90,50,0,.25); }
 #huttip {
   position: fixed; display: none; z-index: 30; pointer-events: none;
   padding: 8px 11px;
@@ -364,7 +281,4 @@
   .jp-step { width: 34px; height: 34px; }
   .jp-n { font-size: 17px; }
   #jpNote { margin: 7px 0; font-size: 9.5px; }
-  #jpAuto { min-height: 42px; }
-  .hearth-ico { width: 38px; height: 38px; }
-  #hearthCard { padding: 10px; }
 }

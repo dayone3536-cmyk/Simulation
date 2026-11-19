@@ -14,6 +14,7 @@
 
   // ---- saved state: position, grove list and the last moment the game was open ----
   let woodHut = { owned: false, c: 0, r: 0, radius: HUT_RADIUS, trees: [], lastSeen: 0, lastAway: null };
+  let movingHut = null;               // { c, r, oc, or, ... } while the hut is being carried
   try {
     const raw = JSON.parse(localStorage.getItem(HUT_SAVE_KEY) || 'null');
     if (raw && raw.owned) {
@@ -192,13 +193,18 @@
   }
 
   // ---- map art: the hut, its stumps and the outline of its grove ----
-  let hutArt = null, hutStumpG = null, hutAreaG = null;
+  let hutArt = null, hutStumpG = null, hutAreaG = null, hutArtBuilt = false;
+  function placeHutArt() {
+    if (!hutArt) return;
+    const x = (woodHut.c + HUT_N / 2) * CELL, y = (woodHut.r + HUT_N) * CELL;
+    hutArt.position.set(projX(x, y), projY(x, y)); hutArt.scale.set(1.5);
+  }
   function drawWoodHut() {
     if (!woodHut.owned || typeof farmL === 'undefined') return;
     if (!hutArt) hutArt = farmL.addChild(new PX.Container());
-    const kids = hutArt.removeChildren(); for (const ch of kids) ch.destroy({ children: true });
-    const x = (woodHut.c + HUT_N / 2) * CELL, y = (woodHut.r + HUT_N) * CELL;
-    hutArt.position.set(projX(x, y), projY(x, y)); hutArt.scale.set(1.5);
+    placeHutArt();
+    if (hutArtBuilt) return;                 // geometry is static; moving only repositions the container
+    hutArtBuilt = true;
     const g = hutArt.addChild(new PX.Graphics());
     g.beginFill(0x000000, .18); g.drawEllipse(0, 8, 70, 24); g.endFill();
     // stacked logs beside the hut
@@ -271,7 +277,7 @@
       for (let j = 0; j < HUT_N && free; j++) for (let i = 0; i < HUT_N; i++) if (occ.get(slot(c + i, r + j))) { free = false; break; }
       if (!free) continue;
       const d = Math.hypot(c + HUT_N / 2 - (home.c + HOME_N / 2), r + HUT_N / 2 - (home.r + HOME_N / 2));
-      if (d < 2.4 || d > 10) continue;
+      if (d < 4 || d > 10) continue;
       if (d < fallbackD) { fallbackD = d; fallback = { c, r }; }
       let treesNear = 0;
       const tc = c + HUT_N / 2, tr = r + HUT_N / 2, R = HUT_RADIUS + .45;
@@ -328,14 +334,14 @@
     '<div class="hp-head"><span class="hp-ico">' + HUT_ICON + '</span><div class="hp-tt"><div class="hp-title">Woodcutter Hut</div><div class="hp-sub" id="hutSub">A small grove by your home</div></div>' +
       '<button class="hp-x" id="hutClose" type="button" aria-label="Close">&#10005;</button></div>' +
     '<div class="hp-row"><span>Grove</span><b id="hutTreeCount">0 trees</b></div>' +
-    '<div class="hp-row"><span>Away pace</span><b id="hutRate">10 trees/hr</b></div>' +
     '<div class="hp-row"><span>Woodcutters</span><b id="hutCrew">0</b></div>' +
-    '<div id="hutNote"></div><div id="hutAway"></div>';
+    '<div id="hutNote"></div><div id="hutAway"></div>' +
+    '<button id="hutMove" type="button">Move hut</button>';
   hud.appendChild(hutPanel);
   const hutSubEl = document.getElementById('hutSub'), hutTreeCountEl = document.getElementById('hutTreeCount');
-  const hutRateEl = document.getElementById('hutRate'), hutCrewEl = document.getElementById('hutCrew');
+  const hutCrewEl = document.getElementById('hutCrew');
   const hutNoteEl = document.getElementById('hutNote'), hutAwayEl = document.getElementById('hutAway');
-  if (hutRateEl) hutRateEl.textContent = HUT_OFFLINE_TREES_PER_HOUR + ' trees/hr \u00B7 ' + hutTreesPerHour() + ' wood/hr';
+  const hutMoveEl = document.getElementById('hutMove');
 
   let hutPanelOpen = false, hutPanelKey = '', hutHover = false;
   function renderHutPanel(force) {
@@ -348,13 +354,13 @@
     const key = [standing, total, next ? Math.ceil((next - now) / 1000) : 0, crew, away].join('|');
     if (!force && key === hutPanelKey) return;
     hutPanelKey = key;
-    if (hutSubEl) hutSubEl.textContent = 'A small grove ' + HUT_RADIUS + ' tiles around the hut';
+    if (hutSubEl) hutSubEl.textContent = 'Cuts trees in its own small grove';
     if (hutTreeCountEl) hutTreeCountEl.textContent = standing + ' / ' + total + ' standing';
     if (hutCrewEl) hutCrewEl.textContent = String(crew);
     if (hutNoteEl) {
       if (!crew) hutNoteEl.textContent = 'Assign a woodcutter in the Villagers menu to work this grove.';
       else if (!standing) hutNoteEl.textContent = 'The grove is resting \u2014 the next tree regrows in ' + hudClock(next - now) + '.';
-      else hutNoteEl.textContent = 'Cutters fell one tree at a time, only inside the green outline.';
+      else hutNoteEl.textContent = 'Tap a stump to clear it away.';
     }
     if (hutAwayEl) {
       const a = woodHut.lastAway;
@@ -390,13 +396,117 @@
 
   function hutAt(sx, sy) {
     if (!woodHut.owned || typeof slotAt !== 'function') return false;
+    const pos = movingHut || woodHut;
     const s = slotAt(sx, sy);
-    return !!s && s.c >= woodHut.c - 1 && s.c < woodHut.c + HUT_N + 1 && s.r >= woodHut.r - 1 && s.r < woodHut.r + HUT_N + 1;
+    return !!s && s.c >= pos.c - .5 && s.c < pos.c + HUT_N + .5 && s.r >= pos.r - .5 && s.r < pos.r + HUT_N + .5;
   }
   function hutTap(sx, sy) {
     if (!hutAt(sx, sy)) return false;
     openHutPanel();
     return true;
+  }
+
+  // ---- moving the hut: same friendly feel as farms, but a 2x2 footprint ----
+  const hutClamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  function hutTileOK(c, r) {
+    const o = occ.get(slot(c, r));
+    return !o || o.type === 'hut';
+  }
+  function hutFootOK(c, r) {
+    if (c < 0 || r < 0 || c + HUT_N > WORLD_W / CELL || r + HUT_N > WORLD_H / CELL) return false;
+    for (let j = 0; j < HUT_N; j++) for (let i = 0; i < HUT_N; i++) if (!hutTileOK(c + i, r + j)) return false;
+    return true;
+  }
+  function startMovingHut(sx, sy, armed) {
+    if (!woodHut.owned || movingHut) return false;
+    if ((typeof placing !== 'undefined' && placing) || (typeof movingFarm !== 'undefined' && movingFarm) || (typeof drag !== 'undefined' && drag)) return false;
+    const s = (typeof slotAt === 'function' && slotAt(sx, sy)) || { c: woodHut.c, r: woodHut.r };
+    for (let j = 0; j < HUT_N; j++) for (let i = 0; i < HUT_N; i++) {
+      const o = occ.get(slot(woodHut.c + i, woodHut.r + j));
+      if (o && o.type === 'hut') occ.delete(slot(woodHut.c + i, woodHut.r + j));
+    }
+    movingHut = {
+      c: woodHut.c, r: woodHut.r, oc: woodHut.c, or: woodHut.r,
+      offC: hutClamp(s.c - woodHut.c, 0, HUT_N - 1), offR: hutClamp(s.r - woodHut.r, 0, HUT_N - 1),
+      id: null, held: !armed, q: { x: sx, y: sy }, ok: true, armed: !!armed, moved: false
+    };
+    closeHutPanel(); setHutAreaVisible(true); barKey = '#';
+    return true;
+  }
+  function setMovingHutPos(c, r) {
+    if (!movingHut) return;
+    c = hutClamp(c, 0, WORLD_W / CELL - HUT_N); r = hutClamp(r, 0, WORLD_H / CELL - HUT_N);
+    if (c === movingHut.c && r === movingHut.r) return;
+    movingHut.c = c; movingHut.r = r; movingHut.ok = hutFootOK(c, r);
+    woodHut.c = c; woodHut.r = r;
+    drawWoodHut(); drawHutArea(); barKey = '#';
+  }
+  function hutMoveTo(sx, sy) {
+    if (!movingHut || typeof slotAt !== 'function') return;
+    const s = slotAt(sx, sy); if (!s) return;
+    setMovingHutPos(s.c - movingHut.offC, s.r - movingHut.offR);
+    movingHut.moved = true;
+  }
+  function releaseOldHutTrees() {
+    const now = Date.now();
+    for (const e of woodHut.trees) {
+      if (e.felledAt && e.regrowAt > now) continue;
+      if (!occ.get(slot(e.c, e.r))) createHutTree(e);
+    }
+    woodHut.trees = [];
+  }
+  function captureHutGrove() {
+    for (const t of trees.slice()) {
+      if (!hutTreeAllowed(t)) continue;
+      if (t.claim || t.dying) continue;
+      woodHut.trees.push({ c: t.c, r: t.r, v: t.v, s: t.s, flip: t.flip, ph: t.ph, felledAt: 0, regrowAt: 0 });
+      removeHutWorldTree(t);
+    }
+    woodHut.trees.sort((a, b) => (a.c + a.r) - (b.c + b.r) || a.c - b.c);
+  }
+  function endMovingHut(commit) {
+    if (!movingHut) return;
+    const m = movingHut;
+    if (commit) {
+      if (!hutFootOK(m.c, m.r)) { mvBar.classList.remove('shake'); void mvBar.offsetWidth; mvBar.classList.add('shake'); return; }
+      woodHut.c = m.c; woodHut.r = m.r;
+      releaseOldHutTrees();          // old grove becomes ordinary forest again
+      captureHutGrove();             // new trees become the hut's grove
+      claimHutSlots();
+      saveHut(); drawWoodHut(); drawHutStumps();
+      if (typeof toast === 'function') toast('Woodcutter Hut moved');
+    } else {
+      woodHut.c = m.oc; woodHut.r = m.or;
+      claimHutSlots(); drawWoodHut(); drawHutStumps();
+    }
+    movingHut = null; barKey = '#'; setHutAreaVisible(false);
+    if (hutPanelOpen) renderHutPanel(true);
+  }
+  if (hutMoveEl) hutMoveEl.addEventListener('click', () => {
+    if (!hutPanelOpen) return;
+    const wx = (woodHut.c + HUT_N / 2) * CELL, wy = (woodHut.r + HUT_N / 2) * CELL;
+    startMovingHut((projX(wx, wy) - cpx) * zoom + cw / 2, (projY(wx, wy) - cpy) * zoom + ch / 2, true);
+  });
+
+  // tap a stump and it is gone for good
+  function tapHutStump(sx, sy) {
+    if (!woodHut.owned) return false;
+    const now = Date.now();
+    for (let i = woodHut.trees.length - 1; i >= 0; i--) {
+      const e = woodHut.trees[i];
+      if (!e.felledAt || e.regrowAt <= now) continue;
+      const u = projX((e.c + .5) * CELL, (e.r + .5) * CELL), v = projY((e.c + .5) * CELL, (e.r + .5) * CELL);
+      const bx = (u - cpx) * zoom + cw / 2, by = (v - cpy) * zoom + ch / 2;
+      if (Math.hypot(sx - bx, sy - by) > 28 * Math.max(.7, zoom) + 12) continue;
+      woodHut.trees.splice(i, 1);
+      const w = occ.get(slot(e.c, e.r));
+      if (w && w.type === 'tree') removeHutWorldTree(w);
+      if (typeof leafBurst === 'function') leafBurst(u, v, 4);
+      drawHutStumps(); saveHut(); if (hutPanelOpen) renderHutPanel(true);
+      if (typeof toast === 'function') toast('Stump cleared');
+      return true;
+    }
+    return false;
   }
 
   const hutTip = document.createElement('div');

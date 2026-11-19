@@ -21,7 +21,7 @@
   const woodNum = document.getElementById('woodnum');
   let woodKey = '';
   function refreshWoodHud() {
-    const show = woodCount > 0 || (typeof lumberCamp !== 'undefined' && lumberCamp) || (typeof woodHut !== 'undefined' && woodHut.owned);
+    const show = woodCount > 0 || (typeof woodHut !== 'undefined' && woodHut.owned);
     const key = woodCount + '|' + (show ? 1 : 0);
     if (key === woodKey) return; woodKey = key;
     if (woodPill) woodPill.style.display = show ? 'flex' : 'none';
@@ -80,7 +80,6 @@
   function woodRate() {
     let r = 1;
     if (typeof workerRateMul === 'function') r *= workerRateMul();
-    if (typeof lumberCamp !== 'undefined' && lumberCamp) r *= 1.2;   // sharp hut axes
     if (typeof wheatCount === 'number' && wheatCount <= 0) r *= .6;   // hungry hands are slow, never idle forever
     return Math.max(.2, r);
   }
@@ -99,10 +98,11 @@
   }
   function fellTree(t, v) {
     t.claim = null; t.dying = performance.now();
-    occ.delete(slot(t.c, t.r));
+    if (occ.get(slot(t.c, t.r)) === t) occ.delete(slot(t.c, t.r));
     setTimeout(() => { const k = trees.indexOf(t); if (k >= 0) trees.splice(k, 1); dropTree(t); }, 430);
     addWood(WOOD_PER_TREE);
     if (typeof onHutTreeFelled === 'function') onHutTreeFelled(t);   // 14: remember the stump and regrow time
+    if (typeof leafBurst === 'function') leafBurst(projX(t.x, t.y), projY(t.x, t.y) - 34, 7);
     woodFloat('+' + WOOD_PER_TREE + ' wood', t.x, t.y);
     v.cut = null;
   }
@@ -125,10 +125,9 @@
     if (typeof villagers === 'undefined') return;
     tickWoodFx(); drawWoodPile();
     const doorX = (home.c + 1.4) * CELL, stepY = (home.r + HOME_N + .55) * CELL;
-    // built huts are a forward depot: logs are dropped at the forest edge, not hauled all the way home
-    const campDrop = typeof lumberCamp !== 'undefined' && lumberCamp;
-    let dropX = campDrop ? clearing.x1 - 190 : doorX;
-    let dropY = campDrop ? clearing.y0 + 178 : stepY;
+    // built huts are a forward depot: logs are dropped at the hut, not hauled all the way home
+    let dropX = doorX;
+    let dropY = stepY;
     if (typeof hutDropPoint === 'function') { const hp = hutDropPoint(); if (hp) { dropX = hp.x; dropY = hp.y; } }   // 14: the hut is the drop-off
     for (const v of villagers) {
       if (v.role !== 'woodcutter') {

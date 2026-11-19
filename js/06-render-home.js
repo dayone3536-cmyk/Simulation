@@ -66,17 +66,17 @@
   // uses it again when a tree in the hut's grove grows back.
   function buildTreeSprite(t) {
     const tr = TRE[t.v];
-    if (!tr || !shadowTex || t.spr) return;
+    if (!tr || t.spr) return;
     const tex = tr.tex;
     if (!tex) return;
     t.px = projX(t.x, t.y); t.py = projY(t.x, t.y);
     t.sx0 = t.flip * tr.w * t.s * .9 / tex.width; t.sy0 = tr.h * t.s * .9 / tex.height;
     const s = new PX.Sprite(tex); s.anchor.set(.5, 1); s.position.set(t.px, t.py + 4 * t.s); s.scale.set(t.sx0, t.sy0); s.visible = false;
-    const sh = new PX.Sprite(shadowTex), w = tr.w * t.s * .75; sh.anchor.set(.5); sh.position.set(t.px, t.py - 2); sh.scale.set(w / shadowTex.width, w * .42 / shadowTex.height); sh.visible = false;
-    t.spr = s; t.shd = sh; shadowL.addChild(sh); treeL.addChild(s);
+    t.spr = s; treeL.addChild(s);   // no fake blob under the canopy: the art carries its own depth
   }
   function buildTrees() {
     for (const t of trees) buildTreeSprite(t);
+    buildLeaves();
   }
   let glowSpr = null, glowTree = null;
   function updateTrees(time, now) {
@@ -85,26 +85,76 @@
     let selTree = null;
     for (const t of trees) {
       const spr = t.spr; if (!spr) continue;
-      if (t.px < vl || t.px > vr || t.py < vt || t.py > vb) { if (t.vis) { spr.visible = false; t.shd.visible = false; t.vis = false; } continue; }
-      if (!t.vis) { spr.visible = true; t.shd.visible = true; t.vis = true; t.fresh = true; }
+      if (t.px < vl || t.px > vr || t.py < vt || t.py > vb) { if (t.vis) { spr.visible = false; t.vis = false; } continue; }
+      if (!t.vis) { spr.visible = true; t.vis = true; t.fresh = true; }
       if (t.dying) {                          // a cleared tree shrinks and fades away
-        const k = 1 - Math.min(1, (now - t.dying) / 400), w = TRE[t.v].w * t.s * .75 * k;
-        spr.alpha = k; spr.scale.set(t.sx0 * k, t.sy0 * k); t.shd.scale.set(w / shadowTex.width, w * .42 / shadowTex.height); t.mod = true;
+        const k = 1 - Math.min(1, (now - t.dying) / 400);
+        spr.alpha = k; spr.scale.set(t.sx0 * k, t.sy0 * k); t.mod = true;
         spr.skew.x = Math.sin(time * 1.1 + t.ph) * .02;
       } else if (sel && t.c === sel.c && t.r === sel.r) {   // the tree on the selected slot bounces and glows
         selTree = t; const q = (now - selT) / 1000, sq = 1 + .07 * Math.exp(-q * 4) * Math.sin(q * 22);
         spr.scale.set(t.sx0, t.sy0 * sq); spr.skew.x = Math.sin(time * 1.1 + t.ph) * .02; t.mod = true;
       } else {
         if (t.mod) { spr.scale.set(t.sx0, t.sy0); spr.alpha = 1; t.mod = false; }
-        if (swayNow || t.fresh) { spr.skew.x = Math.sin(time * 1.1 + t.ph) * .02; t.fresh = false; }
+        if (swayNow || t.fresh) { spr.skew.x = Math.sin(time * 1.1 + t.ph) * .03; t.fresh = false; }
       }
     }
+    updateLeaves(time);
     if (selTree) {
       if (!glowSpr) { glowSpr = new PX.Sprite(glowTex); glowSpr.anchor.set(.5); }
       if (glowTree !== selTree) { glowTree = selTree; treeL.addChildAt(glowSpr, Math.max(0, treeL.getChildIndex(selTree.spr))); }
       const tr = TRE[selTree.v], w = tr.w * selTree.s * .9, h = tr.h * selTree.s * .9;
       glowSpr.visible = true; glowSpr.position.set(selTree.px, selTree.py + 4 * selTree.s - h * .5); glowSpr.width = w * 1.5; glowSpr.height = h * 1.25; glowSpr.alpha = .5 + .2 * Math.sin(time * 5);
     } else if (glowSpr) { glowSpr.visible = false; glowTree = null; }
+  }
+  // ---- ambient leaves: a handful of drifting sprites keep the forest alive without a per-frame particle sim ----
+  const leafSeeds = [];
+  let leafTex = null, leafLast = 0;
+  function buildLeaves() {
+    if (leafSeeds.length || typeof leafL === 'undefined') return;
+    const cv = bakeCanvas(22, 14, 3), g = cv.getContext('2d');
+    g.setTransform(3, 0, 0, 3, 11, 7);
+    g.fillStyle = '#ffffff'; g.beginPath();
+    g.moveTo(-6, 0); g.quadraticCurveTo(-1, -5, 5, -1); g.quadraticCurveTo(1, 4, -6, 0); g.fill();
+    g.strokeStyle = 'rgba(0,0,0,.28)'; g.lineWidth = .8; g.beginPath(); g.moveTo(-5, 0); g.lineTo(4, -1); g.stroke();
+    leafTex = PX.Texture.from(cv);
+    const tints = [0x8fbf4a, 0xd9b45a, 0x6fae45, 0xe0c477, 0x9acb54];
+    for (let i = 0; i < 18; i++) {
+      const s = new PX.Sprite(leafTex); s.anchor.set(.5); s.tint = tints[i % tints.length];
+      s.alpha = .75; leafL.addChild(s);
+      leafSeeds.push({ s, x: 0, y: 0, vy: 0, sway: 0, ph: 0, rot: 0, spin: 0, life: 0 });
+    }
+    for (const l of leafSeeds) respawnLeaf(l, true);
+  }
+  function respawnLeaf(l, anywhere) {
+    const halfW = cw / 2 / zoom, halfH = ch / 2 / zoom;
+    l.x = cpx + rr(-halfW, halfW);
+    l.y = cpy + (anywhere ? rr(-halfH, halfH) : -halfH - 40);
+    l.vy = rr(18, 42); l.sway = rr(8, 26); l.ph = rr(0, 6.28); l.rot = rr(0, 6.28);
+    l.spin = rr(-1.4, 1.4); l.life = rr(5, 12); l.s.scale.set(rr(.35, .7));
+  }
+  function updateLeaves(time) {
+    if (!leafSeeds.length) return;
+    const dt = leafLast ? Math.min(.08, Math.max(0, time - leafLast)) : 0; leafLast = time;
+    if ((fc & 1) !== 0) return;               // leaves move at 30fps
+    const halfW = cw / 2 / zoom + 60, halfH = ch / 2 / zoom + 60;
+    for (const l of leafSeeds) {
+      l.life -= dt; l.y += l.vy * dt; l.x += Math.sin(time * .9 + l.ph) * l.sway * dt;
+      l.rot += l.spin * dt;
+      l.s.visible = Math.abs(l.x - cpx) < halfW && Math.abs(l.y - cpy) < halfH;
+      l.s.position.set(l.x, l.y); l.s.rotation = l.rot;
+      l.s.alpha = .35 + .4 * Math.min(1, l.life);
+      if (l.life <= 0 || l.y > cpy + halfH || Math.abs(l.x - cpx) > halfW) respawnLeaf(l, false);
+    }
+  }
+  function leafBurst(x, y, n) {
+    if (!leafSeeds.length) return;
+    for (let i = 0; i < (n || 5); i++) {
+      const l = leafSeeds[(i * 3 + ((fc / 2) | 0)) % leafSeeds.length];
+      l.x = x + rr(-14, 14); l.y = y + rr(-18, 4); l.vy = rr(-40, 10); l.sway = rr(10, 30);
+      l.life = rr(.8, 1.8); l.spin = rr(-3, 3);
+      l.s.visible = true; l.s.position.set(l.x, l.y);
+    }
   }
   const selColor = () => (sel && occ.get(slot(sel.c, sel.r))) ? 0xffc846 : 0x78ff8c;   // amber = occupied, green = free to build
   let selOn = false;
@@ -138,8 +188,8 @@
     return (typeof homeLevel === 'number' && homeLevel > 0) ? 1.12 : 1;
   }
   function homeOK(c, r, ignoreOcc) {
-    const x0 = c * CELL, y0 = r * CELL, x1 = (c + HOME_N) * CELL, y1 = (r + HOME_N) * CELL;
-    if (x0 < clearing.x0 || y0 < clearing.y0 || x1 > clearing.x1 || y1 > clearing.y1) return false;
+    const worldC = WORLD_W / CELL, worldR = WORLD_H / CELL;
+    if (c < 0 || r < 0 || c + HOME_N > worldC || r + HOME_N > worldR) return false;
     if (!ignoreOcc) for (let j = 0; j < HOME_N; j++) for (let i = 0; i < HOME_N; i++) { const o = occ.get(slot(c + i, r + j)); if (o && o.type !== 'home') return false; }
     return true;
   }
@@ -173,27 +223,25 @@
   }
   function dragTo(q) { drag.q = q; const s = slotAt(q.x, q.y); if (s) setDragPos(s.c - drag.oc, s.r - drag.or); }
   function moveHere(sx, sy) { const s = slotAt(sx, sy); if (s) setDragPos(s.c - 1, s.r - 1); }   // centre the cabin on the tapped tile
-  // one tile of the map: inside the clearing and nothing but the cabin itself standing on it
+  // one tile of the map: nothing but the cabin itself standing on it
   function tileFree(c, r) {
-    const x0 = c * CELL, y0 = r * CELL;
-    if (x0 < clearing.x0 || y0 < clearing.y0 || x0 + CELL > clearing.x1 || y0 + CELL > clearing.y1) return false;
     const o = occ.get(slot(c, r)); return !o || o.type === 'home';
   }
   function blockReason(pos) {
-    let edge = false;
     for (let j = 0; j < HOME_N; j++) for (let i = 0; i < HOME_N; i++) {
       const o = occ.get(slot(pos.c + i, pos.r + j)); if (o && o.type !== 'home') return 'tree';
-      if (!tileFree(pos.c + i, pos.r + j)) edge = true;
     }
-    return edge ? 'edge' : '';
+    return '';
   }
   // the big grid: every tile near the moving building is tinted green (free) or red (blocked), drawn on the ground UNDER the trees
   let gridKey = '';
   function updateMoveGrid(time) {
-    const src = drag || placing || movingFarm;
+    const carrying = (typeof movingHut !== 'undefined') ? movingHut : null;
+    const src = drag || placing || movingFarm || carrying;
     if (!src) { if (gridKey) { gridG.clear(); footG.clear(); gridKey = ''; } return; }
-    const isFarm = !!placing || !!movingFarm, rot = isFarm ? src.rot : 0, cols = isFarm ? fCols(rot) : HOME_N, rows = isFarm ? fRows(rot) : HOME_N;
-    const freeAt = isFarm ? farmTileOK : tileFree;
+    const isHut = !!carrying, isFarm = !!placing || !!movingFarm, rot = isFarm ? src.rot : 0;
+    const cols = isHut ? HUT_N : isFarm ? fCols(rot) : HOME_N, rows = isHut ? HUT_N : isFarm ? fRows(rot) : HOME_N;
+    const freeAt = isHut ? hutTileOK : isFarm ? farmTileOK : tileFree;
     const worldCols = WORLD_W / CELL, worldRows = WORLD_H / CELL, pad = 5, pulse = .5 + .5 * Math.sin(time * 4);
     const c0 = Math.max(0, src.c - pad), c1 = Math.min(worldCols - 1, src.c + cols - 1 + pad);
     const r0 = Math.max(0, src.r - pad), r1 = Math.min(worldRows - 1, src.r + rows - 1 + pad);
@@ -249,14 +297,22 @@
       if (q.y < m) dy = -(m - q.y) / m; else if (q.y > ch - m) dy = (q.y - (ch - m)) / m;
       if (dx || dy) { cpx += dx * 9 / zoom; cpy += dy * 9 / zoom; clampCam(); const s = slotAt(q.x, q.y); if (s) { setMovingFarmPos(s.c - movingFarm.offC, s.r - movingFarm.offR); barKey = '#'; rebuildFarm(movingFarm.farm); } }
     }
-    const fm = placing || movingFarm, pos = drag || fm;
-    const valid = fm ? farmSpotOK(fm.c, fm.r, fm.rot) : drag ? drag.ok : true;
-    const key = !pos ? '' : fm ? (valid ? 'pok' : 'pbad') : (drag.ok ? 'ok' : blockReason(drag) || 'edge');
+    if (typeof movingHut !== 'undefined' && movingHut && movingHut.held && movingHut.q) {
+      const m = 70, q = movingHut.q; let dx = 0, dy = 0;
+      if (q.x < m) dx = -(m - q.x) / m; else if (q.x > cw - m) dx = (q.x - (cw - m)) / m;
+      if (q.y < m) dy = -(m - q.y) / m; else if (q.y > ch - m) dy = (q.y - (ch - m)) / m;
+      if (dx || dy) { cpx += dx * 9 / zoom; cpy += dy * 9 / zoom; clampCam(); hutMoveTo(q.x, q.y); }
+    }
+    const hut = (typeof movingHut !== 'undefined') ? movingHut : null;
+    const fm = placing || movingFarm, pos = drag || fm || hut;
+    const valid = hut ? hutFootOK(hut.c, hut.r) : fm ? farmSpotOK(fm.c, fm.r, fm.rot) : drag ? drag.ok : true;
+    const key = !pos ? '' : hut ? (valid ? 'hok' : 'hbad') : fm ? (valid ? 'pok' : 'pbad') : (drag.ok ? 'ok' : blockReason(drag) || 'edge');
     if (key === barKey) return;
     barKey = key;
     mvBar.style.display = pos ? 'flex' : 'none'; mvBar.classList.toggle('bad', !!pos && !valid);
     mvBar.classList.toggle('placing', !!fm);
     mvMsg.innerHTML = !pos ? ''
+      : hut ? (valid ? 'Looks good!<small>Drag or tap the map to move \u00B7 \u2713 places</small>' : 'Can\u2019t move here<small>Red tiles are blocked \u00B7 pick a green spot</small>')
       : fm ? (valid ? (placing ? 'Looks good!<small>Drag or tap the map to move \u00B7 \u27F3 rotates \u00B7 \u2713 confirms</small>' : 'Looks good!<small>Drag or tap the map to move \u00B7 \u27F3 rotates \u00B7 \u2713 places</small>')
         : 'Can\u2019t build here<small>Move to a free spot \u00B7 \u27F3 rotates</small>')
       : key === 'ok' ? 'Looks good!<small>Tap \u2713 to place it here</small>'
@@ -276,10 +332,21 @@
     }
     drag = null; barKey = '#';                      // cross = cabin goes back to where it was
   }
-  document.getElementById('mvOk').addEventListener('click', () => { if (placing) endPlacing(true); else if (movingFarm) endMovingFarm(true); else endDrag(true); });
-  document.getElementById('mvNo').addEventListener('click', () => { if (placing) endPlacing(false); else if (movingFarm) endMovingFarm(false); else endDrag(false); });
+  document.getElementById('mvOk').addEventListener('click', () => {
+    if (typeof movingHut !== 'undefined' && movingHut) endMovingHut(true);
+    else if (placing) endPlacing(true); else if (movingFarm) endMovingFarm(true); else endDrag(true);
+  });
+  document.getElementById('mvNo').addEventListener('click', () => {
+    if (typeof movingHut !== 'undefined' && movingHut) endMovingHut(false);
+    else if (placing) endPlacing(false); else if (movingFarm) endMovingFarm(false); else endDrag(false);
+  });
   mvRot.addEventListener('click', () => rotateFarm());
   window.addEventListener('keydown', e => {
+    if (typeof movingHut !== 'undefined' && movingHut) {
+      if (e.key === 'Enter') endMovingHut(true);
+      else if (e.key === 'Escape') endMovingHut(false);
+      return;
+    }
     if (placing || movingFarm) {
       if (e.key === 'Enter') { if (placing) endPlacing(true); else endMovingFarm(true); }
       else if (e.key === 'Escape') { if (placing) endPlacing(false); else endMovingFarm(false); }
@@ -313,18 +380,20 @@
   }
   // everything drawn on top of the trees and the cabin: footprints and selection outline
   function updateOverlay(time) {
+    const hut = (typeof movingHut !== 'undefined') ? movingHut : null;
     const fm = placing || movingFarm;
-    if (!sel && !drag && !fm) { if (overOn) { overG.clear(); overOn = false; } return; }
+    if (!sel && !drag && !fm && !hut) { if (overOn) { overG.clear(); overOn = false; } return; }
     overOn = true; overG.clear();
-    if (drag || fm) {
-      const isFarm = !!fm, pos = drag || fm, ok = isFarm ? farmSpotOK(pos.c, pos.r, pos.rot) : pos.ok;
-      const cols = isFarm ? fCols(pos.rot) : HOME_N, rows = isFarm ? fRows(pos.rot) : HOME_N;
+    if (drag || fm || hut) {
+      const isHut = !!hut, isFarm = !!fm, pos = drag || fm || hut;
+      const ok = isHut ? hutFootOK(pos.c, pos.r) : isFarm ? farmSpotOK(pos.c, pos.r, pos.rot) : pos.ok;
+      const cols = isHut ? HUT_N : isFarm ? fCols(pos.rot) : HOME_N, rows = isHut ? HUT_N : isFarm ? fRows(pos.rot) : HOME_N;
       const rgb = ok ? 0x50e664 : 0xf0463c, x0 = pos.c * CELL, y0 = pos.r * CELL, x1 = (pos.c + cols) * CELL, y1 = (pos.r + rows) * CELL;
       const P = [projX(x0, y0), projY(x0, y0), projX(x1, y0), projY(x1, y0), projX(x1, y1), projY(x1, y1), projX(x0, y1), projY(x0, y1)];
       overG.lineStyle(0); overG.beginFill(rgb, .10); overG.drawPolygon(P); overG.endFill();
       overG.lineStyle({ width: 5 / zoom, color: 0x000000, alpha: .35, join: 'round' }); overG.drawPolygon(P);
       overG.lineStyle({ width: 3 / zoom, color: rgb, alpha: 1, join: 'round' }); overG.drawPolygon(P);
-      drawFootMarks(pos, cols, rows, isFarm ? farmTileOK : tileFree);
+      drawFootMarks(pos, cols, rows, isHut ? hutTileOK : isFarm ? farmTileOK : tileFree);
     }
     if (sel) {
       const P = ringPts(sel.c, sel.r, 1);

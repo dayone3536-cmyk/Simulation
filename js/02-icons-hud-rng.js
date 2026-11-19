@@ -8,16 +8,8 @@
   const hud = document.getElementById('hud'), goldEl = document.getElementById('goldnum');
   const buildBtn = document.getElementById('buildbtn'), buildPanel = document.getElementById('buildpanel');
   buildBtn.addEventListener('click', () => { const o = buildPanel.style.display !== 'block'; buildPanel.style.display = o ? 'block' : 'none'; buildBtn.classList.toggle('open', o); buildBtn.classList.remove('hint'); });
-  const statsEl = document.getElementById('stats'), moreBtn = document.getElementById('moreBtn'), statRows = {};
-  // one row per stat in the three-dots panel. Add more any time: setStat('wood', ICON.wood, 'Wood', 120)
-  function setStat(key, icon, label, value) {
-    let r = statRows[key];
-    if (!r) { r = statRows[key] = document.createElement('div'); r.className = 'row'; r.innerHTML = '<span class="ic"></span><span class="lb"></span><b class="vl"></b>'; statsEl.appendChild(r); r.children[0].innerHTML = icon; r.children[1].textContent = label; }
-    r.children[2].textContent = value;
-  }
-  moreBtn.addEventListener('click', () => { const o = statsEl.style.display !== 'block'; statsEl.style.display = o ? 'block' : 'none'; moreBtn.classList.toggle('open', o); });
-  window.addEventListener('pointerdown', e => { if (statsEl.style.display === 'block' && !statsEl.contains(e.target) && !moreBtn.contains(e.target)) { statsEl.style.display = 'none'; moreBtn.classList.remove('open'); } }, true);
-  setStat('gold', ICON.coin, 'Gold', '...'); setStat('pop', ICON.villager, 'Population', '10');
+  // The old three-dots stat sheet is gone. HUD pills carry the numbers players need.
+  function setStat() {}
   let gold = 0, sb = null, goldPending = 0;   // goldPending = gold spent that the server does not know about yet
   try { goldPending = parseInt(localStorage.getItem('goldPending'), 10) || 0; } catch (e) {}
   const setGold = n => { gold = n; goldEl.textContent = Number(n).toLocaleString(); setStat('gold', ICON.coin, 'Gold', Number(n).toLocaleString()); };

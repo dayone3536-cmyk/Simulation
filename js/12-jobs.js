@@ -8,7 +8,7 @@
   let rolesSeeded = roles.length > 0;
   const saveRoles = () => { try { localStorage.setItem('roles', JSON.stringify(roles)); } catch (e) {} };
   const countRole = role => { let n = 0; for (const r of roles) if (r === role) n++; return n; };
-  const cutterCap = () => 2 + (typeof lumberCamp !== 'undefined' && lumberCamp ? 2 : 0);
+  const cutterCap = () => 3 + (typeof woodHut !== 'undefined' && woodHut && woodHut.owned ? 2 : 0);
   const idleCount = () => countRole(ROLE_IDLE);
   const farmerCount = () => countRole(ROLE_FARM);
 
@@ -51,52 +51,8 @@
     if (typeof farms === 'undefined') return 1;
     const n = Math.max(1, farms.length);
     const crew = Math.min(1, farmerCount() / n);
-    const buff = (typeof wellFedActive === 'function' && wellFedActive()) ? 1.25 : 1;
     const hungry = typeof wheatCount === 'number' && wheatCount <= 0 ? .75 : 1;
-    return (0.5 + 0.5 * crew) * buff * hungry;
-  }
-
-  // ---- the forest is cleared: the huts are the woodcutters' home ----
-  let campG = null;
-  function drawLumberCamp() {
-    if (!lumberCamp || campG) return;
-    const x = clearing.x1 - 190, y = clearing.y0 + 170;
-    const px = projX(x, y), py = projY(x, y);
-    campG = farmL.addChild(new PX.Container());
-    campG.position.set(px, py); campG.scale.set(1.75);
-    const g = campG.addChild(new PX.Graphics());
-    g.beginFill(0x000000, .18); g.drawEllipse(0, 8, 74, 26); g.endFill();
-    // stacked logs (the camp's little stock)
-    for (let i = 0; i < 3; i++) {
-      const yy = 2 - i * 6, w = 44 - i * 5;
-      g.beginFill(0x3a220c); g.drawRoundedRect(-62, yy + 2, w, 8, 4); g.endFill();
-      g.beginFill(i % 2 ? 0x7a4a22 : 0x8b5a2b); g.drawRoundedRect(-62, yy, w, 9, 4.5); g.endFill();
-      g.beginFill(0xc79a5e); g.drawEllipse(-62 + w - 4, yy + 4.5, 5, 4); g.endFill();
-    }
-    // open-fronted timber shelter
-    g.beginFill(0x5a3a1c); g.drawRoundedRect(-34, -34, 68, 42, 7); g.endFill();
-    g.beginFill(0x2a1708); g.drawRoundedRect(-27, -27, 54, 33, 5); g.endFill();
-    g.beginFill(0xb08a52); g.drawRoundedRect(-34, -40, 68, 9, 4); g.endFill();
-    g.beginFill(0x8a5a2f); g.drawPolygon([-46, -40, 0, -68, 46, -40]); g.endFill();
-    g.beginFill(0x5a3417); g.drawPolygon([-40, -41, 0, -64, 40, -41]); g.endFill();
-    g.beginFill(0x6b4519); g.drawRect(-4, -66, 8, 10); g.endFill();
-    // axe in the stump
-    g.beginFill(0x4a2c0e); g.drawRoundedRect(40, -4, 18, 16, 4); g.endFill();
-    g.beginFill(0x8a5a2f); g.drawRoundedRect(41, -5, 16, 6, 3); g.endFill();
-    g.lineStyle({ width: 3, color: 0x6b4519, cap: 'round' }); g.moveTo(49, -2); g.lineTo(58, -20);
-    g.lineStyle({ width: 1.5, color: 0x2f1d0c }); g.moveTo(53, -15); g.lineTo(63, -15);
-  }
-  function buildLumberCamp() {
-    if (typeof lumberCamp === 'undefined' || lumberCamp) return false;
-    if (gold < CAMP_COST) { toast('You need ' + CAMP_COST + ' gold for the woodcutter huts'); return false; }
-    if ((typeof woodCount === 'number' ? woodCount : 0) < CAMP_WOOD) { toast('You need ' + CAMP_WOOD + ' wood for the woodcutter huts'); return false; }
-    if (!spendGold(CAMP_COST)) return false;
-    if (typeof spendWood === 'function') spendWood(CAMP_WOOD);
-    lumberCamp = 1; saveCamp(); drawLumberCamp();
-    if (typeof renderBuild === 'function') renderBuild();
-    renderJobs();
-    toast('Woodcutter Huts built! Logs are dropped here and two more cutters can work');
-    return true;
+    return (0.5 + 0.5 * crew) * hungry;
   }
 
   // ---- HUD: villagers button + jobs sheet ----
@@ -115,8 +71,7 @@
     '<div class="jp-row"><span class="jp-ic" id="jpWoodIco"></span><div class="jp-mid"><b>Woodcutters</b><small id="jpWoodSub"></small></div>' +
       '<button class="jp-step" data-role="woodcutter" data-dir="-1" type="button">&#8722;</button><b class="jp-n" id="jpWoodN">0</b><button class="jp-step" data-role="woodcutter" data-dir="1" type="button">+</button></div>' +
     '<div class="jp-idle"><span class="jp-ic" id="jpIdleIco"></span><div class="jp-mid"><b>Idle</b><small>waiting for a job</small></div><b class="jp-n" id="jpIdleN">0</b></div>' +
-    '<div id="jpNote"></div>' +
-    '<button id="jpAuto" type="button">Auto-assign</button>';
+    '<div id="jpNote"></div>';
   hud.appendChild(jobsPanel);
 
   const jpFarmIco = document.getElementById('jpFarmIco'), jpWoodIco = document.getElementById('jpWoodIco'), jpIdleIco = document.getElementById('jpIdleIco');
@@ -146,19 +101,19 @@
     applyJobs();
     const nFarm = countRole(ROLE_FARM), nWood = countRole(ROLE_WOOD), nIdle = countRole(ROLE_IDLE);
     const nFarms = typeof farms !== 'undefined' ? farms.length : 0, cap = cutterCap();
-    const key = [nFarm, nWood, nIdle, nFarms, cap, population, lumberCamp ? 1 : 0].join('|');
+    const key = [nFarm, nWood, nIdle, nFarms, cap, population, woodHut.owned ? 1 : 0].join('|');
     if (key !== jobsRenderKey) {
       jobsRenderKey = key;
       const farmN = document.getElementById('jpFarmN'), woodN = document.getElementById('jpWoodN'), idleN = document.getElementById('jpIdleN');
       if (farmN) farmN.textContent = nFarm; if (woodN) woodN.textContent = nWood; if (idleN) idleN.textContent = nIdle;
       const farmSub = document.getElementById('jpFarmSub'); if (farmSub) farmSub.textContent = nFarms ? nFarm + ' of ' + nFarms + ' farms staffed' : 'No farms yet';
       const woodSub = document.getElementById('jpWoodSub');
-      if (woodSub) woodSub.textContent = nWood + ' of ' + cap + ' slots' + (cap < 4 ? ' · huts add 2' : ' · huts built');
+      if (woodSub) woodSub.textContent = nWood + ' of ' + cap + ' slots' + (woodHut.owned ? ' · hut crew' : ' · hut adds 2');
       const sub = document.getElementById('jpSub'); if (sub) sub.textContent = population + ' villagers';
       const note = document.getElementById('jpNote');
       if (note) note.textContent = (nWood === 0 && nIdle === 0) ? 'No idle hands \u2014 take a farmer off the fields to cut wood.'
         : (nFarms && nFarm < nFarms) ? 'Farms without a farmer grow at half speed.'
-        : (nWood >= cap ? 'Build Woodcutter Huts to hire more woodcutters.' : '');
+        : (nWood >= cap ? 'Build the Woodcutter Hut to hire 2 more cutters.' : '');
     }
     if (jpFarmMinus) jpFarmMinus.disabled = nFarm <= 0;
     if (jpFarmPlus) jpFarmPlus.disabled = nIdle <= 0;
@@ -170,7 +125,7 @@
   function bumpRole(role, dir) {
     applyJobs();
     if (dir > 0) {
-      if (role === ROLE_WOOD && countRole(ROLE_WOOD) >= cutterCap()) { toast('Build Woodcutter Huts to hire more woodcutters'); return; }
+      if (role === ROLE_WOOD && countRole(ROLE_WOOD) >= cutterCap()) { toast(woodHut.owned ? 'Your hut crew is full' : 'Build the Woodcutter Hut to hire more cutters'); return; }
       const idx = roles.indexOf(ROLE_IDLE);
       if (idx < 0) { toast('Everyone already has a job'); return; }
       roles[idx] = role;
@@ -183,22 +138,8 @@
     }
     saveRoles(); applyJobs(); jobsRenderKey = ''; renderJobs();
   }
-  function autoJobs() {
-    applyJobs();
-    const nFarms = typeof farms !== 'undefined' ? farms.length : 0, cap = cutterCap();
-    for (const v of villagers) if (v.role === ROLE_WOOD) releaseCutter(v);
-    roles = roles.map(() => ROLE_IDLE);
-    let f = 0, c = 0;
-    for (let i = 0; i < roles.length; i++) {
-      if (f < nFarms) { roles[i] = ROLE_FARM; f++; }
-      else if (c < cap) { roles[i] = ROLE_WOOD; c++; }
-    }
-    saveRoles(); applyJobs(); jobsRenderKey = ''; renderJobs();
-    toast('Jobs assigned');
-  }
   jobsBtn.addEventListener('click', () => setJobsOpen(!jobsOpen));
   const jpClose = document.getElementById('jpClose'); if (jpClose) jpClose.addEventListener('click', () => setJobsOpen(false));
-  const jpAuto = document.getElementById('jpAuto'); if (jpAuto) jpAuto.addEventListener('click', autoJobs);
   jobsPanel.addEventListener('click', e => {
     const b = e.target.closest ? e.target.closest('.jp-step') : null;
     if (b) bumpRole(b.dataset.role, +b.dataset.dir);
@@ -240,11 +181,9 @@
     toast('A newcomer joined your village');
   }
 
-  drawLumberCamp();
   setInterval(() => {
     tickGrowth(); refreshHunger();
     if (jobsOpen) renderJobs(); else { const b = document.getElementById('idleBadge'); if (b) { const n = idleCount(); b.textContent = n; b.style.display = n ? 'flex' : 'none'; } }
   }, 1200);
   applyJobs(); jobsRenderKey = ''; refreshHunger();
-
-  window.jobs = { roles, apply: applyJobs, set: bumpRole, auto: autoJobs, cap: cutterCap, crew: farmCrewSpeed, open: () => setJobsOpen(true) };
+  window.jobs = { roles, apply: applyJobs, set: bumpRole, cap: cutterCap, crew: farmCrewSpeed, open: () => setJobsOpen(true) };
