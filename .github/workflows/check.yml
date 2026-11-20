@@ -1,0 +1,32 @@
+name: Syntax check
+
+# Runs on every push and pull request, on GitHub's machines, so a broken file is caught
+# even when nobody is at the keyboard.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  javascript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check every JavaScript file
+        run: |
+          status=0
+          for file in js/*.js js/components/*.js; do
+            [ -e "$file" ] || continue
+            echo "checking $file"
+            node --check "$file" || status=1
+          done
+          exit $status

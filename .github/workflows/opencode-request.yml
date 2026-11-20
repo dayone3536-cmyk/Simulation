@@ -1,0 +1,124 @@
+name: OpenCode request
+
+# Ask OpenCode to do a job from the GitHub website, even when your laptop is off.
+# Actions -> OpenCode request -> Run workflow. The result becomes a branch and a pull request.
+
+on:
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: 'What should OpenCode do?'
+        required: true
+        type: string
+      branch:
+        description: 'Result branch'
+        required: false
+        default: auto/request
+        type: string
+      base:
+        description: 'Branch to start from'
+        required: false
+        default: main
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: opencode-request-${{ inputs.branch }}
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Check out base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.base }}
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install OpenCode
+        run: npm install --global @opencode/cli
+
+      - name: Prepare result branch
+        env:
+          BRANCH: ${{ inputs.branch }}
+        run: |
+          git config user.name "opencode-bot"
+          git config user.email "opencode-bot@users.noreply.github.com"
+          git checkout -B "$BRANCH"
+
+      - name: Write CI-only OpenCode config
+        run: |
+          cat > opencode.json <<'JSON'
+          {
+            "$schema": "https://opencode.ai/config.json",
+            "model": "opencode/deepseek-v4.1-flash-free",
+            "permissions": [
+              { "action": "shell", "resource": "git push *", "effect": "deny" },
+              { "action": "shell", "resource": "git * push *", "effect": "deny" },
+              { "action": "shell", "resource": "gh pr *", "effect": "deny" }
+            ]
+          }
+          JSON
+
+      - name: Run request
+        env:
+          PROMPT: ${{ inputs.prompt }}
+        run: |
+          echo "$PROMPT" > /tmp/prompt.txt
+
+          # Free models are rate limited, so retry with a fallback model.
+          for model in opencode/deepseek-v4.1-flash-free opencode/flint-40b-free; do
+            echo "::group::opencode run ($model)"
+            if timeout 150m opencode run --standalone --auto --archived \
+                 --model "$model" "$(cat /tmp/prompt.txt)"; then
+              echo "::endgroup::"
+              exit 0
+            fi
+            echo "::endgroup::"
+            echo "Model $model failed, trying the fallback model."
+          done
+          echo "All models failed." >&2
+          exit 1
+
+      - name: Commit and push result branch
+        id: save
+        env:
+          BRANCH: ${{ inputs.branch }}
+        run: |
+          # Never commit the CI-only config over the real repo config.
+          git checkout -- opencode.json 2>/dev/null || rm -f opencode.json
+
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes were produced."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git commit -m "opencode: on-demand request"
+          git push --force origin "HEAD:refs/heads/$BRANCH"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Open pull request
+        if: steps.save.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ inputs.branch }}
+          BASE: ${{ inputs.base }}
+        run: |
+          gh pr create \
+            --base "$BASE" \
+            --head "$BRANCH" \
+            --title "opencode: on-demand request" \
+            --body "Automated run by OpenCode. Review the diff before merging." \
+            || echo "PR already exists (or PR creation is disabled); branch $BRANCH is still pushed."
