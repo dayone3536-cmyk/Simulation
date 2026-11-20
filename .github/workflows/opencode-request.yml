@@ -2,13 +2,21 @@ name: OpenCode request
 
 # Ask OpenCode to do a job from the GitHub website, even when your laptop is off.
 # Actions -> OpenCode request -> Run workflow. The result becomes a branch and a pull request.
+#
+# It also runs by itself every six hours, using the standing prompt in
+# .github/auto-prompt.md. Leave that file empty or delete it to pause the schedule.
 
 on:
+  schedule:
+    # Every six hours (UTC): 00:00, 06:00, 12:00, 18:00
+    # = 05:30, 11:30, 17:30, 23:30 India time.
+    # GitHub can delay a scheduled run by a few minutes when it is busy.
+    - cron: '0 */6 * * *'
   workflow_dispatch:
     inputs:
       prompt:
-        description: 'What should OpenCode do?'
-        required: true
+        description: 'What should OpenCode do? (leave empty to use .github/auto-prompt.md)'
+        required: false
         type: string
       branch:
         description: 'Result branch'
@@ -26,7 +34,7 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: opencode-request-${{ inputs.branch }}
+  group: opencode-request-${{ inputs.branch || 'auto/scheduled' }}
   cancel-in-progress: false
 
 jobs:
@@ -37,8 +45,17 @@ jobs:
       - name: Check out base branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.base }}
+          ref: ${{ inputs.base || 'main' }}
           fetch-depth: 0
+
+      - name: Resolve run settings
+        env:
+          # A manual run uses its inputs; a scheduled run has none, so it falls back.
+          IN_BRANCH: ${{ inputs.branch }}
+          IN_BASE: ${{ inputs.base }}
+        run: |
+          echo "BRANCH=${IN_BRANCH:-auto/scheduled}" >> "$GITHUB_ENV"
+          echo "BASE=${IN_BASE:-main}" >> "$GITHUB_ENV"
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -49,8 +66,6 @@ jobs:
         run: npm install --global @opencode/cli
 
       - name: Prepare result branch
-        env:
-          BRANCH: ${{ inputs.branch }}
         run: |
           git config user.name "opencode-bot"
           git config user.email "opencode-bot@users.noreply.github.com"
@@ -74,7 +89,17 @@ jobs:
         env:
           PROMPT: ${{ inputs.prompt }}
         run: |
-          echo "$PROMPT" > /tmp/prompt.txt
+          if [ -n "$PROMPT" ]; then
+            printf '%s\n' "$PROMPT" > /tmp/prompt.txt
+          elif [ -f .github/auto-prompt.md ]; then
+            cp .github/auto-prompt.md /tmp/prompt.txt
+          else
+            echo "No prompt supplied and .github/auto-prompt.md is missing; nothing to do."
+            exit 0
+          fi
+
+          echo "Running with branch $BRANCH from $BASE"
+          head -n 5 /tmp/prompt.txt
 
           # Free models are rate limited, so retry with a fallback model.
           for model in opencode/deepseek-v4.1-flash-free opencode/flint-40b-free; do
@@ -92,8 +117,6 @@ jobs:
 
       - name: Commit and push result branch
         id: save
-        env:
-          BRANCH: ${{ inputs.branch }}
         run: |
           # Never commit the CI-only config over the real repo config.
           git checkout -- opencode.json 2>/dev/null || rm -f opencode.json
@@ -105,7 +128,7 @@ jobs:
             exit 0
           fi
 
-          git commit -m "opencode: on-demand request"
+          git commit -m "opencode: automated run"
           git push --force origin "HEAD:refs/heads/$BRANCH"
           echo "changed=true" >> "$GITHUB_OUTPUT"
 
@@ -113,12 +136,10 @@ jobs:
         if: steps.save.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BRANCH: ${{ inputs.branch }}
-          BASE: ${{ inputs.base }}
         run: |
           gh pr create \
             --base "$BASE" \
             --head "$BRANCH" \
-            --title "opencode: on-demand request" \
+            --title "opencode: automated run" \
             --body "Automated run by OpenCode. Review the diff before merging." \
             || echo "PR already exists (or PR creation is disabled); branch $BRANCH is still pushed."
