@@ -10,7 +10,6 @@
   function select(sx, sy) {
     if (placing) { placeTo(sx, sy); return; }          // while choosing a farm spot, a tap moves the ghost
     if (movingFarm) { moveFarmTo(sx, sy); return; }    // while moving a farm, a tap sends it there
-    if (typeof hutTap === 'function' && hutTap(sx, sy)) return;   // 14: tap the woodcutter hut for its status
     if (tapFarm(sx, sy)) return;
     sel = slotAt(sx, sy); selT = performance.now(); card();
   }

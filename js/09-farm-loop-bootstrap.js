@@ -4,12 +4,8 @@
   const FARM_GROW_SEC = 15;        // every crop after that takes 15 seconds to ripen
   const WHEAT_PER_HARVEST = 10;    // wheat you get each time you collect
   const WORKERS = 4;               // villagers who walk out and work the fields
-  const CAMP_COST = 60, CAMP_WOOD = 20;
   let farmsBuilt = 0;              // how many farms the player has ever built (only the first crop is quick)
-  let lumberCamp = 0;
   try { farmsBuilt = parseInt(localStorage.getItem('farmsBuilt'), 10) || 0; } catch (e) {}
-  try { lumberCamp = localStorage.getItem('lumberCamp') === '1' ? 1 : 0; } catch (e) {}
-  const saveCamp = () => { try { localStorage.setItem('lumberCamp', lumberCamp ? '1' : '0'); } catch (e) {} };
   try {
     const saved = JSON.parse(localStorage.getItem('farms') || 'null');
     const old = saved ? null : JSON.parse(localStorage.getItem('farm') || 'null');   // older saves had a single farm
@@ -93,80 +89,60 @@
     }
   }
 
-  // ---- market: sell food for gold. The rate is always quoted for 10 food, and the +/- buttons pick the amount ----
-  const MKT_BASE = 5, MKT_MIN = 2, MKT_MAX = 9;   // gold you get for 10 food
-  const MKT_EVERY_MS = 40000;                     // the rate changes every 40 seconds
-  const market = { p: MKT_BASE, hist: [5, 5, 5, 5, 5, 5], next: Date.now() + MKT_EVERY_MS, note: 'Sell food for gold.' };
+  // ---- market: sell food for gold. Generous, readable rates: 10 wheat is always worth 10-20 gold ----
+  const MKT_BASE = 14, MKT_MIN = 10, MKT_MAX = 20;   // gold you get for 10 food
+  const MKT_EVERY_MS = 45000;                        // the rate changes every 45 seconds
+  const market = { p: MKT_BASE, next: Date.now() + MKT_EVERY_MS, note: 'Sell wheat for gold.' };
   try {
     const m = JSON.parse(localStorage.getItem('market') || 'null');
     if (m && Number.isFinite(m.p)) {
-      market.p = Math.max(MKT_MIN, Math.min(MKT_MAX, Math.round(m.p)));
-      if (Array.isArray(m.hist) && m.hist.length) market.hist = m.hist.filter(Number.isFinite).slice(-8);
-      if (!market.hist.length) market.hist = [market.p];
+      let p = Math.round(m.p);
+      if (p < MKT_MIN) p = MKT_BASE;                 // old saves used a 2-9 scale: lift them to the new one
+      market.p = Math.max(MKT_MIN, Math.min(MKT_MAX, p));
       if (typeof m.note === 'string') market.note = m.note.slice(0, 80);
     }
   } catch (e) {}
-  const saveMarket = () => { try { localStorage.setItem('market', JSON.stringify({ p: market.p, hist: market.hist, note: market.note })); } catch (e) {} };
+  const saveMarket = () => { try { localStorage.setItem('market', JSON.stringify({ p: market.p, note: market.note })); } catch (e) {} };
   const goldFor = food => Math.floor(food * market.p / 10);
   function tickMarket() {
     if (Date.now() < market.next) return false;
     market.next = Date.now() + MKT_EVERY_MS;
-    const r = Math.random(); let d, note;
-    if (r < .1) { d = 2; note = 'A royal caravan rolls in \u2014 everyone is desperate for bread!'; }
-    else if (r < .2) { d = -2; note = 'Granaries overflow across the realm. Wheat is dirt cheap.'; }
-    else if (r < .28) { d = 1; note = 'Travelers from the capital are paying well for supplies.'; }
-    else if (r < .36) { d = -1; note = 'A rival farmer undercuts the stall. Prices dip.'; }
+    const r = Math.random();
+    let d;
+    if (r < .08) { d = 2; market.note = 'A royal caravan wants bread \u2014 prices jump!'; }
+    else if (r < .16) { d = -2; market.note = 'Granaries are full this week. Prices ease.'; }
     else {
-      const pull = market.p > MKT_BASE + 2 ? -1 : market.p < MKT_BASE - 2 ? 1 : 0;   // prices drift back toward normal
-      d = [-1, 0, 0, 1][Math.floor(Math.random() * 4)] + pull; d = Math.max(-1, Math.min(1, d));
-      note = d > 0 ? 'Word spreads \u2014 demand is climbing.' : d < 0 ? 'The crowd thins and prices ease.' : 'A steady day at the market square.';
+      const pull = market.p > MKT_BASE + 2 ? -1 : market.p < MKT_BASE - 2 ? 1 : 0;   // drift back toward the good base rate
+      d = [-1, 0, 1, 1][Math.floor(Math.random() * 4)] + pull;
+      d = Math.max(-1, Math.min(1, d));
+      market.note = d > 0 ? 'Demand is climbing \u2014 a good time to sell.' : d < 0 ? 'The crowd thins and prices ease.' : 'A steady day at the market.';
     }
     market.p = Math.max(MKT_MIN, Math.min(MKT_MAX, market.p + d));
-    market.hist.push(market.p); if (market.hist.length > 8) market.hist.shift();
-    market.note = note; saveMarket();
+    saveMarket();
     if (tradeBtn) { tradeBtn.classList.remove('pulse'); void tradeBtn.offsetWidth; tradeBtn.classList.add('pulse'); }
     return true;
   }
   const tradeBtn = document.getElementById('tradebtn'), tradePanel = document.getElementById('tradepanel');
-  const elMood = document.getElementById('tradeMood'), elGold = document.getElementById('priceGold');
-  const elTag = document.getElementById('priceTag'), elTimer = document.getElementById('priceTimer');
+  const elGold = document.getElementById('priceGold');
+  const elTag = document.getElementById('priceTag');
   const elHave = document.getElementById('tradeGet'), elNote = document.getElementById('tradeNote'), elFx = document.getElementById('coinfx');
-  const trendEl = document.getElementById('trend'), sparkEl = document.getElementById('spark');
   const sell10Btn = document.getElementById('sell10'), sell50Btn = document.getElementById('sell50'), sellXBtn = document.getElementById('sellX');
   const sell10Gain = document.getElementById('sell10g'), sell50Gain = document.getElementById('sell50g');
   const sellXGain = document.getElementById('sellXg'), sellXNum = document.getElementById('sellXn');
   const harvestReadyBtn = document.getElementById('harvestReady'), harvestReadyTxt = document.getElementById('harvestReadyTxt');
   let tradeOpen = false;
-  function renderSpark() {
-    if (!sparkEl) return;
-    const hist = market.hist.length ? market.hist : [market.p];
-    const lo = Math.min(...hist), hi = Math.max(...hist), span = Math.max(1, hi - lo);
-    const step = hist.length > 1 ? 100 / (hist.length - 1) : 0;
-    const pts = hist.map((v, i) => (i * step).toFixed(1) + ',' + (27 - ((v - lo) / span) * 24).toFixed(1));
-    const last = pts[pts.length - 1].split(',');
-    sparkEl.innerHTML =
-      '<polyline points="' + pts.join(' ') + '" fill="none" stroke="rgba(240,196,107,.55)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>' +
-      '<circle cx="' + last[0] + '" cy="' + last[1] + '" r="2.4" fill="#f0c46b"/>';
-  }
   function renderTrade() {
-    if (tradeBtn) tradeBtn.classList.toggle('hot', market.p >= 7);
+    if (tradeBtn) tradeBtn.classList.toggle('hot', market.p >= 17);
     if (!tradePanel || !tradeOpen) return;
     const have = Math.max(0, wheatCount | 0), p = market.p;
-    const need = Math.max(1, Math.ceil(population / 2)), reserve = need * 2;
+    const need = Math.max(1, Math.ceil(population / 2));
     const readyCount = farms.filter(f => farmState(f) === 'ready').length;
-    const prev = market.hist.length > 1 ? market.hist[market.hist.length - 2] : p;
-    elGold.textContent = p;
-    elMood.textContent = market.note;
-    elTag.textContent = p >= 8 ? 'Excellent price' : p === 7 ? 'Great price' : p === 6 ? 'Good price' : p === 5 ? 'Fair price' : p === 4 ? 'A bit low' : 'Poor price';
-    elTag.className = p >= 7 ? 'great' : p <= 3 ? 'poor' : '';
-    if (trendEl) {
-      trendEl.textContent = p > prev ? 'Rising' : p < prev ? 'Easing' : 'Steady';
-      trendEl.className = p > prev ? 'up' : p < prev ? 'down' : '';
+    if (elGold) elGold.textContent = p;
+    if (elTag) {
+      elTag.textContent = p >= 18 ? 'Excellent' : p >= 15 ? 'Great' : p >= 12 ? 'Good' : 'Fair';
+      elTag.className = p >= 15 ? 'great' : p <= 10 ? 'poor' : '';
     }
-    renderSpark();
-    const left = Math.max(0, Math.ceil((market.next - Date.now()) / 1000));
-    elTimer.textContent = 'shifts in ' + left + 's';
-    elHave.textContent = have ? 'You have ' + have + ' food' : 'Your granary is empty';
+    if (elHave) elHave.textContent = have ? 'You have ' + have + ' wheat \u00B7 sell it for ' + goldFor(have) + ' gold' : 'Your granary is empty \u2014 harvest a farm';
     if (sell10Btn) { sell10Btn.disabled = have < 10; if (sell10Gain) sell10Gain.textContent = '+' + goldFor(10) + 'g'; }
     if (sell50Btn) { sell50Btn.disabled = have < 50; if (sell50Gain) sell50Gain.textContent = '+' + goldFor(50) + 'g'; }
     if (sellXBtn) {
@@ -176,10 +152,9 @@
     }
     if (harvestReadyBtn) {
       harvestReadyBtn.style.display = readyCount > 0 ? 'flex' : 'none';
-      if (harvestReadyTxt) harvestReadyTxt.textContent = 'Harvest ' + readyCount + ' ready farm' + (readyCount === 1 ? '' : 's') + ' (+' + (readyCount * WHEAT_PER_HARVEST) + ' food)';
+      if (harvestReadyTxt) harvestReadyTxt.textContent = 'Harvest ' + readyCount + ' ready farm' + (readyCount === 1 ? '' : 's') + ' (+' + (readyCount * WHEAT_PER_HARVEST) + ' wheat)';
     }
-    elNote.textContent = 'Villagers eat ' + need + ' food every 20s \u2014 keep at least ' + reserve + ' in reserve.';
-    if (tradePanel) tradePanel.classList.toggle('great-deal', p >= 7);
+    if (elNote) elNote.textContent = 'Villagers eat ' + need + ' wheat every 20s.';
   }
   function coinBurst(n) {
     if (!elFx || !ICON.coin) return;
@@ -207,8 +182,8 @@
     refreshWheatHud();
     coinBurst(gain);
     renderTrade();
-    const deal = market.p >= 7 ? ' Excellent deal!' : market.p <= 3 ? ' Tough bargain.' : '';
-    toast('Sold ' + food + ' food for ' + gain + ' gold.' + deal);
+    const deal = market.p >= 17 ? ' Excellent deal!' : market.p <= 10 ? ' Prices are low today.' : '';
+    toast('Sold ' + food + ' wheat for ' + gain + ' gold.' + deal);
   }
   function setTradeOpen(open) {
     tradeOpen = !!open;
@@ -234,20 +209,8 @@
     const nextGrow = farmsBuilt === 0 ? FIRST_FARM_GROW_SEC : FARM_GROW_SEC;
     info.textContent = 'Ready in ' + nextGrow + 's \u00B7 ' + WHEAT_PER_HARVEST + ' wheat';
     if (placing) { btn.textContent = 'Placing\u2026'; btn.disabled = true; btn.title = ''; }
-    else if (gold < FARM_COST) { btn.textContent = 'Need ' + FARM_COST + ' gold'; btn.disabled = true; btn.title = 'Sell food at the market for gold'; }
+    else if (gold < FARM_COST) { btn.textContent = 'Need ' + FARM_COST + ' gold'; btn.disabled = true; btn.title = 'Sell wheat at the market for gold'; }
     else { btn.textContent = 'Build \u00B7 ' + FARM_COST + 'g'; btn.disabled = false; btn.title = ''; }
-    renderCamp();
-    if (typeof renderWoodHutBuild === 'function') renderWoodHutBuild();   // 14: the hut card sits beside the camp
-  }
-  function renderCamp() {
-    const btn = document.getElementById('campBuy'), info = document.getElementById('campInfo');
-    if (!btn || !info) return;
-    if (lumberCamp) { info.textContent = '+2 cutters \u00B7 forest-edge drop-off \u00B7 +20% chop'; btn.textContent = 'Built'; btn.disabled = true; btn.title = ''; return; }
-    const haveWood = typeof woodCount === 'number' ? woodCount : 0;
-    info.textContent = '+2 cutters \u00B7 forest-edge drop-off \u00B7 +20% chop';
-    if (gold < CAMP_COST) { btn.textContent = 'Need ' + CAMP_COST + ' gold'; btn.disabled = true; btn.title = 'Sell food at the market for gold'; }
-    else if (haveWood < CAMP_WOOD) { btn.textContent = 'Need ' + CAMP_WOOD + ' wood'; btn.disabled = true; btn.title = 'Assign villagers as woodcutters in the villagers menu'; }
-    else { btn.textContent = 'Build \u00B7 ' + CAMP_COST + 'g + ' + CAMP_WOOD + 'w'; btn.disabled = false; btn.title = ''; }
   }
   function startPlacing() {
     if (placing || movingFarm) return;
@@ -334,15 +297,13 @@
   }
   buildBtn.addEventListener('click', () => { setTradeOpen(false); renderBuild(); });
   document.getElementById('farmBuy').addEventListener('click', () => { if (!placing && !movingFarm) startPlacing(); });
-  const campBuyEl = document.getElementById('campBuy');
-  if (campBuyEl) campBuyEl.addEventListener('click', () => { if (typeof buildLumberCamp === 'function') buildLumberCamp(); });
   if (farms.length || wheatCount) setStat('wheat', ICON.wheat, 'Wheat', wheatCount);
 
   // ---- on the map: green progress bar with the time (Clash-style), then a wheat bubble to tap ----
   const farmUIL = world.addChild(new PX.Container());
   const floaters = [];
   const lerp = (a, b, t) => a + (b - a) * t;
-  const wheatTexBig = PX.Texture.from('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(ICON.wheat.replace('width="64" height="64"', 'width="192" height="192"')));
+  const wheatTexBig = PX.Texture.from(ART.iconData('wheat', 192));
   function ensureFarmUI(f) {
     if (f.ui) return f.ui;
     const barBox = farmUIL.addChild(new PX.Container()), barG = barBox.addChild(new PX.Graphics());
@@ -463,7 +424,6 @@
     shadowTex = radialTex('20,70,6', .42, 64); glowTex = radialTex('255,225,120', .9, 64);
     growForest();
     buildGround(); buildTrees(); farms.forEach(rebuildFarm);
-    if (typeof initWoodHutWorld === 'function') initWoodHutWorld();   // 14: apply the saved hut grove to the fresh forest
     syncVillagers();
     resize();
     // whole clearing diamond fits on screen

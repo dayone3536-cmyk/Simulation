@@ -8,7 +8,7 @@
   // itself stays loaded for other parts of the game.
   function buildGround() {
     const cols = WORLD_W / CELL, rows = WORLD_H / CELL, CK = 8;     // tiles are grouped 8x8 so whole groups off screen cost nothing
-    const BASE = 0x5c8b34, CHECK = 0x5f8f37, BLADE = 0x46722a, PEBBLE = 0x7e7b5e;
+    const BASE = 0x5c8b34, PATCH = 0x628f3a, PATCH_D = 0x54802f, BLADE = 0x46722a, PEBBLE = 0x7e7b5e;
     const hash = (a, b) => {                        // same grass every visit: no Math.random, no per-frame work
       let h = (a * 374761393 + b * 668265263) | 0;
       h = (h ^ (h >>> 13)) * 1274126177 | 0;
@@ -29,9 +29,17 @@
         y0 = Math.min(y0, P[i + 1]); y1 = Math.max(y1, P[i + 1]);
       }
       g.beginFill(BASE); g.drawPolygon(P); g.endFill();       // one solid slab, so the chunk has no internal seams
-      g.beginFill(CHECK);                                     // a very faint checker, not the old tile mosaic
-      for (let r = r0; r < r1; r++) for (let c = c0; c < c1; c++) if (((c + r) & 1) === 0) g.drawPolygon(ringPts(c, r, 1));
-      g.endFill();
+      // broad organic patches instead of a tile checker, so the lawn reads as one field
+      for (let i = 0; i < 6; i++) {
+        const pc = c0 + .5 + hash(c0 + 37 * i, r0 + 7) * (c1 - c0 - 1);
+        const pr = r0 + .5 + hash(c0 + 3, r0 + 31 * i) * (r1 - r0 - 1);
+        const px = projX(pc * CELL, pr * CELL), py = projY(pc * CELL, pr * CELL);
+        const dark = (i % 3 === 2);
+        const rx = (1.0 + hash(pc + 5, pr + i) * 1.7) * CELL;
+        g.beginFill(dark ? PATCH_D : PATCH, dark ? .26 : .38);
+        g.drawEllipse(px, py, rx, rx * .5);
+        g.endFill();
+      }
       g.beginFill(PEBBLE, .38);
       for (let i = 0; i < 2; i++) {
         const pc = c0 + Math.floor(hash(c0 + 19 * i, r0 + 7) * (c1 - c0));
@@ -62,21 +70,20 @@
     const vl = cpx - cw / 2 / zoom, vr = cpx + cw / 2 / zoom, vt = cpy - ch / 2 / zoom, vb = cpy + ch / 2 / zoom;
     for (const g of groundChunks) g.box.visible = !(g.x1 < vl || g.x0 > vr || g.y1 < vt || g.y0 > vb);
   }
-  // one tree's map sprites. buildTrees() uses it for the forest, and 14-woodcutter-hut
-  // uses it again when a tree in the hut's grove grows back.
+  // one tree's map sprite, shared by the initial forest build and any regrowth.
   function buildTreeSprite(t) {
     const tr = TRE[t.v];
-    if (!tr || !shadowTex || t.spr) return;
+    if (!tr || t.spr) return;
     const tex = tr.tex;
     if (!tex) return;
     t.px = projX(t.x, t.y); t.py = projY(t.x, t.y);
     t.sx0 = t.flip * tr.w * t.s * .9 / tex.width; t.sy0 = tr.h * t.s * .9 / tex.height;
     const s = new PX.Sprite(tex); s.anchor.set(.5, 1); s.position.set(t.px, t.py + 4 * t.s); s.scale.set(t.sx0, t.sy0); s.visible = false;
-    const sh = new PX.Sprite(shadowTex), w = tr.w * t.s * .75; sh.anchor.set(.5); sh.position.set(t.px, t.py - 2); sh.scale.set(w / shadowTex.width, w * .42 / shadowTex.height); sh.visible = false;
-    t.spr = s; t.shd = sh; shadowL.addChild(sh); treeL.addChild(s);
+    t.spr = s; treeL.addChild(s);   // no fake blob under the canopy: the art carries its own depth
   }
   function buildTrees() {
     for (const t of trees) buildTreeSprite(t);
+    buildLeaves();
   }
   let glowSpr = null, glowTree = null;
   function updateTrees(time, now) {
@@ -85,26 +92,76 @@
     let selTree = null;
     for (const t of trees) {
       const spr = t.spr; if (!spr) continue;
-      if (t.px < vl || t.px > vr || t.py < vt || t.py > vb) { if (t.vis) { spr.visible = false; t.shd.visible = false; t.vis = false; } continue; }
-      if (!t.vis) { spr.visible = true; t.shd.visible = true; t.vis = true; t.fresh = true; }
+      if (t.px < vl || t.px > vr || t.py < vt || t.py > vb) { if (t.vis) { spr.visible = false; t.vis = false; } continue; }
+      if (!t.vis) { spr.visible = true; t.vis = true; t.fresh = true; }
       if (t.dying) {                          // a cleared tree shrinks and fades away
-        const k = 1 - Math.min(1, (now - t.dying) / 400), w = TRE[t.v].w * t.s * .75 * k;
-        spr.alpha = k; spr.scale.set(t.sx0 * k, t.sy0 * k); t.shd.scale.set(w / shadowTex.width, w * .42 / shadowTex.height); t.mod = true;
+        const k = 1 - Math.min(1, (now - t.dying) / 400);
+        spr.alpha = k; spr.scale.set(t.sx0 * k, t.sy0 * k); t.mod = true;
         spr.skew.x = Math.sin(time * 1.1 + t.ph) * .02;
       } else if (sel && t.c === sel.c && t.r === sel.r) {   // the tree on the selected slot bounces and glows
         selTree = t; const q = (now - selT) / 1000, sq = 1 + .07 * Math.exp(-q * 4) * Math.sin(q * 22);
         spr.scale.set(t.sx0, t.sy0 * sq); spr.skew.x = Math.sin(time * 1.1 + t.ph) * .02; t.mod = true;
       } else {
         if (t.mod) { spr.scale.set(t.sx0, t.sy0); spr.alpha = 1; t.mod = false; }
-        if (swayNow || t.fresh) { spr.skew.x = Math.sin(time * 1.1 + t.ph) * .02; t.fresh = false; }
+        if (swayNow || t.fresh) { spr.skew.x = Math.sin(time * 1.1 + t.ph) * .03; t.fresh = false; }
       }
     }
+    updateLeaves(time);
     if (selTree) {
       if (!glowSpr) { glowSpr = new PX.Sprite(glowTex); glowSpr.anchor.set(.5); }
       if (glowTree !== selTree) { glowTree = selTree; treeL.addChildAt(glowSpr, Math.max(0, treeL.getChildIndex(selTree.spr))); }
       const tr = TRE[selTree.v], w = tr.w * selTree.s * .9, h = tr.h * selTree.s * .9;
       glowSpr.visible = true; glowSpr.position.set(selTree.px, selTree.py + 4 * selTree.s - h * .5); glowSpr.width = w * 1.5; glowSpr.height = h * 1.25; glowSpr.alpha = .5 + .2 * Math.sin(time * 5);
     } else if (glowSpr) { glowSpr.visible = false; glowTree = null; }
+  }
+  // ---- ambient leaves: a handful of drifting sprites keep the forest alive without a per-frame particle sim ----
+  const leafSeeds = [];
+  let leafTex = null, leafLast = 0;
+  function buildLeaves() {
+    if (leafSeeds.length || typeof leafL === 'undefined') return;
+    const cv = bakeCanvas(22, 14, 3), g = cv.getContext('2d');
+    g.setTransform(3, 0, 0, 3, 11, 7);
+    g.fillStyle = '#ffffff'; g.beginPath();
+    g.moveTo(-6, 0); g.quadraticCurveTo(-1, -5, 5, -1); g.quadraticCurveTo(1, 4, -6, 0); g.fill();
+    g.strokeStyle = 'rgba(0,0,0,.28)'; g.lineWidth = .8; g.beginPath(); g.moveTo(-5, 0); g.lineTo(4, -1); g.stroke();
+    leafTex = PX.Texture.from(cv);
+    const tints = [0x8fbf4a, 0xd9b45a, 0x6fae45, 0xe0c477, 0x9acb54];
+    for (let i = 0; i < 18; i++) {
+      const s = new PX.Sprite(leafTex); s.anchor.set(.5); s.tint = tints[i % tints.length];
+      s.alpha = .75; leafL.addChild(s);
+      leafSeeds.push({ s, x: 0, y: 0, vy: 0, sway: 0, ph: 0, rot: 0, spin: 0, life: 0 });
+    }
+    for (const l of leafSeeds) respawnLeaf(l, true);
+  }
+  function respawnLeaf(l, anywhere) {
+    const halfW = cw / 2 / zoom, halfH = ch / 2 / zoom;
+    l.x = cpx + rr(-halfW, halfW);
+    l.y = cpy + (anywhere ? rr(-halfH, halfH) : -halfH - 40);
+    l.vy = rr(18, 42); l.sway = rr(8, 26); l.ph = rr(0, 6.28); l.rot = rr(0, 6.28);
+    l.spin = rr(-1.4, 1.4); l.life = rr(5, 12); l.s.scale.set(rr(.35, .7));
+  }
+  function updateLeaves(time) {
+    if (!leafSeeds.length) return;
+    const dt = leafLast ? Math.min(.08, Math.max(0, time - leafLast)) : 0; leafLast = time;
+    if ((fc & 1) !== 0) return;               // leaves move at 30fps
+    const halfW = cw / 2 / zoom + 60, halfH = ch / 2 / zoom + 60;
+    for (const l of leafSeeds) {
+      l.life -= dt; l.y += l.vy * dt; l.x += Math.sin(time * .9 + l.ph) * l.sway * dt;
+      l.rot += l.spin * dt;
+      l.s.visible = Math.abs(l.x - cpx) < halfW && Math.abs(l.y - cpy) < halfH;
+      l.s.position.set(l.x, l.y); l.s.rotation = l.rot;
+      l.s.alpha = .35 + .4 * Math.min(1, l.life);
+      if (l.life <= 0 || l.y > cpy + halfH || Math.abs(l.x - cpx) > halfW) respawnLeaf(l, false);
+    }
+  }
+  function leafBurst(x, y, n) {
+    if (!leafSeeds.length) return;
+    for (let i = 0; i < (n || 5); i++) {
+      const l = leafSeeds[(i * 3 + ((fc / 2) | 0)) % leafSeeds.length];
+      l.x = x + rr(-14, 14); l.y = y + rr(-18, 4); l.vy = rr(-40, 10); l.sway = rr(10, 30);
+      l.life = rr(.8, 1.8); l.spin = rr(-3, 3);
+      l.s.visible = true; l.s.position.set(l.x, l.y);
+    }
   }
   const selColor = () => (sel && occ.get(slot(sel.c, sel.r))) ? 0xffc846 : 0x78ff8c;   // amber = occupied, green = free to build
   let selOn = false;
@@ -138,8 +195,8 @@
     return (typeof homeLevel === 'number' && homeLevel > 0) ? 1.12 : 1;
   }
   function homeOK(c, r, ignoreOcc) {
-    const x0 = c * CELL, y0 = r * CELL, x1 = (c + HOME_N) * CELL, y1 = (r + HOME_N) * CELL;
-    if (x0 < clearing.x0 || y0 < clearing.y0 || x1 > clearing.x1 || y1 > clearing.y1) return false;
+    const worldC = WORLD_W / CELL, worldR = WORLD_H / CELL;
+    if (c < 0 || r < 0 || c + HOME_N > worldC || r + HOME_N > worldR) return false;
     if (!ignoreOcc) for (let j = 0; j < HOME_N; j++) for (let i = 0; i < HOME_N; i++) { const o = occ.get(slot(c + i, r + j)); if (o && o.type !== 'home') return false; }
     return true;
   }
@@ -173,26 +230,23 @@
   }
   function dragTo(q) { drag.q = q; const s = slotAt(q.x, q.y); if (s) setDragPos(s.c - drag.oc, s.r - drag.or); }
   function moveHere(sx, sy) { const s = slotAt(sx, sy); if (s) setDragPos(s.c - 1, s.r - 1); }   // centre the cabin on the tapped tile
-  // one tile of the map: inside the clearing and nothing but the cabin itself standing on it
+  // one tile of the map: nothing but the cabin itself standing on it
   function tileFree(c, r) {
-    const x0 = c * CELL, y0 = r * CELL;
-    if (x0 < clearing.x0 || y0 < clearing.y0 || x0 + CELL > clearing.x1 || y0 + CELL > clearing.y1) return false;
     const o = occ.get(slot(c, r)); return !o || o.type === 'home';
   }
   function blockReason(pos) {
-    let edge = false;
     for (let j = 0; j < HOME_N; j++) for (let i = 0; i < HOME_N; i++) {
       const o = occ.get(slot(pos.c + i, pos.r + j)); if (o && o.type !== 'home') return 'tree';
-      if (!tileFree(pos.c + i, pos.r + j)) edge = true;
     }
-    return edge ? 'edge' : '';
+    return '';
   }
   // the big grid: every tile near the moving building is tinted green (free) or red (blocked), drawn on the ground UNDER the trees
   let gridKey = '';
   function updateMoveGrid(time) {
     const src = drag || placing || movingFarm;
     if (!src) { if (gridKey) { gridG.clear(); footG.clear(); gridKey = ''; } return; }
-    const isFarm = !!placing || !!movingFarm, rot = isFarm ? src.rot : 0, cols = isFarm ? fCols(rot) : HOME_N, rows = isFarm ? fRows(rot) : HOME_N;
+    const isFarm = !!placing || !!movingFarm, rot = isFarm ? src.rot : 0;
+    const cols = isFarm ? fCols(rot) : HOME_N, rows = isFarm ? fRows(rot) : HOME_N;
     const freeAt = isFarm ? farmTileOK : tileFree;
     const worldCols = WORLD_W / CELL, worldRows = WORLD_H / CELL, pad = 5, pulse = .5 + .5 * Math.sin(time * 4);
     const c0 = Math.max(0, src.c - pad), c1 = Math.min(worldCols - 1, src.c + cols - 1 + pad);
@@ -276,8 +330,12 @@
     }
     drag = null; barKey = '#';                      // cross = cabin goes back to where it was
   }
-  document.getElementById('mvOk').addEventListener('click', () => { if (placing) endPlacing(true); else if (movingFarm) endMovingFarm(true); else endDrag(true); });
-  document.getElementById('mvNo').addEventListener('click', () => { if (placing) endPlacing(false); else if (movingFarm) endMovingFarm(false); else endDrag(false); });
+  document.getElementById('mvOk').addEventListener('click', () => {
+    if (placing) endPlacing(true); else if (movingFarm) endMovingFarm(true); else endDrag(true);
+  });
+  document.getElementById('mvNo').addEventListener('click', () => {
+    if (placing) endPlacing(false); else if (movingFarm) endMovingFarm(false); else endDrag(false);
+  });
   mvRot.addEventListener('click', () => rotateFarm());
   window.addEventListener('keydown', e => {
     if (placing || movingFarm) {
@@ -306,10 +364,13 @@
     updateVillagerSprites(time);
     const pos = drag || home, R = homeRectP(pos.c, pos.r), lift = drag ? 10 : 0;
     homeSpr.position.set(R.x, R.y - lift); homeSpr.width = R.w; homeSpr.height = R.h; homeSpr.alpha = drag ? .94 : 1;
-    if (drag || homeShadowOn) {
-      homeShadowG.clear(); homeShadowOn = !!drag;
-      if (drag) { homeShadowG.beginFill(0x000000, .18); homeShadowG.drawEllipse(R.x + R.w * .5, R.y + R.h * .8, R.w * .38, R.h * .16); homeShadowG.endFill(); }
-    }
+    // the home always sits in a soft contact shadow, so it grows out of the lawn
+    homeShadowG.clear(); homeShadowOn = !!drag;
+    const sx = R.x + R.w * .5, sy = R.y + R.h * .945;
+    homeShadowG.beginFill(0x000000, drag ? .20 : .14);
+    homeShadowG.drawEllipse(sx, sy + R.h * .012, R.w * .43, R.h * .074); homeShadowG.endFill();
+    homeShadowG.beginFill(0x000000, drag ? .16 : .12);
+    homeShadowG.drawEllipse(sx, sy, R.w * .31, R.h * .047); homeShadowG.endFill();
   }
   // everything drawn on top of the trees and the cabin: footprints and selection outline
   function updateOverlay(time) {
@@ -317,7 +378,8 @@
     if (!sel && !drag && !fm) { if (overOn) { overG.clear(); overOn = false; } return; }
     overOn = true; overG.clear();
     if (drag || fm) {
-      const isFarm = !!fm, pos = drag || fm, ok = isFarm ? farmSpotOK(pos.c, pos.r, pos.rot) : pos.ok;
+      const isFarm = !!fm, pos = drag || fm;
+      const ok = isFarm ? farmSpotOK(pos.c, pos.r, pos.rot) : pos.ok;
       const cols = isFarm ? fCols(pos.rot) : HOME_N, rows = isFarm ? fRows(pos.rot) : HOME_N;
       const rgb = ok ? 0x50e664 : 0xf0463c, x0 = pos.c * CELL, y0 = pos.r * CELL, x1 = (pos.c + cols) * CELL, y1 = (pos.r + rows) * CELL;
       const P = [projX(x0, y0), projY(x0, y0), projX(x1, y0), projY(x1, y0), projX(x1, y1), projY(x1, y1), projX(x0, y1), projY(x0, y1)];

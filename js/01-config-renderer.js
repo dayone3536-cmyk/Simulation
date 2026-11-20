@@ -52,6 +52,7 @@
   const selG = world.addChild(new PX.Graphics());
   const gridG = world.addChild(new PX.Graphics()), footG = world.addChild(new PX.Graphics());
   const shadowL = layer(), treeL = layer(), farmL = layer();
+  const leafL = layer();
   const vBack = layer(); vBack.sortableChildren = true;
   const homeL = layer();
   const vFront = layer(); vFront.sortableChildren = true;

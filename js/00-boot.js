@@ -10,10 +10,9 @@
 
     const TIPS = [
       'Tap a ripe field to gather its wheat.',
-      'The market shifts its price every forty seconds.',
+      'The market rate changes every forty-five seconds.',
       'Your villagers eat every twenty seconds \u2014 keep the granary full.',
-      'Woodcutter huts make room for more villagers.',
-      'A feast at your home lifts the whole village.',
+      'Village woodcutters keep the logs coming while you tend the fields.',
       'Drag your home to move it. Tap it to manage it.',
       'The first field ripens in five seconds.',
       'Pinch to see the whole clearing.',
@@ -29,7 +28,7 @@
       if (p < 26) return 'Waking the village';
       if (p < 58) return 'Raising the cabins';
       if (p < 86) return 'Bringing the villagers in';
-      return 'Stoking the hearth';
+      return 'Lighting the lanterns';
     }
 
     function render() {
