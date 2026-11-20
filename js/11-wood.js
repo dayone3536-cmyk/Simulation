@@ -1,4 +1,4 @@
-  // ---------- wood: the second resource. Assigned woodcutters fell trees and carry the logs home ----------
+  // ---------- wood: the second resource. Village woodcutters fell trees and carry the logs home ----------
   const WOOD_PER_TREE = 3;          // logs you get for one felled tree
   const CHOP_SEC = 3.0;             // seconds of chopping after the walk
   const CUTTER_MOVE = 2.35;         // cutters stride out to the forest edge, so trips don't eat the whole loop
@@ -14,14 +14,14 @@
   // in 02 has already run by the time this file loads. ----
   const woodPill = document.createElement('div');
   woodPill.id = 'woodpill'; woodPill.className = 'pill';
-  woodPill.innerHTML = '<span class="ico" id="woodico"></span><span id="woodnum">0</span>';
+  woodPill.innerHTML = '<span class="ico" id="woodico"></span><span class="pill-copy"><small>Wood</small><span id="woodnum">0</span></span>';
   const woodTopRight = document.getElementById('topright');
   if (woodTopRight) woodTopRight.insertBefore(woodPill, document.getElementById('goldbar'));
   const woodIco = document.getElementById('woodico'); if (woodIco) woodIco.innerHTML = WOOD_SVG;
   const woodNum = document.getElementById('woodnum');
   let woodKey = '';
   function refreshWoodHud() {
-    const show = woodCount > 0 || (typeof woodHut !== 'undefined' && woodHut.owned);
+    const show = woodCount > 0;
     const key = woodCount + '|' + (show ? 1 : 0);
     if (key === woodKey) return; woodKey = key;
     if (woodPill) woodPill.style.display = show ? 'flex' : 'none';
@@ -33,7 +33,7 @@
     if (n > 0 && !woodTipShown) {
       woodTipShown = true;
       try { localStorage.setItem('woodTip', '1'); } catch (e) {}
-      toast('Wood! Open the villagers button to put more hands on the axes');
+      toast('Wood! Your cutters will keep the logs coming');
     }
   }
   function spendWood(n) { if (woodCount < n) return false; woodCount -= n; saveWood(); refreshWoodHud(); return true; }
@@ -88,7 +88,6 @@
     let best = null, bs = Infinity;
     for (const t of trees) {
       if (t.claim || t.dying) continue;
-      if (typeof hutTreeAllowed === 'function' && !hutTreeAllowed(t)) continue;   // 14: a built hut owns a small grove
       const d = (t.x - v.x) ** 2 + (t.y - v.y) ** 2;
       const h = (t.x - hx) ** 2 + (t.y - hy) ** 2;
       const s = d * .55 + h * .45;
@@ -101,7 +100,6 @@
     if (occ.get(slot(t.c, t.r)) === t) occ.delete(slot(t.c, t.r));
     setTimeout(() => { const k = trees.indexOf(t); if (k >= 0) trees.splice(k, 1); dropTree(t); }, 430);
     addWood(WOOD_PER_TREE);
-    if (typeof onHutTreeFelled === 'function') onHutTreeFelled(t);   // 14: remember the stump and regrow time
     if (typeof leafBurst === 'function') leafBurst(projX(t.x, t.y), projY(t.x, t.y) - 34, 7);
     woodFloat('+' + WOOD_PER_TREE + ' wood', t.x, t.y);
     v.cut = null;
@@ -124,11 +122,7 @@
     const dt = woodLastT ? Math.min(.06, Math.max(0, time - woodLastT)) : 0; woodLastT = time;
     if (typeof villagers === 'undefined') return;
     tickWoodFx(); drawWoodPile();
-    const doorX = (home.c + 1.4) * CELL, stepY = (home.r + HOME_N + .55) * CELL;
-    // built huts are a forward depot: logs are dropped at the hut, not hauled all the way home
-    let dropX = doorX;
-    let dropY = stepY;
-    if (typeof hutDropPoint === 'function') { const hp = hutDropPoint(); if (hp) { dropX = hp.x; dropY = hp.y; } }   // 14: the hut is the drop-off
+    const dropX = (home.c + 1.4) * CELL, dropY = (home.r + HOME_N + .55) * CELL;
     for (const v of villagers) {
       if (v.role !== 'woodcutter') {
         if (v.cut) { v.cut.claim = null; v.cut = null; }
@@ -147,7 +141,7 @@
           const t = findTreeFor(v);
           if (!t) {
             v.ti = 3;
-            if (!woodEmptyWarned) { woodEmptyWarned = 1; toast(typeof hutEmptyMessage === 'function' ? hutEmptyMessage() : 'The woods around your village are clear'); }
+            if (!woodEmptyWarned) { woodEmptyWarned = 1; toast('The woods around your village are clear'); }
           } else {
             v.cut = t; t.claim = v; v.st = 'toTree';
             if (v.carry0 === undefined) v.carry0 = v.carry;

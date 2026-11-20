@@ -2,6 +2,11 @@
   let population = 10;                              // default 10 people live in the cabin
   try { const s = parseInt(localStorage.getItem('population'), 10); if (s >= 0 && s <= 200) population = s; } catch (e) {}
   const villagers = []; let vLast = 0;
+  const villagePopEl = document.getElementById('villagePop'), villageCapEl = document.getElementById('villageCap');
+  function refreshVillageChip() {
+    if (villagePopEl) villagePopEl.textContent = population;
+    if (villageCapEl) villageCapEl.textContent = (typeof homeCap === 'function') ? homeCap() : population;
+  }
   const TUNIC = ['#c8553d', '#3f7cac', '#6a994e', '#e0a030', '#8e5ea2', '#d98880', '#2a9d8f', '#e76f51', '#4f6fb3', '#b5651d'];
   const SKIN = ['#f6d2b0', '#ecbf92', '#c98f63', '#8d5a3b'], HAIR = ['#3b2415', '#7a4a21', '#d9a441', '#1f1f1f', '#a63d2a'];
   const outside = (x, y, m) => {
@@ -28,6 +33,7 @@
     villagers.length = population;
     villagers.forEach((v, i) => { v.job = i < WORKERS; v.wi = i; });     // the first few villagers are the farm hands
     setStat('pop', ICON.villager, 'Population', population);
+    refreshVillageChip();
   }
   function setPopulation(n) { population = Math.max(0, Math.min(200, n | 0)); try { localStorage.setItem('population', population); } catch (e) {} syncVillagers(); }
   function go(v, tx, ty, dt) {                       // walk toward a point: turn first, speed up, slow down, stride = distance walked

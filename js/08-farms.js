@@ -9,8 +9,12 @@
   let farms = [], placing = null, movingFarm = null, wheatCount = 0;   // farms = [{ t0, c, r, rot }]; placing = preview for a new farm; movingFarm = dragging an existing farm
   (function buildFarmData() {
     let sd = 20260; const rnd = () => { sd = (sd * 1664525 + 1013904223) >>> 0; return sd / 4294967296; };   // own random numbers: the farm looks the same every visit
-    for (let y = 5; y < FH - 2; y += 12) for (let x = 6; x < FW - 2; x += 12) for (let k = 0; k < 2; k++)
-      stalks.push({ x: x + (rnd() - .5) * 9 + k * 5, y: y + (rnd() - .5) * 7 + k * 4, h: 27 + rnd() * 13, lean: (rnd() - .5) * 3.5, ph: rnd() * 6.28, sh: (rnd() * 3) | 0 });
+    for (let y = 10; y < FH - 6; y += 24) for (let x = 8; x < FW - 8; x += 24) {
+      if (rnd() < .10) continue;                        // an occasional bare patch keeps the field breathing
+      const clump = 2 + (rnd() < .45 ? 1 : 0);          // 2-3 stalks per clump, with air between clumps
+      for (let k = 0; k < clump; k++)
+        stalks.push({ x: x + (rnd() - .5) * 13 + k * 6, y: y + (rnd() - .5) * 10 + k * 4, h: 30 + rnd() * 12, lean: (rnd() - .5) * 3.5, ph: rnd() * 6.28, sh: (rnd() * 3) | 0 });
+    }
     for (let i = 0; i < 34; i++) {
       const x = -70 + rnd() * (FW + 140), y = -60 + rnd() * (FH + 200);
       if (x > -14 && x < FW + 8 && y > -22 && y < FH + 8) continue;    // not on the soil

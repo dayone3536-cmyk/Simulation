@@ -12,7 +12,7 @@
       'Tap a ripe field to gather its wheat.',
       'The market rate changes every forty-five seconds.',
       'Your villagers eat every twenty seconds \u2014 keep the granary full.',
-      'Build a Woodcutter Hut to keep the wood coming while you are away.',
+      'Village woodcutters keep the logs coming while you tend the fields.',
       'Drag your home to move it. Tap it to manage it.',
       'The first field ripens in five seconds.',
       'Pinch to see the whole clearing.',
