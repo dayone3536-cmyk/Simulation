@@ -1,5 +1,5 @@
   // ---------- woodcutter hut: a small owned grove that keeps cutting while the tab is closed ----------
-  const HUT_COST = 70;                 // gold
+  const HUT_COST = 75;                 // gold
   const HUT_N = 2;                     // footprint in slots
   const HUT_RADIUS = 5;                // tiles around the hut that belong to its grove
   const HUT_TREE_REGROW_MS = 6 * 60 * 1000;
