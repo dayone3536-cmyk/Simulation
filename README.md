@@ -12,6 +12,13 @@ village. There is no job menu to manage.
 Woodcutters fell nearby trees, carry the logs home, and add to your wood stock.
 Each tree is worth 3 wood.
 
+## Woodcutter Hut
+
+The Woodcutter Hut gives the crew a home in the woods. It adds two more
+woodcutter slots, keeps its own small grove of trees, and becomes the drop-off
+point for logs. While you are away it keeps working, bringing back up to 10
+trees per hour (capped at 12 hours).
+
 ## Market
 
 Sell wheat for gold at the market. The rate is generous and easy to read: **10

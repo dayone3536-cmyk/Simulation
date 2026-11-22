@@ -143,6 +143,7 @@
     homePanel.style.display = 'block';
     homePanel.setAttribute('aria-hidden', 'false');
     if (typeof buildPanel !== 'undefined' && buildPanel) { buildPanel.style.display = 'none'; buildBtn.classList.remove('open'); }
+    if (window.woodHut) window.woodHut.close();
     if (typeof setTradeOpen === 'function') setTradeOpen(false);
     renderHomePanel(true);
   }

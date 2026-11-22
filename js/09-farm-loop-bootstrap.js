@@ -189,7 +189,7 @@
     tradeOpen = !!open;
     if (tradePanel) { tradePanel.style.display = tradeOpen ? 'block' : 'none'; tradePanel.setAttribute('aria-hidden', tradeOpen ? 'false' : 'true'); }
     if (tradeBtn) tradeBtn.classList.toggle('open', tradeOpen);
-    if (tradeOpen) { if (buildPanel) { buildPanel.style.display = 'none'; buildBtn.classList.remove('open'); } renderTrade(); }
+    if (tradeOpen) { if (buildPanel) { buildPanel.style.display = 'none'; buildBtn.classList.remove('open'); } if (window.woodHut) window.woodHut.close(); renderTrade(); }
   }
   if (tradeBtn) tradeBtn.addEventListener('click', () => setTradeOpen(!tradeOpen));
   const tradeCancel = document.getElementById('tradeCancel');
@@ -211,9 +211,10 @@
     if (placing) { btn.textContent = 'Placing\u2026'; btn.disabled = true; btn.title = ''; }
     else if (gold < FARM_COST) { btn.textContent = 'Need ' + FARM_COST + ' gold'; btn.disabled = true; btn.title = 'Sell wheat at the market for gold'; }
     else { btn.textContent = 'Build \u00B7 ' + FARM_COST + 'g'; btn.disabled = false; btn.title = ''; }
+    if (typeof renderWoodHutBuild === 'function') renderWoodHutBuild();
   }
   function startPlacing() {
-    if (placing || movingFarm) return;
+    if (placing || movingFarm || (typeof movingHut !== 'undefined' && movingHut)) return;
     if (gold < FARM_COST) { toast('You need ' + FARM_COST + ' gold'); return; }
     const spot = findFarmSpot(0);
     placing = { c: spot.c, r: spot.r, rot: spot.rot };
@@ -257,7 +258,7 @@
     barKey = '#'; rebuildFarm(movingFarm.farm);
   }
   function startMovingFarm(f, sx, sy) {
-    if (!f || placing || movingFarm || drag) return;
+    if (!f || placing || movingFarm || drag || (typeof movingHut !== 'undefined' && movingHut)) return;
     const s = slotAt(sx, sy) || { c: f.c, r: f.r };
     eachFarmSlot(f, (c, r) => { const o = occ.get(slot(c, r)); if (o && o.type === 'farm') occ.delete(slot(c, r)); });
     movingFarm = { farm: f, c: f.c, r: f.r, rot: f.rot, oc: f.c, or: f.r, orot: f.rot, offC: s.c - f.c, offR: s.r - f.r, ok: true, held: true, id: null, q: { x: sx, y: sy } };
@@ -424,6 +425,7 @@
     shadowTex = radialTex('20,70,6', .42, 64); glowTex = radialTex('255,225,120', .9, 64);
     growForest();
     buildGround(); buildTrees(); farms.forEach(rebuildFarm);
+    if (typeof initWoodHutWorld === 'function') initWoodHutWorld();   // 14: apply the saved hut grove to the fresh forest
     syncVillagers();
     resize();
     // whole clearing diamond fits on screen

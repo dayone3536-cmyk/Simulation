@@ -59,7 +59,7 @@
   const overG = world.addChild(new PX.Graphics());
   let fc = 0;   // frame counter
   const bakeCanvas = (w, h, S) => { const cv = document.createElement('canvas'); cv.width = Math.ceil(w * S); cv.height = Math.ceil(h * S); return cv; };
-  function radialTex(rgb, a0, size) {   // soft round blob, used for tree shadows and the selected-tree glow
+  function radialTex(rgb, a0, size) {   // soft round blob, used for the selected-tree glow
     const cv = bakeCanvas(size, size, 1), g = cv.getContext('2d'), gr = g.createRadialGradient(size / 2, size / 2, 1, size / 2, size / 2, size / 2);
     gr.addColorStop(0, 'rgba(' + rgb + ',' + a0 + ')'); gr.addColorStop(1, 'rgba(' + rgb + ',0)');
     g.fillStyle = gr; g.fillRect(0, 0, size, size); return PX.Texture.from(cv);

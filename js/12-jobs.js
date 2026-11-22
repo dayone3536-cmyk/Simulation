@@ -4,7 +4,7 @@
   let roles = [];
   const saveRoles = () => { try { localStorage.setItem('roles', JSON.stringify(roles)); } catch (e) {} };
   const countRole = role => { let n = 0; for (const r of roles) if (r === role) n++; return n; };
-  const cutterCap = () => 3;
+  const cutterCap = () => 3 + (typeof woodHut !== 'undefined' && woodHut && woodHut.owned ? 2 : 0);
   const idleCount = () => countRole(ROLE_IDLE);
   const farmerCount = () => countRole(ROLE_FARM);
   const cutterCount = () => countRole(ROLE_WOOD);

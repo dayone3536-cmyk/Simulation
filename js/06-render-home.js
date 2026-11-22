@@ -79,7 +79,7 @@
     t.px = projX(t.x, t.y); t.py = projY(t.x, t.y);
     t.sx0 = t.flip * tr.w * t.s * .9 / tex.width; t.sy0 = tr.h * t.s * .9 / tex.height;
     const s = new PX.Sprite(tex); s.anchor.set(.5, 1); s.position.set(t.px, t.py + 4 * t.s); s.scale.set(t.sx0, t.sy0); s.visible = false;
-    t.spr = s; treeL.addChild(s);   // no fake blob under the canopy: the art carries its own depth
+    t.spr = s; treeL.addChild(s);   // no fake blob under the canopy: the tree art is shadow-free
   }
   function buildTrees() {
     for (const t of trees) buildTreeSprite(t);
@@ -243,11 +243,12 @@
   // the big grid: every tile near the moving building is tinted green (free) or red (blocked), drawn on the ground UNDER the trees
   let gridKey = '';
   function updateMoveGrid(time) {
-    const src = drag || placing || movingFarm;
+    const carrying = (typeof movingHut !== 'undefined') ? movingHut : null;
+    const src = drag || placing || movingFarm || carrying;
     if (!src) { if (gridKey) { gridG.clear(); footG.clear(); gridKey = ''; } return; }
-    const isFarm = !!placing || !!movingFarm, rot = isFarm ? src.rot : 0;
-    const cols = isFarm ? fCols(rot) : HOME_N, rows = isFarm ? fRows(rot) : HOME_N;
-    const freeAt = isFarm ? farmTileOK : tileFree;
+    const isHut = !!carrying, isFarm = !!placing || !!movingFarm, rot = isFarm ? src.rot : 0;
+    const cols = isHut ? HUT_N : isFarm ? fCols(rot) : HOME_N, rows = isHut ? HUT_N : isFarm ? fRows(rot) : HOME_N;
+    const freeAt = isHut ? hutTileOK : isFarm ? farmTileOK : tileFree;
     const worldCols = WORLD_W / CELL, worldRows = WORLD_H / CELL, pad = 5, pulse = .5 + .5 * Math.sin(time * 4);
     const c0 = Math.max(0, src.c - pad), c1 = Math.min(worldCols - 1, src.c + cols - 1 + pad);
     const r0 = Math.max(0, src.r - pad), r1 = Math.min(worldRows - 1, src.r + rows - 1 + pad);
@@ -303,14 +304,22 @@
       if (q.y < m) dy = -(m - q.y) / m; else if (q.y > ch - m) dy = (q.y - (ch - m)) / m;
       if (dx || dy) { cpx += dx * 9 / zoom; cpy += dy * 9 / zoom; clampCam(); const s = slotAt(q.x, q.y); if (s) { setMovingFarmPos(s.c - movingFarm.offC, s.r - movingFarm.offR); barKey = '#'; rebuildFarm(movingFarm.farm); } }
     }
-    const fm = placing || movingFarm, pos = drag || fm;
-    const valid = fm ? farmSpotOK(fm.c, fm.r, fm.rot) : drag ? drag.ok : true;
-    const key = !pos ? '' : fm ? (valid ? 'pok' : 'pbad') : (drag.ok ? 'ok' : blockReason(drag) || 'edge');
+    if (typeof movingHut !== 'undefined' && movingHut && movingHut.held && movingHut.q) {
+      const m = 70, q = movingHut.q; let dx = 0, dy = 0;
+      if (q.x < m) dx = -(m - q.x) / m; else if (q.x > cw - m) dx = (q.x - (cw - m)) / m;
+      if (q.y < m) dy = -(m - q.y) / m; else if (q.y > ch - m) dy = (q.y - (ch - m)) / m;
+      if (dx || dy) { cpx += dx * 9 / zoom; cpy += dy * 9 / zoom; clampCam(); hutMoveTo(q.x, q.y); }
+    }
+    const hut = (typeof movingHut !== 'undefined') ? movingHut : null;
+    const fm = placing || movingFarm, pos = drag || fm || hut;
+    const valid = hut ? hutFootOK(hut.c, hut.r) : fm ? farmSpotOK(fm.c, fm.r, fm.rot) : drag ? drag.ok : true;
+    const key = !pos ? '' : hut ? (valid ? 'hok' : 'hbad') : fm ? (valid ? 'pok' : 'pbad') : (drag.ok ? 'ok' : blockReason(drag) || 'edge');
     if (key === barKey) return;
     barKey = key;
     mvBar.style.display = pos ? 'flex' : 'none'; mvBar.classList.toggle('bad', !!pos && !valid);
     mvBar.classList.toggle('placing', !!fm);
     mvMsg.innerHTML = !pos ? ''
+      : hut ? (valid ? 'Looks good!<small>Drag or tap the map to move \u00B7 \u2713 places</small>' : 'Can\u2019t move here<small>Red tiles are blocked \u00B7 pick a green spot</small>')
       : fm ? (valid ? (placing ? 'Looks good!<small>Drag or tap the map to move \u00B7 \u27F3 rotates \u00B7 \u2713 confirms</small>' : 'Looks good!<small>Drag or tap the map to move \u00B7 \u27F3 rotates \u00B7 \u2713 places</small>')
         : 'Can\u2019t build here<small>Move to a free spot \u00B7 \u27F3 rotates</small>')
       : key === 'ok' ? 'Looks good!<small>Tap \u2713 to place it here</small>'
@@ -331,13 +340,20 @@
     drag = null; barKey = '#';                      // cross = cabin goes back to where it was
   }
   document.getElementById('mvOk').addEventListener('click', () => {
-    if (placing) endPlacing(true); else if (movingFarm) endMovingFarm(true); else endDrag(true);
+    if (typeof movingHut !== 'undefined' && movingHut) endMovingHut(true);
+    else if (placing) endPlacing(true); else if (movingFarm) endMovingFarm(true); else endDrag(true);
   });
   document.getElementById('mvNo').addEventListener('click', () => {
-    if (placing) endPlacing(false); else if (movingFarm) endMovingFarm(false); else endDrag(false);
+    if (typeof movingHut !== 'undefined' && movingHut) endMovingHut(false);
+    else if (placing) endPlacing(false); else if (movingFarm) endMovingFarm(false); else endDrag(false);
   });
   mvRot.addEventListener('click', () => rotateFarm());
   window.addEventListener('keydown', e => {
+    if (typeof movingHut !== 'undefined' && movingHut) {
+      if (e.key === 'Enter') endMovingHut(true);
+      else if (e.key === 'Escape') endMovingHut(false);
+      return;
+    }
     if (placing || movingFarm) {
       if (e.key === 'Enter') { if (placing) endPlacing(true); else endMovingFarm(true); }
       else if (e.key === 'Escape') { if (placing) endPlacing(false); else endMovingFarm(false); }
@@ -374,19 +390,20 @@
   }
   // everything drawn on top of the trees and the cabin: footprints and selection outline
   function updateOverlay(time) {
+    const hut = (typeof movingHut !== 'undefined') ? movingHut : null;
     const fm = placing || movingFarm;
-    if (!sel && !drag && !fm) { if (overOn) { overG.clear(); overOn = false; } return; }
+    if (!sel && !drag && !fm && !hut) { if (overOn) { overG.clear(); overOn = false; } return; }
     overOn = true; overG.clear();
-    if (drag || fm) {
-      const isFarm = !!fm, pos = drag || fm;
-      const ok = isFarm ? farmSpotOK(pos.c, pos.r, pos.rot) : pos.ok;
-      const cols = isFarm ? fCols(pos.rot) : HOME_N, rows = isFarm ? fRows(pos.rot) : HOME_N;
+    if (drag || fm || hut) {
+      const isHut = !!hut, isFarm = !!fm, pos = drag || fm || hut;
+      const ok = isHut ? hutFootOK(pos.c, pos.r) : isFarm ? farmSpotOK(pos.c, pos.r, pos.rot) : pos.ok;
+      const cols = isHut ? HUT_N : isFarm ? fCols(pos.rot) : HOME_N, rows = isHut ? HUT_N : isFarm ? fRows(pos.rot) : HOME_N;
       const rgb = ok ? 0x50e664 : 0xf0463c, x0 = pos.c * CELL, y0 = pos.r * CELL, x1 = (pos.c + cols) * CELL, y1 = (pos.r + rows) * CELL;
       const P = [projX(x0, y0), projY(x0, y0), projX(x1, y0), projY(x1, y0), projX(x1, y1), projY(x1, y1), projX(x0, y1), projY(x0, y1)];
       overG.lineStyle(0); overG.beginFill(rgb, .10); overG.drawPolygon(P); overG.endFill();
       overG.lineStyle({ width: 5 / zoom, color: 0x000000, alpha: .35, join: 'round' }); overG.drawPolygon(P);
       overG.lineStyle({ width: 3 / zoom, color: rgb, alpha: 1, join: 'round' }); overG.drawPolygon(P);
-      drawFootMarks(pos, cols, rows, isFarm ? farmTileOK : tileFree);
+      drawFootMarks(pos, cols, rows, isHut ? hutTileOK : isFarm ? farmTileOK : tileFree);
     }
     if (sel) {
       const P = ringPts(sel.c, sel.r, 1);

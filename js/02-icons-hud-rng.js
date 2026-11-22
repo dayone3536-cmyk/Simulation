@@ -17,6 +17,7 @@
     buildPanel.style.display = o ? 'block' : 'none';
     buildPanel.setAttribute('aria-hidden', o ? 'false' : 'true');
     buildBtn.classList.toggle('open', o);
+    if (o && window.woodHut) window.woodHut.close();
   }
   buildBtn.addEventListener('click', () => {
     setBuildOpen(buildPanel.style.display !== 'block');
