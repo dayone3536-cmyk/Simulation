@@ -51,13 +51,13 @@
   function updateVillagers(time) {
     const dt = Math.min(.05, Math.max(0, time - vLast)); vLast = time;
     const doorX = (home.c + 1.4) * CELL, doorY = (home.r + HOME_N - .55) * CELL, stepY = (home.r + HOME_N + .55) * CELL, span = stepY - doorY;
+    const growingFarms = farms.length ? farms.filter(f => farmState(f) === 'growing') : [];
     for (const v of villagers) {
       v.walking = false;
-      if (v.job && farms.length) {                                   // farm hands: out of the cabin, over to a growing field, work until that wheat is ripe
-        const grow = farms.filter(f => farmState(f) === 'growing');
-        if (grow.length) {
+      if (v.job) {                                                   // farm hands: out of the cabin, over to a growing field, work until that wheat is ripe
+        if (growingFarms.length) {
           if (v.st === 'inside') v.ti = 0;
-          else if (v.st === 'idle' || v.st === 'walk' || v.st === 'toDoor') { v.wf = grow[v.wi % grow.length]; workSpot(v, false, v.wf); v.st = 'toFarm'; }
+          else if (v.st === 'idle' || v.st === 'walk' || v.st === 'toDoor') { v.wf = growingFarms[v.wi % growingFarms.length]; workSpot(v, false, v.wf); v.st = 'toFarm'; }
         } else if (v.st === 'toFarm' || v.st === 'work') { v.st = 'idle'; v.wait = rr(.5, 2.5); }
       }
       if (v.st === 'idle') {
@@ -207,16 +207,32 @@
   // Each villager is painted (by the code above) into its own small canvas, and the GPU moves that picture around.
   // The painting only needs refreshing ~20 times a second (8 when standing still) instead of 60, which is a big saving on old phones.
   const VW = 100, VH = 96, VS = 1.2, VBASE = 76;     // canvas is VW x VH world units, feet sit VBASE units down from the top, VS = pixels per unit
+  const MAX_VILLAGER_SPRITES = 12;                   // only draw the nearest few people; everyone else still lives in the simulation
+  const shownVillagers = [];
   function killVSprite(v) { if (v.spr) { v.spr.texture.destroy(true); v.spr.destroy(); } v.spr = null; v.cv = null; v.cx = null; }
   function updateVillagerSprites(time) {
     const vl = cpx - cw / 2 / zoom - 60, vr = cpx + cw / 2 / zoom + 60, vt = cpy - ch / 2 / zoom - 100, vb = cpy + ch / 2 / zoom + 40;
     const hx1 = (home.c + HOME_N) * CELL, hy1 = (home.r + HOME_N) * CELL;
     let paintBudget = 5;                             // a crowd never melts the frame: at most a few canvas repaints per frame
-    const crowd = population > 12, far = zoom < .5 ? 1.6 : 1;
+    const crowd = population > MAX_VILLAGER_SPRITES, far = zoom < .5 ? 1.6 : 1;
+    shownVillagers.length = 0;
     for (const v of villagers) {
+      if (v.a <= .02) { if (v.spr) v.spr.visible = false; continue; }
       const u = projX(v.x, v.y), w = projY(v.x, v.y);
+      if (u < vl || u > vr || w < vt || w > vb) { if (v.spr) v.spr.visible = false; continue; }
+      v._u = u; v._w = w; v._d = (u - cpx) * (u - cpx) + (w - cpy) * (w - cpy);
+      shownVillagers.push(v);
+    }
+    if (shownVillagers.length > MAX_VILLAGER_SPRITES) {
+      shownVillagers.sort((a, b) => a._d - b._d || a.wi - b.wi);
+      for (let i = MAX_VILLAGER_SPRITES; i < shownVillagers.length; i++) {
+        const v = shownVillagers[i]; if (v.spr) v.spr.visible = false;
+      }
+      shownVillagers.length = MAX_VILLAGER_SPRITES;
+    }
+    for (const v of shownVillagers) {
+      const u = v._u, w = v._w;
       let spr = v.spr;
-      if (v.a <= .02 || u < vl || u > vr || w < vt || w > vb) { if (spr) spr.visible = false; continue; }
       if (!spr) {
         v.cv = document.createElement('canvas'); v.cv.width = Math.round(VW * VS); v.cv.height = Math.round(VH * VS); v.cx = v.cv.getContext('2d');
         spr = v.spr = new PX.Sprite(PX.Texture.from(v.cv)); spr.anchor.set(.5, VBASE / VH); spr.scale.set(1 / VS); v.lay = null; v.pt = -1;
