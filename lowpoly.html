@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Low-poly structure placeholders · Forest Village</title>
+<meta name="theme-color" content="#0c1710">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/lowpoly-preview.css">
+</head>
+<body>
+<div class="page">
+
+  <header class="masthead">
+    <div class="brand"><span class="mark" aria-hidden="true"></span>Forest Village <span style="color:var(--faint);font-weight:500">/ style study</span></div>
+    <div class="branch"><i aria-hidden="true"></i>style/lowpoly-placeholders</div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-copy">
+        <span class="eyebrow">Placeholder kit · 01</span>
+        <h1>Low-poly <em>structures</em>, sized for the village.</h1>
+        <p class="lede">Flat-shaded stand-ins for the farm, the two homes and the woodcutter hut. They keep the game’s <strong>2:1 grid and footprints</strong> while the real structures are being modelled in Blender, so scale, placement and economy can be tested now.</p>
+        <div class="chips">
+          <span>4 structures</span>
+          <span>2:1 dimetric</span>
+          <span>no outlines</span>
+          <span>v0.1</span>
+        </div>
+      </div>
+      <figure class="hero-art">
+        <img id="heroArt" alt="Low-poly Timber Manor placeholder">
+        <figcaption>Timber Manor · 3 × 3 · home level 2</figcaption>
+      </figure>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">The set</span>
+          <h2>Four pieces, one language</h2>
+        </div>
+        <p>Every piece is generated from the same kit: same projection, same three-value materials, same footprint as the slot it occupies in the game.</p>
+      </div>
+      <div class="grid" id="grid"></div>
+    </section>
+
+    <section class="section split">
+      <div class="rules">
+        <span class="eyebrow">Style contract</span>
+        <h2>Rules that keep it coherent</h2>
+        <ol>
+          <li><div><b>Flat faces only</b><span>No gradients or soft airbrush shading. One plane, one value; the facets carry the form.</span></div></li>
+          <li><div><b>One sun, three values</b><span>Light comes from the lower-left. Each material gets a lit, base and shade tone — and nothing else.</span></div></li>
+          <li><div><b>No outlines</b><span>Silhouette and value contrast do the work. Dark timber is real structure, not a stroke around the building.</span></div></li>
+          <li><div><b>Grid first</b><span>Home 3 × 3, farm 5 × 2, hut 2 × 2. Art sits on the existing cells, so Blender models can replace it without a layout pass.</span></div></li>
+        </ol>
+      </div>
+      <div class="palette-card">
+        <span class="eyebrow">Palette</span>
+        <h2 style="font-size:28px">Warm build, cool ground</h2>
+        <div class="swatches" id="swatches"></div>
+        <p class="note">Thatch and timber carry the buildings; moss greens stay in the ground so structures read first. The gold accent matches the market and wheat HUD.</p>
+      </div>
+    </section>
+
+    <section class="section code-card">
+      <div>
+        <span class="eyebrow">Drop-in</span>
+        <h2>Same cell, same anchor</h2>
+        <p>The kit returns plain SVG or a data URI. Swap it for the current sprite without touching footprints, hit areas or placement rules.</p>
+      </div>
+      <pre><code><span class="c">// js/lowpoly-kit.js</span>
+<span class="k">const</span> svg = LOWPOLY.<span class="s">art</span>(<span class="s">'cabin'</span>);   <span class="c">// markup</span>
+<span class="k">const</span> url = LOWPOLY.<span class="s">data</span>(<span class="s">'cabin'</span>);  <span class="c">// data:image/svg+xml</span>
+
+<span class="c">// sizes stay true to the grid</span>
+<span class="c">// cabin / manor 3×3 · farm 5×2 · hut 2×2</span></code></pre>
+    </section>
+  </main>
+
+  <footer>
+    <span>Placeholder v0.1 <span class="dot"></span> built for the stretch between concept and Blender</span>
+    <span>branch <code>style/lowpoly-placeholders</code> <span class="dot"></span> <code>main</code> left untouched</span>
+  </footer>
+
+</div>
+
+<script src="js/lowpoly-kit.js"></script>
+<script>
+(function () {
+  'use strict';
+  var LP = window.LOWPOLY;
+  if (!LP) return;
+
+  document.getElementById('heroArt').src = LP.data('manor');
+
+  var order = ['cabin', 'manor', 'farm', 'hut'];
+  document.getElementById('grid').innerHTML = order.map(function (key) {
+    var m = LP.META[key];
+    return '<article class="card">' +
+      '<div class="card-art"><img src="' + LP.data(key) + '" alt="Low-poly ' + m.name + ' placeholder"></div>' +
+      '<div class="card-body"><div><h3>' + m.name + '</h3><p>' + m.note + '</p></div>' +
+      '<div class="foot"><b>' + m.foot + '</b>' + m.role + '</div></div>' +
+      '</article>';
+  }).join('');
+
+  var mats = [
+    ['Thatch', LP.PAL.thatch.base],
+    ['Plaster', LP.PAL.plaster.base],
+    ['Timber', LP.PAL.timber.base],
+    ['Grass', LP.PAL.grass.base],
+    ['Stone', LP.PAL.stone.base]
+  ];
+  document.getElementById('swatches').innerHTML = mats.map(function (m) {
+    return '<div class="swatch"><i style="background:' + m[1] + '"></i><span>' + m[0] + '<br>' + m[1].toUpperCase() + '</span></div>';
+  }).join('');
+})();
+</script>
+</body>
+</html>
