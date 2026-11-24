@@ -1,12 +1,12 @@
   // ---------- the farm loop: buy it in the Build menu, villagers plant it, wait for the green bar, tap the bubble to collect the wheat ----------
   const FARM_COST = 50;            // gold to build it — food is bought with coin, not logs
-  const FARM_UPGRADE_COST = 150;   // one-time farmhands upgrade: every farm harvests itself from then on
+  const FARM_UPGRADE_COST = 150;   // one-time auto-harvest upgrade: every farm harvests itself from then on
   const FIRST_FARM_GROW_SEC = 5;   // the very first crop the player ever plants ripens in 5 seconds
   const FARM_GROW_SEC = 15;        // every crop after that takes 15 seconds to ripen
   const WHEAT_PER_HARVEST = 10;    // wheat you get each time you collect
   const WORKERS = 4;               // villagers who walk out and work the fields
   let farmsBuilt = 0;              // how many farms the player has ever built (only the first crop is quick)
-  let farmAuto = false;            // farmhands upgrade: ripe wheat is collected without a tap
+  let farmAuto = false;            // auto-harvest upgrade: ripe wheat is collected without a tap
   try { farmsBuilt = parseInt(localStorage.getItem('farmsBuilt'), 10) || 0; } catch (e) {}
   try { farmAuto = localStorage.getItem('farmAuto') === '1'; } catch (e) {}
   try {
@@ -145,7 +145,7 @@
       elTag.textContent = p >= 18 ? 'Excellent' : p >= 15 ? 'Great' : p >= 12 ? 'Good' : 'Fair';
       elTag.className = p >= 15 ? 'great' : p <= 10 ? 'poor' : '';
     }
-    if (elHave) elHave.textContent = have ? 'You have ' + have + ' wheat \u00B7 sell it for ' + goldFor(have) + ' gold' : (farmAuto ? 'Your farmhands are harvesting \u2014 wheat arrives automatically' : 'Your granary is empty \u2014 harvest a farm');
+    if (elHave) elHave.textContent = have ? 'You have ' + have + ' wheat \u00B7 sell it for ' + goldFor(have) + ' gold' : (farmAuto ? 'Your farms harvest automatically \u2014 just sell the wheat' : 'Your granary is empty \u2014 harvest a farm');
     if (sell10Btn) { sell10Btn.disabled = have < 10; if (sell10Gain) sell10Gain.textContent = '+' + goldFor(10) + 'g'; }
     if (sell50Btn) { sell50Btn.disabled = have < 50; if (sell50Gain) sell50Gain.textContent = '+' + goldFor(50) + 'g'; }
     if (sellXBtn) {
@@ -157,7 +157,7 @@
       harvestReadyBtn.style.display = readyCount > 0 && !farmAuto ? 'flex' : 'none';
       if (harvestReadyTxt) harvestReadyTxt.textContent = 'Harvest ' + readyCount + ' ready farm' + (readyCount === 1 ? '' : 's') + ' (+' + (readyCount * WHEAT_PER_HARVEST) + ' wheat)';
     }
-    if (elNote) elNote.textContent = 'Villagers eat ' + need + ' wheat every 20s.' + (farmAuto ? ' Farmhands harvest for you.' : '');
+    if (elNote) elNote.textContent = 'Villagers eat ' + need + ' wheat every 20s.' + (farmAuto ? ' Your farms harvest for you.' : '');
   }
   function coinBurst(n) {
     if (!elFx || !ICON.coin) return;
@@ -207,28 +207,25 @@
     if (tradeOpen && tradePanel && !tradePanel.contains(e.target) && tradeBtn && !tradeBtn.contains(e.target)) setTradeOpen(false);
   }, true);
   function focusFarm(f) { if (!f) return; const ctr = farmCenter(f); cpx = ctr[0]; cpy = ctr[1]; clampCam(); }
-  const farmUpCard = document.getElementById('farmUpCard'), farmUpBuy = document.getElementById('farmUpBuy'), farmUpInfo = document.getElementById('farmUpInfo');
+  const farmUpBuy = document.getElementById('farmUpBuy');
   function renderFarmUpgrade() {
-    if (!farmUpCard || !farmUpBuy || !farmUpInfo) return;
-    farmUpCard.hidden = !farms.length && !farmAuto;        // an upgrade only makes sense once a farm exists
-    if (farmAuto) {
-      farmUpInfo.textContent = 'Every farm harvests itself \u00B7 you just sell';
-      farmUpBuy.textContent = 'Farmhands hired'; farmUpBuy.disabled = true; farmUpBuy.title = '';
-      return;
-    }
-    farmUpInfo.textContent = 'Workers harvest every farm for you';
-    if (gold < FARM_UPGRADE_COST) { farmUpBuy.textContent = 'Need ' + FARM_UPGRADE_COST + ' gold'; farmUpBuy.disabled = true; farmUpBuy.title = 'Sell wheat at the market for gold'; }
-    else { farmUpBuy.textContent = 'Upgrade all \u00B7 ' + FARM_UPGRADE_COST + 'g'; farmUpBuy.disabled = false; farmUpBuy.title = 'All farms harvest automatically from now on'; }
+    if (!farmUpBuy) return;
+    const show = farms.length > 0 && !farmAuto;            // no new structure: the upgrade sits on the farm card
+    farmUpBuy.hidden = !show;
+    if (!show) return;
+    farmUpBuy.title = 'Workers harvest every farm for you; you only sell';
+    if (gold < FARM_UPGRADE_COST) { farmUpBuy.textContent = 'Upgrade all farms \u00B7 need ' + FARM_UPGRADE_COST + 'g'; farmUpBuy.disabled = true; }
+    else { farmUpBuy.textContent = 'Upgrade all farms \u00B7 ' + FARM_UPGRADE_COST + 'g'; farmUpBuy.disabled = false; }
   }
   function buyFarmUpgrade() {
     if (farmAuto) return;
     if (!farms.length) { toast('Build a farm first'); return; }
-    if (gold < FARM_UPGRADE_COST) { toast('You need ' + FARM_UPGRADE_COST + ' gold for farmhands'); return; }
+    if (gold < FARM_UPGRADE_COST) { toast('You need ' + FARM_UPGRADE_COST + ' gold to upgrade the farms'); return; }
     if (!spendGold(FARM_UPGRADE_COST)) return;
     farmAuto = true;
     try { localStorage.setItem('farmAuto', '1'); } catch (e) {}
     renderBuild(); renderTrade(); refreshWheatHud();
-    toast('Farmhands hired \u2014 all farms now harvest automatically');
+    toast('All farms upgraded \u2014 they harvest automatically now');
   }
   function renderBuild() {
     const btn = document.getElementById('farmBuy'), info = document.getElementById('farmInfo');
@@ -381,7 +378,7 @@
         ui.barT.position.set(fx, bt + bh / 2 + .5);
       }
       if (ui.bubble.visible) ui.bubble.position.set(fx, fy - 80 + Math.sin(time * 3) * 4);
-      if (farmAuto && st === 'ready' && f !== movingF) collectFarm(f, { silent: true, quiet: !show });   // farmhands pick it so the player only sells
+      if (farmAuto && st === 'ready' && f !== movingF) collectFarm(f, { silent: true, quiet: !show });   // the upgrade picks it so the player only sells
     }
     const now = performance.now();
     for (let i = floaters.length - 1; i >= 0; i--) {                       // "+10 wheat" floating up

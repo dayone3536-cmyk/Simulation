@@ -438,15 +438,13 @@ canvas.rot.flip { transform: rotate(-90deg) translateX(-100%); }
 }
 #farmBuy, #hutBuy { font-size: 12.5px; }
 
-/* farmhands: the one-time auto-harvest upgrade under the farm card */
-#farmUpCard[hidden] { display: none; }
-#farmUpCard .bi.up {
-  background:
-    radial-gradient(ellipse at 50% 70%, rgba(143, 196, 94, .34), rgba(0,0,0,0) 72%),
-    rgba(8, 7, 4, .25);
-}
+/* farm upgrade: a slim secondary action inside the farm card, not a separate structure */
+#farmUpBuy[hidden] { display: none; }
 #farmUpBuy {
-  min-height: 42px;
+  grid-row: 3;
+  min-height: 38px;
+  margin-top: -2px;
+  padding: 9px 12px;
   border: 1px solid var(--line-mid);
   border-radius: 13px;
   background: linear-gradient(180deg, rgba(168, 221, 122, .16), rgba(168, 221, 122, .05));
