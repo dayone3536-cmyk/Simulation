@@ -1,11 +1,14 @@
   // ---------- the farm loop: buy it in the Build menu, villagers plant it, wait for the green bar, tap the bubble to collect the wheat ----------
   const FARM_COST = 50;            // gold to build it — food is bought with coin, not logs
+  const FARM_UPGRADE_COST = 150;   // one-time farmhands upgrade: every farm harvests itself from then on
   const FIRST_FARM_GROW_SEC = 5;   // the very first crop the player ever plants ripens in 5 seconds
   const FARM_GROW_SEC = 15;        // every crop after that takes 15 seconds to ripen
   const WHEAT_PER_HARVEST = 10;    // wheat you get each time you collect
   const WORKERS = 4;               // villagers who walk out and work the fields
   let farmsBuilt = 0;              // how many farms the player has ever built (only the first crop is quick)
+  let farmAuto = false;            // farmhands upgrade: ripe wheat is collected without a tap
   try { farmsBuilt = parseInt(localStorage.getItem('farmsBuilt'), 10) || 0; } catch (e) {}
+  try { farmAuto = localStorage.getItem('farmAuto') === '1'; } catch (e) {}
   try {
     const saved = JSON.parse(localStorage.getItem('farms') || 'null');
     const old = saved ? null : JSON.parse(localStorage.getItem('farm') || 'null');   // older saves had a single farm
@@ -25,7 +28,7 @@
   const farmGrowSec = f => (f && f.fast) ? FIRST_FARM_GROW_SEC : FARM_GROW_SEC;   // only the very first crop ever is quick
   const farmState = f => !f ? 'none' : (Date.now() - f.t0 >= farmGrowSec(f) * 1000 / farmCrewMul(f) ? 'ready' : 'growing');
   const farmProgress = f => f ? Math.min(1, (Date.now() - f.t0) / (farmGrowSec(f) * 1000 / farmCrewMul(f))) : 0;
-  const saveFarms = () => { try { localStorage.setItem('farms', JSON.stringify(farms.map(f => ({ t0: f.t0, fast: f.fast ? 1 : 0, c: f.c, r: f.r, rot: f.rot })))); localStorage.setItem('wheat', wheatCount); localStorage.setItem('farmsBuilt', farmsBuilt); } catch (e) {} };
+  const saveFarms = () => { try { localStorage.setItem('farms', JSON.stringify(farms.map(f => ({ t0: f.t0, fast: f.fast ? 1 : 0, c: f.c, r: f.r, rot: f.rot })))); localStorage.setItem('wheat', wheatCount); localStorage.setItem('farmsBuilt', farmsBuilt); localStorage.setItem('farmAuto', farmAuto ? '1' : '0'); } catch (e) {} };
   // a brand-new village starts with a small granary, so there is something to sell while the first crop grows
   try {
     if (!farms.length && wheatCount === 0 && localStorage.getItem('wheat') === null) { wheatCount = 20; saveFarms(); }
@@ -142,7 +145,7 @@
       elTag.textContent = p >= 18 ? 'Excellent' : p >= 15 ? 'Great' : p >= 12 ? 'Good' : 'Fair';
       elTag.className = p >= 15 ? 'great' : p <= 10 ? 'poor' : '';
     }
-    if (elHave) elHave.textContent = have ? 'You have ' + have + ' wheat \u00B7 sell it for ' + goldFor(have) + ' gold' : 'Your granary is empty \u2014 harvest a farm';
+    if (elHave) elHave.textContent = have ? 'You have ' + have + ' wheat \u00B7 sell it for ' + goldFor(have) + ' gold' : (farmAuto ? 'Your farmhands are harvesting \u2014 wheat arrives automatically' : 'Your granary is empty \u2014 harvest a farm');
     if (sell10Btn) { sell10Btn.disabled = have < 10; if (sell10Gain) sell10Gain.textContent = '+' + goldFor(10) + 'g'; }
     if (sell50Btn) { sell50Btn.disabled = have < 50; if (sell50Gain) sell50Gain.textContent = '+' + goldFor(50) + 'g'; }
     if (sellXBtn) {
@@ -151,10 +154,10 @@
       if (sellXGain) sellXGain.textContent = '+' + goldFor(have) + 'g';
     }
     if (harvestReadyBtn) {
-      harvestReadyBtn.style.display = readyCount > 0 ? 'flex' : 'none';
+      harvestReadyBtn.style.display = readyCount > 0 && !farmAuto ? 'flex' : 'none';
       if (harvestReadyTxt) harvestReadyTxt.textContent = 'Harvest ' + readyCount + ' ready farm' + (readyCount === 1 ? '' : 's') + ' (+' + (readyCount * WHEAT_PER_HARVEST) + ' wheat)';
     }
-    if (elNote) elNote.textContent = 'Villagers eat ' + need + ' wheat every 20s.';
+    if (elNote) elNote.textContent = 'Villagers eat ' + need + ' wheat every 20s.' + (farmAuto ? ' Farmhands harvest for you.' : '');
   }
   function coinBurst(n) {
     if (!elFx || !ICON.coin) return;
@@ -204,13 +207,37 @@
     if (tradeOpen && tradePanel && !tradePanel.contains(e.target) && tradeBtn && !tradeBtn.contains(e.target)) setTradeOpen(false);
   }, true);
   function focusFarm(f) { if (!f) return; const ctr = farmCenter(f); cpx = ctr[0]; cpy = ctr[1]; clampCam(); }
+  const farmUpCard = document.getElementById('farmUpCard'), farmUpBuy = document.getElementById('farmUpBuy'), farmUpInfo = document.getElementById('farmUpInfo');
+  function renderFarmUpgrade() {
+    if (!farmUpCard || !farmUpBuy || !farmUpInfo) return;
+    farmUpCard.hidden = !farms.length && !farmAuto;        // an upgrade only makes sense once a farm exists
+    if (farmAuto) {
+      farmUpInfo.textContent = 'Every farm harvests itself \u00B7 you just sell';
+      farmUpBuy.textContent = 'Farmhands hired'; farmUpBuy.disabled = true; farmUpBuy.title = '';
+      return;
+    }
+    farmUpInfo.textContent = 'Workers harvest every farm for you';
+    if (gold < FARM_UPGRADE_COST) { farmUpBuy.textContent = 'Need ' + FARM_UPGRADE_COST + ' gold'; farmUpBuy.disabled = true; farmUpBuy.title = 'Sell wheat at the market for gold'; }
+    else { farmUpBuy.textContent = 'Upgrade all \u00B7 ' + FARM_UPGRADE_COST + 'g'; farmUpBuy.disabled = false; farmUpBuy.title = 'All farms harvest automatically from now on'; }
+  }
+  function buyFarmUpgrade() {
+    if (farmAuto) return;
+    if (!farms.length) { toast('Build a farm first'); return; }
+    if (gold < FARM_UPGRADE_COST) { toast('You need ' + FARM_UPGRADE_COST + ' gold for farmhands'); return; }
+    if (!spendGold(FARM_UPGRADE_COST)) return;
+    farmAuto = true;
+    try { localStorage.setItem('farmAuto', '1'); } catch (e) {}
+    renderBuild(); renderTrade(); refreshWheatHud();
+    toast('Farmhands hired \u2014 all farms now harvest automatically');
+  }
   function renderBuild() {
     const btn = document.getElementById('farmBuy'), info = document.getElementById('farmInfo');
     const nextGrow = farmsBuilt === 0 ? FIRST_FARM_GROW_SEC : FARM_GROW_SEC;
-    info.textContent = 'Ready in ' + nextGrow + 's \u00B7 ' + WHEAT_PER_HARVEST + ' wheat';
+    info.textContent = 'Ready in ' + nextGrow + 's \u00B7 ' + WHEAT_PER_HARVEST + ' wheat' + (farmAuto ? ' \u00B7 auto' : '');
     if (placing) { btn.textContent = 'Placing\u2026'; btn.disabled = true; btn.title = ''; }
     else if (gold < FARM_COST) { btn.textContent = 'Need ' + FARM_COST + ' gold'; btn.disabled = true; btn.title = 'Sell wheat at the market for gold'; }
     else { btn.textContent = 'Build \u00B7 ' + FARM_COST + 'g'; btn.disabled = false; btn.title = ''; }
+    renderFarmUpgrade();
     if (typeof renderWoodHutBuild === 'function') renderWoodHutBuild();
   }
   function startPlacing() {
@@ -298,6 +325,7 @@
   }
   buildBtn.addEventListener('click', () => { setTradeOpen(false); renderBuild(); });
   document.getElementById('farmBuy').addEventListener('click', () => { if (!placing && !movingFarm) startPlacing(); });
+  if (farmUpBuy) farmUpBuy.addEventListener('click', () => { if (!farmAuto) buyFarmUpgrade(); });
   if (farms.length || wheatCount) setStat('wheat', ICON.wheat, 'Wheat', wheatCount);
 
   // ---- on the map: green progress bar with the time (Clash-style), then a wheat bubble to tap ----
@@ -335,7 +363,7 @@
       f.hf = hf;
       f.tint = (Math.round(lerp(.6, 1, m) * 255) << 16) | (Math.round(lerp(.93, 1, m) * 255) << 8) | Math.round(lerp(.36, 1, m) * 255);
       const show = canShow && farmVisible(f) && f !== movingF;
-      ui.barBox.visible = show && st === 'growing'; ui.bubble.visible = show && st === 'ready';
+      ui.barBox.visible = show && st === 'growing'; ui.bubble.visible = show && st === 'ready' && !farmAuto;
       const [fx, fy] = farmCenter(f);
       if (ui.barBox.visible) {
         const bw = 118, bh = 20, bx = fx - bw / 2, bt = fy - 72, left = Math.max(0, Math.ceil(farmGrowSec(f) * (1 - p)));
@@ -353,6 +381,7 @@
         ui.barT.position.set(fx, bt + bh / 2 + .5);
       }
       if (ui.bubble.visible) ui.bubble.position.set(fx, fy - 80 + Math.sin(time * 3) * 4);
+      if (farmAuto && st === 'ready' && f !== movingF) collectFarm(f, { silent: true, quiet: !show });   // farmhands pick it so the player only sells
     }
     const now = performance.now();
     for (let i = floaters.length - 1; i >= 0; i--) {                       // "+10 wheat" floating up
@@ -365,9 +394,11 @@
     if (farmState(f) !== 'ready') return false;
     wheatCount += WHEAT_PER_HARVEST; f.fast = false; f.t0 = Date.now(); if (f.ui) f.ui.barSec = -1; saveFarms();   // collecting ends the quick first crop; every replant takes 15s
     setStat('wheat', ICON.wheat, 'Wheat', wheatCount); refreshWheatHud();
-    const [fx, fy] = farmCenter(f);
-    const t = new PX.Text('+' + WHEAT_PER_HARVEST + ' wheat', { fontFamily: 'system-ui, sans-serif', fontWeight: '800', fontSize: 36, fill: 0xfff3b0, stroke: 0x3c2305, strokeThickness: 8, lineJoin: 'round' });
-    t.anchor.set(.5); t.scale.set(.5); t.resolution = 2; farmUIL.addChild(t); floaters.push({ t0: performance.now(), txt: t, x: fx, y: fy });
+    if (!opts || !opts.quiet) {
+      const [fx, fy] = farmCenter(f);
+      const t = new PX.Text('+' + WHEAT_PER_HARVEST + ' wheat', { fontFamily: 'system-ui, sans-serif', fontWeight: '800', fontSize: 36, fill: 0xfff3b0, stroke: 0x3c2305, strokeThickness: 8, lineJoin: 'round' });
+      t.anchor.set(.5); t.scale.set(.5); t.resolution = 2; farmUIL.addChild(t); floaters.push({ t0: performance.now(), txt: t, x: fx, y: fy });
+    }
     if (!opts || !opts.silent) toast('Collected ' + WHEAT_PER_HARVEST + ' wheat');
     return true;
   }

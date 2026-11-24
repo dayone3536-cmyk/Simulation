@@ -438,6 +438,29 @@ canvas.rot.flip { transform: rotate(-90deg) translateX(-100%); }
 }
 #farmBuy, #hutBuy { font-size: 12.5px; }
 
+/* farmhands: the one-time auto-harvest upgrade under the farm card */
+#farmUpCard[hidden] { display: none; }
+#farmUpCard .bi.up {
+  background:
+    radial-gradient(ellipse at 50% 70%, rgba(143, 196, 94, .34), rgba(0,0,0,0) 72%),
+    rgba(8, 7, 4, .25);
+}
+#farmUpBuy {
+  min-height: 42px;
+  border: 1px solid var(--line-mid);
+  border-radius: 13px;
+  background: linear-gradient(180deg, rgba(168, 221, 122, .16), rgba(168, 221, 122, .05));
+  color: var(--ink);
+  font: 700 12.5px/1 var(--font-ui);
+  cursor: pointer;
+  transition: transform .14s ease, filter .18s ease, opacity .18s ease;
+}
+@media (hover: hover) {
+  #farmUpBuy:hover:not(:disabled) { filter: brightness(1.18); transform: translateY(-1px); }
+}
+#farmUpBuy:active:not(:disabled) { transform: translateY(1px); }
+#farmUpBuy:disabled { opacity: .48; cursor: default; filter: grayscale(.3); }
+
 /* ---------- move bar / info ---------- */
 #info {
   display: none;
