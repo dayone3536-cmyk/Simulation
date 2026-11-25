@@ -132,6 +132,9 @@
 
   // the standing parts: back fence, every wheat stalk (swaying), front fence and stones.
   function buildFarmStanding(f) {
+    const X0 = f.c * CELL, Y0 = f.r * CELL;
+    const fm = window.FARM_MODEL, rot = f.rot ? 1 : 0;
+    const useModel = !!(fm && fm.ready && fm.textures && fm.textures[rot] && fm.layouts && fm.layouts[rot]);
     const fence = (g, x0, y0, x1, y1) => {
       const n = Math.max(1, Math.round(Math.hypot(x1 - x0, y1 - y0) / 40)), P = [];
       for (let i = 0; i <= n; i++) { const lx = x0 + (x1 - x0) * i / n, ly = y0 + (y1 - y0) * i / n; P.push(farmProj(f, lx, ly)); }
@@ -141,8 +144,16 @@
       for (const [px, py] of P) { g.moveTo(px, py); g.lineTo(px, py - 15); }
     };
     const E = [[-14, -14, FW + 2, -14], [-14, -14, -14, FH + 6], [FW + 2, -14, FW + 2, FH + 6], [-14, FH + 6, FW + 2, FH + 6]];
-    const back = f.stand.addChild(new PX.Graphics());
-    for (const i of (f.rot ? [0, 2] : [0, 1])) fence(back, ...E[i]);
+    if (useModel) {                                                      // the Blender bed replaces the drawn fence
+      const lay = fm.layouts[rot], spr = new PX.Sprite(fm.textures[rot]);
+      spr.anchor.set(0, 0);
+      spr.position.set(projX(X0, Y0) + lay.posX, projY(X0, Y0) + lay.posY);
+      spr.width = lay.w; spr.height = lay.h;
+      f.stand.addChild(spr);
+    } else {
+      const back = f.stand.addChild(new PX.Graphics());
+      for (const i of (f.rot ? [0, 2] : [0, 1])) fence(back, ...E[i]);
+    }
     f.stalkC = f.stand.addChild(new PX.Container());
     f.stalkSprites = stalks.map(p => { const [u, v] = farmProj(f, p.x, p.y); return { x: p.x, y: p.y, h: p.h, lean: p.lean, ph: p.ph, sh: p.sh, u, v, spr: null }; });
     f.stalkSprites.sort((a, b) => a.v - b.v);
@@ -150,8 +161,8 @@
       const s = new PX.Sprite(stalkTex[p.sh]); s.anchor.set(.5, 55 / 58);
       s.position.set(p.u, p.v); s.scale.set(p.h / 40 * STEM_S); p.spr = s; f.stalkC.addChild(s);
     }
-    const front = f.stand.addChild(new PX.Graphics());
-    for (const i of (f.rot ? [1, 3] : [2, 3])) fence(front, ...E[i]);
+    const front = useModel ? null : f.stand.addChild(new PX.Graphics());
+    if (front) for (const i of (f.rot ? [1, 3] : [2, 3])) fence(front, ...E[i]);
     const rg = f.stand.addChild(new PX.Graphics());
     for (const q of rocks) {
       const [sx, sy] = farmProj(f, q.x, q.y), k = q.s;
@@ -194,6 +205,24 @@
         p.spr.scale.set(p.h / 40 * STEM_S * (.7 + .3 * hf), p.h / 40 * STEM_S * hf); p.spr.tint = tint; p.spr.skew.x = -(p.lean * hf + wave(p.x, p.y, time) * (2.2 + 3 * hf) + Math.sin(time * .6 + p.ph) * .35) / (p.h * hf * STEM_S);
       }
     }
+  }
+
+  // the 3D model loader (16-farm-model.js) asks for the field size and a repaint once it is baked
+  window.__farmArt = {
+    get FW() { return FW; },
+    get FH() { return FH; },
+    rebuildAll() {
+      for (const f of farms) rebuildFarm(f);
+      if (placing) rebuildFarm(placing);
+      if (movingFarm) rebuildFarm(movingFarm.farm);
+    }
+  };
+
+  // bring in the Blender field model in the background; if it fails the drawn farm stays
+  if (!window.FARM_MODEL) {
+    const src = (document.currentScript && document.currentScript.src) || location.href;
+    import(new URL('16-farm-model.js?v=1', src).href)
+      .catch(err => console.warn('Farm model could not be loaded; using the drawn farm art.', err));
   }
 
 
