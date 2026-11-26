@@ -333,8 +333,7 @@
   function ensureFarmUI(f) {
     if (f.ui) return f.ui;
     const barBox = farmUIL.addChild(new PX.Container()), barG = barBox.addChild(new PX.Graphics());
-    const barT = barBox.addChild(new PX.Text('', { fontFamily: 'system-ui, sans-serif', fontWeight: '800', fontSize: 26, fill: 0xffffff, stroke: 0x1e0f05, strokeThickness: 7, lineJoin: 'round' }));
-    barT.anchor.set(.5); barT.scale.set(.5); barT.resolution = 2;
+    const barT = barBox.addChild(timerText());
     const bubble = farmUIL.addChild(new PX.Container()), bubG = bubble.addChild(new PX.Graphics());
     bubG.lineStyle({ width: 2.5, color: 0x6b4519, join: 'round' }); bubG.beginFill(0xfffae1, .97); bubG.drawCircle(0, 0, 25); bubG.endFill();
     bubG.beginFill(0xfffae1, .97); bubG.drawPolygon([-7, 23, 0, 34, 7, 23]); bubG.endFill();
@@ -363,18 +362,19 @@
       ui.barBox.visible = show && st === 'growing'; ui.bubble.visible = show && st === 'ready' && !farmAuto;
       const [fx, fy] = farmCenter(f);
       if (ui.barBox.visible) {
-        const bw = 118, bh = 20, bx = fx - bw / 2, bt = fy - 72, left = Math.max(0, Math.ceil(farmGrowSec(f) * (1 - p)));
+        const bw = 150, bh = 30, bx = fx - bw / 2, bt = fy - 80, left = Math.max(0, Math.ceil(farmGrowSec(f) * (1 - p)));
         ui.barG.clear();
-        ui.barG.beginFill(0x000000, .25); ui.barG.drawRoundedRect(bx - 2, bt + 1, bw + 4, bh + 6, 10); ui.barG.endFill();
-        ui.barG.lineStyle({ width: 2, color: 0xc99a4b }); ui.barG.beginFill(0x2a1a0c); ui.barG.drawRoundedRect(bx - 3, bt - 3, bw + 6, bh + 6, 10); ui.barG.endFill(); ui.barG.lineStyle(0);
-        ui.barG.beginFill(0x4a321a); ui.barG.drawRoundedRect(bx, bt, bw, bh, 7); ui.barG.endFill();
+        ui.barG.beginFill(0x000000, .25); ui.barG.drawRoundedRect(bx - 2, bt + 1, bw + 4, bh + 6, 12); ui.barG.endFill();
+        ui.barG.lineStyle({ width: 2, color: 0xc99a4b }); ui.barG.beginFill(0x2a1a0c); ui.barG.drawRoundedRect(bx - 3, bt - 3, bw + 6, bh + 6, 12); ui.barG.endFill(); ui.barG.lineStyle(0);
+        ui.barG.beginFill(0x4a321a); ui.barG.drawRoundedRect(bx, bt, bw, bh, 9); ui.barG.endFill();
         if (p > 0) {
-          const w = Math.max(10, bw * p), r = Math.min(7, w / 2);
+          const w = Math.max(12, bw * p), r = Math.min(9, w / 2);
           ui.barG.beginFill(0x3aaa30); ui.barG.drawRoundedRect(bx, bt, w, bh, r); ui.barG.endFill();
           ui.barG.beginFill(0x6fe052); ui.barG.drawRoundedRect(bx, bt, w, bh * .62, r); ui.barG.endFill();
-          ui.barG.beginFill(0xc2fa8c, .55); ui.barG.drawRoundedRect(bx + 2, bt + 2, Math.max(4, w - 4), 4, 2); ui.barG.endFill();
+          ui.barG.beginFill(0xc2fa8c, .55); ui.barG.drawRoundedRect(bx + 3, bt + 3, Math.max(6, w - 6), 5, 2.5); ui.barG.endFill();
         }
         if (left !== ui.barSec) { ui.barSec = left; ui.barT.text = Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0'); }
+        syncTimerText(ui.barT);
         ui.barT.position.set(fx, bt + bh / 2 + .5);
       }
       if (ui.bubble.visible) ui.bubble.position.set(fx, fy - 80 + Math.sin(time * 3) * 4);

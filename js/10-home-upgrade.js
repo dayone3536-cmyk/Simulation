@@ -200,8 +200,7 @@
   const smokeL = homeFxL.addChild(new PX.Container());
   const progressL = homeFxL.addChild(new PX.Container());
   const progressG = progressL.addChild(new PX.Graphics());
-  const progressT = progressL.addChild(new PX.Text('', { fontFamily: 'system-ui, sans-serif', fontWeight: '800', fontSize: 26, fill: 0xffffff, stroke: 0x1e0f05, strokeThickness: 7, lineJoin: 'round' }));
-  progressT.anchor.set(.5); progressT.scale.set(.5); progressT.resolution = 2;
+  const progressT = progressL.addChild(timerText());
   progressL.visible = false;
 
   const smokeTex = radialTex('228,230,232', .55, 48);
@@ -261,23 +260,24 @@
   function drawProgress(R, nowMs) {
     progressL.visible = true;
     const total = HOME_UPGRADE_SEC * 1000, left = Math.max(0, homeUpgrading - nowMs), p = Math.min(1, 1 - left / total);
-    const bw = 146, bh = 20, cx = R.x + R.w / 2, by = R.y - 30;
+    const bw = 170, bh = 30, cx = R.x + R.w / 2, by = R.y - 34;
     progressG.clear();
-    progressG.beginFill(0x000000, .25); progressG.drawRoundedRect(cx - bw / 2 - 2, by + 1, bw + 4, bh + 6, 10); progressG.endFill();
+    progressG.beginFill(0x000000, .25); progressG.drawRoundedRect(cx - bw / 2 - 2, by + 1, bw + 4, bh + 6, 12); progressG.endFill();
     progressG.lineStyle({ width: 2, color: 0xc99a4b });
-    progressG.beginFill(0x2a1a0c); progressG.drawRoundedRect(cx - bw / 2 - 4, by - 3, bw + 8, bh + 6, 10); progressG.endFill();
+    progressG.beginFill(0x2a1a0c); progressG.drawRoundedRect(cx - bw / 2 - 4, by - 3, bw + 8, bh + 6, 12); progressG.endFill();
     progressG.lineStyle(0);
-    progressG.beginFill(0x4a321a); progressG.drawRoundedRect(cx - bw / 2, by, bw, bh, 7); progressG.endFill();
+    progressG.beginFill(0x4a321a); progressG.drawRoundedRect(cx - bw / 2, by, bw, bh, 9); progressG.endFill();
     if (p > 0) {
-      const w = Math.max(10, bw * p), r = Math.min(7, w / 2);
+      const w = Math.max(12, bw * p), r = Math.min(9, w / 2);
       progressG.beginFill(0x9a6410); progressG.drawRoundedRect(cx - bw / 2, by, w, bh, r); progressG.endFill();
       progressG.beginFill(0xffb629); progressG.drawRoundedRect(cx - bw / 2, by, w, bh * .72, r); progressG.endFill();
-      progressG.beginFill(0xffe27a); progressG.drawRoundedRect(cx - bw / 2 + 2, by + 2, Math.max(4, w - 4), 4, 2); progressG.endFill();
+      progressG.beginFill(0xffe27a); progressG.drawRoundedRect(cx - bw / 2 + 3, by + 3, Math.max(6, w - 6), 5, 2.5); progressG.endFill();
     }
-    progressG.beginFill(0xffcf6a, .22); progressG.drawCircle(cx + bw / 2 - 3, by + bh / 2, 7); progressG.endFill();
+    progressG.beginFill(0xffcf6a, .22); progressG.drawCircle(cx + bw / 2 - 3, by + bh / 2, 8); progressG.endFill();
     progressT.position.set(cx, by + bh / 2 + .5);
     const txt = clockText(left);
     if (progressT.text !== txt) progressT.text = txt;
+    syncTimerText(progressT);
   }
 
   function spawnHomeSparks() {

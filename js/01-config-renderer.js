@@ -64,5 +64,16 @@
     gr.addColorStop(0, 'rgba(' + rgb + ',' + a0 + ')'); gr.addColorStop(1, 'rgba(' + rgb + ',0)');
     g.fillStyle = gr; g.fillRect(0, 0, size, size); return PX.Texture.from(cv);
   }
+  // in-world countdown numbers: baked at the exact screen density so the digits never blur
+  function timerText(size = 22, stroke = 4.5) {
+    const t = new PX.Text('', { fontFamily: 'system-ui, sans-serif', fontWeight: '800', fontSize: size, fill: 0xffffff, stroke: 0x1e0f05, strokeThickness: stroke, lineJoin: 'round' });
+    t.anchor.set(.5);
+    t.resolution = Math.min(3, Math.max(1, dpr * zoom));
+    return t;
+  }
+  function syncTimerText(t) {   // re-bake only when the zoom changed enough to matter
+    const want = Math.min(3, Math.max(1, Math.round(dpr * zoom * 4) / 4));
+    if (t._timerRes !== want) { t._timerRes = want; t.resolution = want; }
+  }
   let shadowTex = null, glowTex = null;
 
