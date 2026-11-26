@@ -368,18 +368,25 @@
     const w = HOME_N * 2 * CELL * IX * 1.12 * homeArtScale(), h = w * homeArtAspect();
     return { x: projX(bx, by) - w * .51, y: projY(bx, by) - h * .985, w, h };
   }
-  let homeSpr = null, homeShadowG = null, homeShadowOn = false, overOn = false;
+  let homeSpr = null, homeShadowG = null, homeDarkG = null, homeShadowOn = false, overOn = false;
   function updateHome(time) {
     const art = homeArtNow();
     if (!(art && (art.naturalWidth || art.width))) return;
     const tex = (typeof homeSpriteTexture === 'function' && homeSpriteTexture()) || PX.Texture.from(HOME);
-    if (!homeSpr) { homeShadowG = homeL.addChild(new PX.Graphics()); homeSpr = homeL.addChild(new PX.Sprite(tex)); }
+      if (!homeSpr) { homeShadowG = homeL.addChild(new PX.Graphics()); homeSpr = homeL.addChild(new PX.Sprite(tex)); homeDarkG = homeL.addChildAt(new PX.Graphics(), 0); }
+      else if (tex && homeSpr.texture !== tex) homeSpr.texture = tex;
     else if (tex && homeSpr.texture !== tex) homeSpr.texture = tex;
     updateVillagers(time);
     moveTick();
     updateVillagerSprites(time);
     const pos = drag || home, R = homeRectP(pos.c, pos.r), lift = drag ? 10 : 0;
     homeSpr.position.set(R.x, R.y - lift); homeSpr.width = R.w; homeSpr.height = R.h; homeSpr.alpha = drag ? .94 : 1;
+    // 9x9 dark grass patch around the home (Clash of Clans style)
+    if (homeDarkG) {
+      const pos = drag || home, pad = 3, c0 = pos.c - pad, r0 = pos.r - pad, c1 = pos.c + HOME_N + pad, r1 = pos.r + HOME_N + pad;
+      const P = [projX(c0 * CELL, r0 * CELL), projY(c0 * CELL, r0 * CELL), projX(c1 * CELL, r0 * CELL), projY(c1 * CELL, r0 * CELL), projX(c1 * CELL, r1 * CELL), projY(c1 * CELL, r1 * CELL), projX(c0 * CELL, r1 * CELL), projY(c0 * CELL, r1 * CELL)];
+      homeDarkG.clear(); homeDarkG.beginFill(0x3f6b2a, .45); homeDarkG.drawPolygon(P); homeDarkG.endFill();
+    }
     // the home always sits in a soft contact shadow, so it grows out of the lawn
     homeShadowG.clear(); homeShadowOn = !!drag;
     const sx = R.x + R.w * .5, sy = R.y + R.h * .945;

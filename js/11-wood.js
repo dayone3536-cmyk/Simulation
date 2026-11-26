@@ -102,6 +102,7 @@
     setTimeout(() => { const k = trees.indexOf(t); if (k >= 0) trees.splice(k, 1); dropTree(t); }, 430);
     addWood(WOOD_PER_TREE);
     if (typeof onHutTreeFelled === 'function') onHutTreeFelled(t);   // 14: remember the stump and regrow time
+    if (typeof onVillageTreeCleared === 'function') onVillageTreeCleared(t);   // 15: count toward the rival plot
     if (typeof leafBurst === 'function') leafBurst(projX(t.x, t.y), projY(t.x, t.y) - 34, 7);
     woodFloat('+' + WOOD_PER_TREE + ' wood', t.x, t.y);
     v.cut = null;

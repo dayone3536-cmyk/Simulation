@@ -454,6 +454,7 @@
     growForest();
     buildGround(); buildTrees(); farms.forEach(rebuildFarm);
     if (typeof initWoodHutWorld === 'function') initWoodHutWorld();   // 14: apply the saved hut grove to the fresh forest
+    if (typeof initRivalVillage === 'function') initRivalVillage();   // 15: restore the rival plot after the forest is grown
     syncVillagers();
     resize();
     // whole clearing diamond fits on screen

@@ -19,6 +19,13 @@ adds two more woodcutter slots, keeps its own small grove of trees, and becomes
 the drop-off point for logs. While you are away it keeps working, bringing back
 up to 10 trees per hour (capped at 12 hours).
 
+## Rival Village
+
+Clear **12 trees** and a rival village reveals itself in a far corner of the map.
+It gets the same 16×10 plot of land as your clearing, with its own hall, four
+wheat fields, a palisade and seven villagers. They currently just live and work
+there — there is no combat yet.
+
 ## Market
 
 Sell wheat for gold at the market. The rate is generous and easy to read: **10

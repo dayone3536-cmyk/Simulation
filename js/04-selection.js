@@ -19,7 +19,7 @@
   infoEl.addEventListener('click', e => {
     const a = e.target.dataset.a; if (!a) return;
     if (a === 'close') sel = null;
-    if (a === 'clear') { const t = occ.get(slot(sel.c, sel.r)); if (t && t.type === 'tree') { t.dying = performance.now(); occ.delete(slot(sel.c, sel.r)); setTimeout(() => { const i = trees.indexOf(t); if (i >= 0) trees.splice(i, 1); dropTree(t); }, 400); selT = performance.now(); } }
+    if (a === 'clear') { const t = occ.get(slot(sel.c, sel.r)); if (t && t.type === 'tree') { t.dying = performance.now(); occ.delete(slot(sel.c, sel.r)); setTimeout(() => { const i = trees.indexOf(t); if (i >= 0) trees.splice(i, 1); dropTree(t); }, 400); if (typeof onVillageTreeCleared === 'function') onVillageTreeCleared(t); selT = performance.now(); } }
     card();
   });
   // a diamond around slot centre as a flat [x, y, x, y ...] list, k = 1 is the exact tile, k > 1 grows outward (used for the tap ripple)
