@@ -2,12 +2,13 @@
   // ---------- render ----------
   let started = false;
 
-  // Lively cartoon lawn in the Clash of Clans style: warm tropical base, varied
-  // organic patches in contrasting greens with bold cartoon outlines, plus plenty of
-  // grass blades and tufts so the floor never reads as one flat plain color.
+  // The floor is painted grass now: a flat base per 8x8 chunk, a barely-there checker and a
+  // few deterministic tufts/pebbles. One Graphics per chunk replaces the old wall of atlas
+  // sprites; the chunk boxes still drive cullGround() exactly as before. The grass atlas
+  // itself stays loaded for other parts of the game.
   function buildGround() {
-    const cols = WORLD_W / CELL, rows = WORLD_H / CELL, CK = 8;     // tiles grouped 8x8 so off-screen groups cost nothing
-    const BASE = 0x7cb342, LIGHT = 0xaed581, DARK = 0x558b2f, DEEP = 0x33691e, BLADE = 0x2e5d14, PEBBLE = 0x7e7b5e;
+    const cols = WORLD_W / CELL, rows = WORLD_H / CELL, CK = 8;     // tiles are grouped 8x8 so whole groups off screen cost nothing
+    const BASE = 0x5c8b34, PATCH = 0x628f3a, PATCH_D = 0x54802f, BLADE = 0x46722a, PEBBLE = 0x7e7b5e;
     const hash = (a, b) => {                        // same grass every visit: no Math.random, no per-frame work
       let h = (a * 374761393 + b * 668265263) | 0;
       h = (h ^ (h >>> 13)) * 1274126177 | 0;
@@ -28,27 +29,19 @@
         y0 = Math.min(y0, P[i + 1]); y1 = Math.max(y1, P[i + 1]);
       }
       g.beginFill(BASE); g.drawPolygon(P); g.endFill();       // one solid slab, so the chunk has no internal seams
-      // bold organic patches in contrasting greens, each with a dark cartoon outline
-      for (let i = 0; i < 9; i++) {
+      // broad organic patches instead of a tile checker, so the lawn reads as one field
+      for (let i = 0; i < 6; i++) {
         const pc = c0 + .5 + hash(c0 + 37 * i, r0 + 7) * (c1 - c0 - 1);
         const pr = r0 + .5 + hash(c0 + 3, r0 + 31 * i) * (r1 - r0 - 1);
         const px = projX(pc * CELL, pr * CELL), py = projY(pc * CELL, pr * CELL);
-        const shade = i % 4;                            // 0 light, 1 dark, 2 deep, 3 base-bright
-        let col, a;
-        switch (shade) {
-          case 0: col = LIGHT; a = .52; break;          // bright sunlit tuft
-          case 1: col = DARK; a = .45; break;           // CoC accent green
-          case 2: col = DEEP; a = .40; break;           // shadowed clump
-          default: col = BASE; a = .34; break;
-        }
-        const rx = (1.1 + hash(pc + 5, pr + i) * 1.9) * CELL;
-        g.beginFill(col, a); g.drawEllipse(px, py, rx, rx * .55); g.endFill();
-        g.lineStyle({ width: 1.6, color: 0x1b4313, alpha: .55, cap: 'round', join: 'round' });
-        g.drawEllipse(px, py, rx, rx * .55);
-        g.lineStyle({ width: 0, color: 0 });
+        const dark = (i % 3 === 2);
+        const rx = (1.0 + hash(pc + 5, pr + i) * 1.7) * CELL;
+        g.beginFill(dark ? PATCH_D : PATCH, dark ? .26 : .38);
+        g.drawEllipse(px, py, rx, rx * .5);
+        g.endFill();
       }
-      g.beginFill(PEBBLE, .42);
-      for (let i = 0; i < 3; i++) {
+      g.beginFill(PEBBLE, .38);
+      for (let i = 0; i < 2; i++) {
         const pc = c0 + Math.floor(hash(c0 + 19 * i, r0 + 7) * (c1 - c0));
         const pr = r0 + Math.floor(hash(c0 + 3, r0 + 31 * i) * (r1 - r0));
         const px = projX((pc + .2 + .6 * hash(pc, i + 5)) * CELL, (pr + .2 + .6 * hash(pr, i + 9)) * CELL);
@@ -57,16 +50,16 @@
         g.drawEllipse(px, py, 2.1 * s, 1.15 * s);
       }
       g.endFill();
-      const n = Math.max(8, Math.round((c1 - c0) * (r1 - r0) / 4));   // plenty of blades per chunk for a lively lawn
-      g.lineStyle({ width: 1.6, color: BLADE, alpha: .75, cap: 'round' });
+      const n = Math.max(4, Math.round((c1 - c0) * (r1 - r0) / 8));   // a handful per chunk, never a carpet
+      g.lineStyle({ width: 1.3, color: BLADE, alpha: .5, cap: 'round' });
       for (let i = 0; i < n; i++) {
         const c = c0 + Math.floor(hash(c0 * 131 + i, r0 * 197 + 11) * (c1 - c0));
         const r = r0 + Math.floor(hash(c0 * 313 + i * 17, r0 * 271 + 7) * (r1 - r0));
         const fx = c + .15 + .7 * hash(c * 911 + i, r * 53 + 5), fy = r + .15 + .7 * hash(c * 71 + r, i + 23);
-        const px = projX(fx * CELL, fy * CELL), py = projY(fx * CELL, fy * CELL), s = .9 + .6 * hash(c + 13, r + 29);
-        g.moveTo(px - 2.9 * s, py + .7); g.lineTo(px - 4.5 * s, py - 5.0 * s);
-        g.moveTo(px, py + 1.0); g.lineTo(px + .3 * s, py - 6.2 * s);
-        g.moveTo(px + 2.9 * s, py + .7); g.lineTo(px + 4.4 * s, py - 4.6 * s);
+        const px = projX(fx * CELL, fy * CELL), py = projY(fx * CELL, fy * CELL), s = .75 + .5 * hash(c + 13, r + 29);
+        g.moveTo(px - 2.4 * s, py + .6); g.lineTo(px - 3.8 * s, py - 4.0 * s);
+        g.moveTo(px, py + .8); g.lineTo(px + .2 * s, py - 5.0 * s);
+        g.moveTo(px + 2.4 * s, py + .6); g.lineTo(px + 3.6 * s, py - 3.6 * s);
       }
       x0 -= 2; y0 -= 8; x1 += 2; y1 += 2;              // room for the little blades just past the chunk edge
       groundL.addChild(box); groundChunks.push({ box, x0, y0, x1, y1 });
@@ -388,17 +381,14 @@
     updateVillagerSprites(time);
     const pos = drag || home, R = homeRectP(pos.c, pos.r), lift = drag ? 10 : 0;
     homeSpr.position.set(R.x, R.y - lift); homeSpr.width = R.w; homeSpr.height = R.h; homeSpr.alpha = drag ? .94 : 1;
-    // compact cartoon dark-green patch around every structure (Clash of Clans style),
-    // 1 tile tight around each footprint with a bold outline so it pops off the lawn
+    // compact dark-green patch around every structure (Clash of Clans style), 1 tile tight around each footprint
     if (structureDarkG) {
       structureDarkG.clear();
-      const DARK = 0x3a7d1e, PAD = 1;
+      const DARK = 0x2a4515, PAD = 1;
       const draw = (c, r, cols, rows) => {
         const c0 = c - PAD, r0 = r - PAD, c1 = c + cols + PAD, r1 = r + rows + PAD;
         const P = [projX(c0 * CELL, r0 * CELL), projY(c0 * CELL, r0 * CELL), projX(c1 * CELL, r0 * CELL), projY(c1 * CELL, r0 * CELL), projX(c1 * CELL, r1 * CELL), projY(c1 * CELL, r1 * CELL), projX(c0 * CELL, r1 * CELL), projY(c0 * CELL, r1 * CELL)];
-        structureDarkG.beginFill(DARK, .55); structureDarkG.drawPolygon(P); structureDarkG.endFill();
-        structureDarkG.lineStyle({ width: 2.2 / zoom, color: 0x144a0a, alpha: .75, join: 'round' });
-        structureDarkG.drawPolygon(P);
+        structureDarkG.beginFill(DARK, .5); structureDarkG.drawPolygon(P); structureDarkG.endFill();
       };
       const pos = drag || home;
       draw(pos.c, pos.r, HOME_N, HOME_N);
