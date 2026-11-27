@@ -1,8 +1,8 @@
 // ---------- the wheat-farm model: assets/farm.glb is a small Blender diorama, so it is
 // rendered once from the game's isometric angle and used as the farm's field art ----------
 // The GLB is loaded in the browser with three.js (from the same CDN family as Pixi).
-// We keep the one complete bed in the file, drop the bright green ground planes and the
-// duplicate copies, tile two beds over the 5x2 field, then bake two sprites (rot 0 / rot 1).
+// The file holds three copies of the bed; we keep one, recolor its base plate to brown
+// soil, center it on the 5x2 field, then bake two sprites (rot 0 / rot 1).
 import * as THREE from 'https://esm.sh/three@0.170.0';
 import { GLTFLoader } from 'https://esm.sh/three@0.170.0/examples/jsm/loaders/GLTFLoader.js';
 
@@ -21,7 +21,7 @@ function isGreenGround(mesh) {
 function groupMeshes(root) {          // split the file into its three bed copies
   const meshes = [];
   root.updateMatrixWorld(true);
-  root.traverse(o => { if (o.isMesh && !isGreenGround(o)) { const p = new THREE.Vector3(); o.getWorldPosition(p); meshes.push({ o, p }); } });
+  root.traverse(o => { if (o.isMesh) { const p = new THREE.Vector3(); o.getWorldPosition(p); meshes.push({ o, p }); } });
   const parent = meshes.map((_, i) => i);
   const find = i => parent[i] === i ? i : (parent[i] = find(parent[i]));
   const join = (a, b) => { a = find(a); b = find(b); if (a !== b) parent[b] = a; };
@@ -38,7 +38,9 @@ function bakeBed(root, keep) {         // flatten the chosen copy into one small
   const model = new THREE.Group();
   for (const { o } of keep) {
     o.updateWorldMatrix(true, false);
-    const m = new THREE.Mesh(o.geometry, o.material);
+    const mat = o.material.clone();
+    if (isGreenGround(o)) mat.color.set(0x6f4a28);   // the diorama's grass base becomes the farm's brown ground
+    const m = new THREE.Mesh(o.geometry, mat);
     m.applyMatrix4(o.matrixWorld);
     model.add(m);
   }
@@ -53,16 +55,13 @@ function bakeBed(root, keep) {         // flatten the chosen copy into one small
 
 function buildAssembly(bed, rot, FW, FH) {
   const g = new THREE.Group();
-  const bw = rot ? FH : FW / 2;        // each bed covers half the field
-  const bd = rot ? FW / 2 : FH;
-  const sx = bw / bed.size.x, sz = bd / bed.size.z, sy = (sx + sz) / 2;
-  const spots = rot ? [[FH / 2, FW / 4], [FH / 2, FW * 3 / 4]] : [[FW / 4, FH / 2], [FW * 3 / 4, FH / 2]];
-  for (const [cx, cz] of spots) {
-    const b = bed.norm.clone(true);
-    b.scale.set(sx, sy, sz);
-    b.position.set(cx, 0, cz);
-    g.add(b);
-  }
+  const bw = rot ? FH : FW;            // one bed, centered on the field
+  const bd = rot ? FW : FH;
+  const s = Math.min(bw / bed.size.x, bd / bed.size.z);
+  const b = bed.norm.clone(true);
+  b.scale.set(s, s, s);
+  b.position.set(bw / 2, 0, bd / 2);
+  g.add(b);
   return g;
 }
 
