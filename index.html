@@ -10,7 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/pixi.js@7.4.2/dist/pixi.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="stylesheet" href="css/style.css?v=14">
+<link rel="stylesheet" href="css/style.css?v=15">
 <link rel="stylesheet" href="css/economy.css?v=9">
 <link rel="stylesheet" href="css/boot.css?v=3">
 </head>
@@ -71,8 +71,8 @@
     </div>
   </div>
 
-  <button id="buildbtn" aria-label="Build"><span class="btn-art"><svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="bh1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d8dfe8"/><stop offset=".45" stop-color="#9aa8b7"/><stop offset="1" stop-color="#6b7683"/></linearGradient><linearGradient id="bh2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8b5a2b"/><stop offset="1" stop-color="#4a2810"/></linearGradient></defs><g transform="rotate(-35 32 32)"><rect x="26.5" y="30" width="11" height="30" rx="4.5" fill="url(#bh2)" stroke="#2e1608" stroke-width="2"/><rect x="28.5" y="35" width="7" height="2.2" rx="1.1" fill="#c89b63" opacity=".55"/><rect x="28.5" y="41" width="7" height="2.2" rx="1.1" fill="#c89b63" opacity=".45"/><rect x="28.5" y="47" width="7" height="2.2" rx="1.1" fill="#c89b63" opacity=".35"/><rect x="14" y="10" width="36" height="18" rx="5" fill="url(#bh1)" stroke="#3f4852" stroke-width="2.2"/><rect x="14" y="10" width="36" height="6.5" rx="3" fill="#eef4fb" opacity=".45"/><path d="M18 19h10M36 19h10" stroke="#eaf2fb" stroke-width="2.2" stroke-linecap="round" opacity=".55"/><rect x="23.5" y="24" width="17" height="8" rx="2.5" fill="#7e8894" stroke="#3f4852" stroke-width="1.8"/></g></svg></span><span class="btn-label">Build</span></button>
-  <button id="tradebtn" aria-label="Open the market"><span class="ico" data-ic="coin"></span><span class="btn-label">Market</span></button>
+  <button id="buildbtn" aria-label="Build" title="Build"><span class="btn-art" data-ic="build"></span></button>
+  <button id="tradebtn" aria-label="Open the market" title="Market"><span class="ico" data-ic="trade"></span></button>
 
   <div id="tradepanel" aria-hidden="true">
     <div class="tp-head">
@@ -156,9 +156,9 @@
 
 <script src="js/01-config-renderer.js?v=7"></script>
 
-<script src="js/art-kit.js?v=1"></script>
+<script src="js/art-kit.js?v=2"></script>
 
-<script src="js/02-icons-hud-rng.js?v=10"></script>
+<script src="js/02-icons-hud-rng.js?v=11"></script>
 
 <script src="js/03-atlases-world.js?v=5"></script>
 
@@ -166,7 +166,7 @@
 
 <script src="js/05-camera-input.js?v=7"></script>
 
-<script src="js/06-render-home.js?v=14"></script>
+<script src="js/06-render-home.js?v=15"></script>
 
 
 <script src="js/07-villagers.js?v=5"></script>
@@ -184,6 +184,7 @@
 <script src="js/14-woodcutter-hut.js?v=8"></script>
 
 <script src="js/15-rival-village.js?v=1"></script>
+<script src="js/_debug.js"></script>
 
 </body>
 
