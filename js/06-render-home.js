@@ -2,14 +2,14 @@
   // ---------- render ----------
   let started = false;
 
-  // Painted grass lawn in Clash of Clans style: dark soil showing between
-  // distinct grass clumps, each clump a dark base fading to bright tips, plus
-  // soil-tone patches so the lawn reads as real grass not a flat green slab.
-  // Deterministic hash: identical every visit, no per-frame cost.
+  // The floor is painted grass: a flat green slab per 8x8 chunk, a few soft organic
+  // patches and sparse deterministic blades/pebbles. One Graphics per chunk replaces the
+  // old wall of atlas sprites; the chunk boxes still drive cullGround() exactly as before.
+  // The grass atlas itself stays loaded for other parts of the game.
   function buildGround() {
-    const cols = WORLD_W / CELL, rows = WORLD_H / CELL, CK = 8;
-    const SOIL = 0x4a3418, PATCH = 0x82b35a, PATCH_D = 0x4d7c25, DARK = 0x4d7c25, TIP = 0xc8e6c9, BLADE = 0x3e6f24, PEBBLE = 0x7e7b5e;
-    const hash = (a, b) => {
+    const cols = WORLD_W / CELL, rows = WORLD_H / CELL, CK = 8;     // tiles are grouped 8x8 so whole groups off screen cost nothing
+    const BASE = 0x5c8b34, PATCH = 0x628f3a, PATCH_D = 0x54802f, BLADE = 0x46722a, PEBBLE = 0x7e7b5e;
+    const hash = (a, b) => {                        // same grass every visit: no Math.random, no per-frame work
       let h = (a * 374761393 + b * 668265263) | 0;
       h = (h ^ (h >>> 13)) * 1274126177 | 0;
       return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
@@ -28,63 +28,40 @@
         x0 = Math.min(x0, P[i]); x1 = Math.max(x1, P[i]);
         y0 = Math.min(y0, P[i + 1]); y1 = Math.max(y1, P[i + 1]);
       }
-      g.beginFill(SOIL); g.drawPolygon(P); g.endFill();       // dark soil shows between clumps
-      // soil-tone patches between clumps
-      for (let i = 0; i < 4; i++) {
+      g.beginFill(BASE); g.drawPolygon(P); g.endFill();       // one solid slab, so the chunk has no internal seams
+      // broad organic patches instead of a tile checker, so the lawn reads as one field
+      for (let i = 0; i < 6; i++) {
         const pc = c0 + .5 + hash(c0 + 37 * i, r0 + 7) * (c1 - c0 - 1);
         const pr = r0 + .5 + hash(c0 + 3, r0 + 31 * i) * (r1 - r0 - 1);
         const px = projX(pc * CELL, pr * CELL), py = projY(pc * CELL, pr * CELL);
-        const dark = (i % 2 === 1);
-        const rx = (1.0 + hash(pc + 5, pr + i) * 1.6) * CELL;
-        g.beginFill(dark ? PATCH_D : PATCH, dark ? .22 : .30);
+        const dark = (i % 3 === 2);
+        const rx = (1.0 + hash(pc + 5, pr + i) * 1.7) * CELL;
+        g.beginFill(dark ? PATCH_D : PATCH, dark ? .26 : .38);
         g.drawEllipse(px, py, rx, rx * .5);
         g.endFill();
       }
-      // grass clumps: dark base fading to bright tip, a few blades per clump
-      g.lineCap = 'round';
-      const nClumps = Math.max(5, Math.round((c1 - c0) * (r1 - r0) / 7));
-      for (let i = 0; i < nClumps; i++) {
-        const cc = c0 + .5 + hash(c0 * 131 + i, r0 * 197 + 11) * (c1 - c0 - 1);
-        const rr = r0 + .5 + hash(c0 * 313 + i * 17, r0 * 271 + 7) * (r1 - r0 - 1);
-        const px = projX(cc * CELL, rr * CELL), py = projY(cc * CELL, rr * CELL);
-        g.beginFill(0x1b140c, .5); g.drawEllipse(px, py, 3, 1.7); g.endFill();   // clump base sunk in soil
-        const s = .8 + .5 * hash(cc + 11, rr + 29);
-        const h = (16 + hash(cc * 7 + i, rr * 13 + i) * 14) * s;
-        const spread = 9 * s;
-        const midH = h * .65;
-        const blades = [-spread, 0, spread];
-        for (const bx of blades) {
-          const mx = px + bx * .45, my = py - midH;
-          const tx = px + bx, ty = py - h;
-          g.lineStyle({ width: 2.0 * s, color: DARK, alpha: .95, cap: 'round' });
-          g.moveTo(px, py + 1); g.lineTo(mx, my);
-          g.lineStyle({ width: 1.4 * s, color: TIP, alpha: .95, cap: 'round' });
-          g.moveTo(mx, my); g.lineTo(tx, ty);
-        }
-      }
-      // sparse taller blades between clumps
-      const n = Math.max(3, Math.round((c1 - c0) * (r1 - r0) / 14));
-      g.lineStyle({ width: 1.2, color: BLADE, alpha: .55, cap: 'round' });
-      for (let i = 0; i < n; i++) {
-        const c = c0 + Math.floor(hash(c0 * 131 + i, r0 * 197 + 11) * (c1 - c0));
-        const r = r0 + Math.floor(hash(c0 * 313 + i * 17, r0 * 271 + 7) * (r1 - r0));
-        const fx = c + .15 + .7 * hash(c * 911 + i, r * 53 + 5), fy = r + .15 + .7 * hash(c * 71 + r, i + 23);
-        const px = projX(fx * CELL, fy * CELL), py = projY(fx * CELL, fy * CELL), s = .8 + .5 * hash(c + 13, r + 29);
-        g.moveTo(px - 2.4 * s, py + .6); g.lineTo(px - 3.8 * s, py - 4.0 * s);
-        g.moveTo(px, py + .8); g.lineTo(px + .2 * s, py - 5.0 * s);
-        g.moveTo(px + 2.4 * s, py + .6); g.lineTo(px + 3.6 * s, py - 3.6 * s);
-      }
-      g.beginFill(PEBBLE, .32);
+      g.beginFill(PEBBLE, .38);
       for (let i = 0; i < 2; i++) {
         const pc = c0 + Math.floor(hash(c0 + 19 * i, r0 + 7) * (c1 - c0));
         const pr = r0 + Math.floor(hash(c0 + 3, r0 + 31 * i) * (r1 - r0));
         const px = projX((pc + .2 + .6 * hash(pc, i + 5)) * CELL, (pr + .2 + .6 * hash(pr, i + 9)) * CELL);
         const py = projY((pc + .2 + .6 * hash(pc, i + 5)) * CELL, (pr + .2 + .6 * hash(pr, i + 9)) * CELL);
         const s = .7 + .5 * hash(pc + 11, pr + 17);
-        g.drawEllipse(px, py, 2.0 * s, 1.1 * s);
+        g.drawEllipse(px, py, 2.1 * s, 1.15 * s);
       }
       g.endFill();
-      x0 -= 2; y0 -= 8; x1 += 2; y1 += 2;
+      const n = Math.max(4, Math.round((c1 - c0) * (r1 - r0) / 8));   // a handful per chunk, never a carpet
+      g.lineStyle({ width: 1.3, color: BLADE, alpha: .5, cap: 'round' });
+      for (let i = 0; i < n; i++) {
+        const c = c0 + Math.floor(hash(c0 * 131 + i, r0 * 197 + 11) * (c1 - c0));
+        const r = r0 + Math.floor(hash(c0 * 313 + i * 17, r0 * 271 + 7) * (r1 - r0));
+        const fx = c + .15 + .7 * hash(c * 911 + i, r * 53 + 5), fy = r + .15 + .7 * hash(c * 71 + r, i + 23);
+        const px = projX(fx * CELL, fy * CELL), py = projY(fx * CELL, fy * CELL), s = .75 + .5 * hash(c + 13, r + 29);
+        g.moveTo(px - 2.4 * s, py + .6); g.lineTo(px - 3.8 * s, py - 4.0 * s);
+        g.moveTo(px, py + .8); g.lineTo(px + .2 * s, py - 5.0 * s);
+        g.moveTo(px + 2.4 * s, py + .6); g.lineTo(px + 3.6 * s, py - 3.6 * s);
+      }
+      x0 -= 2; y0 -= 8; x1 += 2; y1 += 2;              // room for the little blades just past the chunk edge
       groundL.addChild(box); groundChunks.push({ box, x0, y0, x1, y1 });
     }
   }
