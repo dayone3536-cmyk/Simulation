@@ -3,31 +3,7 @@
   const FW = FARM_BASE_W * CELL, FH = FARM_BASE_H * CELL;   // local field size in world units
   const fCols = rot => rot ? FARM_BASE_H : FARM_BASE_W;      // footprint width in slots
   const fRows = rot => rot ? FARM_BASE_W : FARM_BASE_H;      // footprint height in slots
-  const WSTEM = ['#c48a22', '#d09a2c', '#b87f1e'], WHEAD = ['#f7d04f', '#ffe066', '#ecb93a'];
-  const STEM_S = .25;                              // stalk pictures are baked at 4x, so draw them at a quarter size
-  const stalks = [], tufts = [], rocks = [];
   let farms = [], placing = null, movingFarm = null, wheatCount = 0;   // farms = [{ t0, c, r, rot }]; placing = preview for a new farm; movingFarm = dragging an existing farm
-  (function buildFarmData() {
-    let sd = 20260; const rnd = () => { sd = (sd * 1664525 + 1013904223) >>> 0; return sd / 4294967296; };   // own random numbers: the farm looks the same every visit
-    for (let y = 10; y < FH - 6; y += 24) for (let x = 8; x < FW - 8; x += 24) {
-      if (rnd() < .10) continue;                        // an occasional bare patch keeps the field breathing
-      const clump = 2 + (rnd() < .45 ? 1 : 0);          // 2-3 stalks per clump, with air between clumps
-      for (let k = 0; k < clump; k++)
-        stalks.push({ x: x + (rnd() - .5) * 13 + k * 6, y: y + (rnd() - .5) * 10 + k * 4, h: 30 + rnd() * 12, lean: (rnd() - .5) * 3.5, ph: rnd() * 6.28, sh: (rnd() * 3) | 0 });
-    }
-    for (let i = 0; i < 34; i++) {
-      const x = -70 + rnd() * (FW + 140), y = -60 + rnd() * (FH + 200);
-      if (x > -24 && x < FW + 24 && y > -30 && y < FH + 24) continue;    // not on the brown ground
-      tufts.push({ x, y, f: rnd() < .35 ? ['#ffffff', '#ffd3e6', '#ffe27a'][(rnd() * 3) | 0] : null });
-    }
-    for (const [lx, ly, sz] of [[70, FH + 8, 1], [96, FH + 10, .7], [FW - 80, FH + 10, .9], [FW - 56, FH + 12, .6]]) rocks.push({ x: lx, y: ly, s: sz });
-  })();
-  const wave = (x, y, t) => Math.sin(t * .55 - (x + y) * .008) * .55 + Math.sin(t * .22 - x * .004 + y * .003) * .45;   // slow wind rolling across the field
-  function farmWorld(f, lx, ly) {
-    const X0 = f.c * CELL, Y0 = f.r * CELL;
-    return f.rot ? [X0 + ly, Y0 + FW - lx] : [X0 + lx, Y0 + ly];
-  }
-  function farmProj(f, lx, ly) { if (!f) return [0, 0]; const [x, y] = farmWorld(f, lx, ly); return [projX(x, y), projY(x, y)]; }
   function farmBounds(f) {
     if (!f) return null;
     const cols = fCols(f.rot), rows = fRows(f.rot);
@@ -88,85 +64,9 @@
     }
     return best || { c: prefC, r: prefR, rot };
   }
-  function rrectG(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
 
-  // The flat ground art (soil + furrows) is baked into one picture, already tilted into the diamond view.
-  // It is rebuilt whenever the farm is placed or rotated.
-  let stalkTex = null, tuftTex = null;
-  function makeFarmTextures() {
-    if (stalkTex) return;
-    stalkTex = [0, 1, 2].map(i => {
-      const cv = bakeCanvas(16, 58, 4), g = cv.getContext('2d');
-      g.setTransform(4, 0, 0, 4, 32, 220); g.lineCap = 'round'; g.strokeStyle = WSTEM[i]; g.lineWidth = 1.7; g.beginPath(); g.moveTo(0, 0); g.lineTo(0, -40); g.stroke();
-      g.fillStyle = WHEAD[i]; g.beginPath(); g.ellipse(0, -44, 2.7, 7, 0, 0, 7); g.fill();
-      return PX.Texture.from(cv);
-    });
-    tuftTex = {};
-    for (const f of [null, '#ffffff', '#ffd3e6', '#ffe27a']) {
-      const tc = bakeCanvas(20, 14, 4), t = tc.getContext('2d');
-      t.setTransform(4, 0, 0, 4, 32, 48); t.lineCap = 'round'; t.strokeStyle = '#3f8a22'; t.lineWidth = 1.5; t.beginPath();
-      t.moveTo(-3, 0); t.lineTo(-5, -7); t.moveTo(0, 0); t.lineTo(0, -9); t.moveTo(3, 0); t.lineTo(5, -7); t.stroke();
-      if (f) { t.fillStyle = f; t.beginPath(); t.arc(6, -3, 2.2, 0, 7); t.fill(); }
-      tuftTex[f] = PX.Texture.from(tc);
-    }
-  }
-  function buildFarmGround(f) {
-    const S = 3, M = 24;
-    const cs = [[-M, -M], [FW + M, -M], [FW + M, FH + M], [-M, FH + M]].map(([lx, ly]) => farmProj(f, lx, ly));
-    const u0 = Math.min(...cs.map(p => p[0])), u1 = Math.max(...cs.map(p => p[0])), v0 = Math.min(...cs.map(p => p[1])), v1 = Math.max(...cs.map(p => p[1]));
-    const cv = bakeCanvas(u1 - u0, v1 - v0, S), g = cv.getContext('2d');
-    const X0 = f.c * CELL, Y0 = f.r * CELL;
-    const a = IX, b = f.rot ? -IY : IY, c = f.rot ? IX : -IX, d = IY;
-    const e = f.rot ? (X0 - Y0 - FW) * IX : (X0 - Y0) * IX;
-    const fv = f.rot ? (X0 + Y0 + FW) * IY : (X0 + Y0) * IY;
-    g.setTransform(S * a, S * b, S * c, S * d, (e - u0) * S, (fv - v0) * S);       // local farm units land on the diamond
-    rrectG(g, -20, -20, FW + 40, FH + 40, 28); g.fillStyle = 'rgba(40,70,10,.26)'; g.fill();    // soft shade on the grass around the bed
-    rrectG(g, -16, -16, FW + 32, FH + 32, 20); g.fillStyle = '#4a2d16'; g.fill();                  // dark rim of the brown ground
-    rrectG(g, -13, -13, FW + 26, FH + 26, 17); g.fillStyle = '#6b4526'; g.fill();                  // brown ground pad under the farm
-    rrectG(g, -8, -8, FW + 16, FH + 16, 14); g.fillStyle = '#5f3d20'; g.fill();                    // soil bed
-    for (let i = 0; i < 10; i++) { g.fillStyle = i % 2 ? '#7a502e' : '#8f6238'; g.fillRect(0, i * 16, FW, 16); }   // furrows
-    if (f.groundTex) f.groundTex.destroy(true);
-    f.groundTex = PX.Texture.from(cv);
-    const sp = new PX.Sprite(f.groundTex); sp.position.set(u0, v0); sp.scale.set(1 / S); f.flat.addChild(sp);
-    // grass tufts and little flowers around the field
-    for (const t of tufts) { const s = new PX.Sprite(tuftTex[t.f]); s.anchor.set(8 / 20, 12 / 14); s.scale.set(.25); const [u, v] = farmProj(f, t.x, t.y); s.position.set(u, v); f.flat.addChild(s); }
-  }
-
-  // the standing parts: every wheat stalk (swaying), the stones, and an optional fence.
-  function buildFarmStanding(f, withFence = true) {
-    const fence = (g, x0, y0, x1, y1) => {
-      const n = Math.max(1, Math.round(Math.hypot(x1 - x0, y1 - y0) / 40)), P = [];
-      for (let i = 0; i <= n; i++) { const lx = x0 + (x1 - x0) * i / n, ly = y0 + (y1 - y0) * i / n; P.push(farmProj(f, lx, ly)); }
-      g.lineStyle({ width: 2.2, color: 0xa97a44, cap: 'round', join: 'round' });
-      for (const h of [5, 11]) P.forEach(([px, py], i) => i ? g.lineTo(px, py - h) : g.moveTo(px, py - h));
-      g.lineStyle({ width: 3.6, color: 0x7d5128, cap: 'round', join: 'round' });
-      for (const [px, py] of P) { g.moveTo(px, py); g.lineTo(px, py - 15); }
-    };
-    const E = [[-14, -14, FW + 2, -14], [-14, -14, -14, FH + 6], [FW + 2, -14, FW + 2, FH + 6], [-14, FH + 6, FW + 2, FH + 6]];
-    if (withFence) {
-      const back = f.stand.addChild(new PX.Graphics());
-      for (const i of (f.rot ? [0, 2] : [0, 1])) fence(back, ...E[i]);
-    }
-    f.stalkC = f.stand.addChild(new PX.Container());
-    f.stalkSprites = stalks.map(p => { const [u, v] = farmProj(f, p.x, p.y); return { x: p.x, y: p.y, h: p.h, lean: p.lean, ph: p.ph, sh: p.sh, u, v, spr: null }; });
-    f.stalkSprites.sort((a, b) => a.v - b.v);
-    for (const p of f.stalkSprites) {
-      const s = new PX.Sprite(stalkTex[p.sh]); s.anchor.set(.5, 55 / 58);
-      s.position.set(p.u, p.v); s.scale.set(p.h / 40 * STEM_S); p.spr = s; f.stalkC.addChild(s);
-    }
-    if (withFence) {
-      const front = f.stand.addChild(new PX.Graphics());
-      for (const i of (f.rot ? [1, 3] : [2, 3])) fence(front, ...E[i]);
-    }
-    const rg = f.stand.addChild(new PX.Graphics());
-    for (const q of rocks) {
-      const [sx, sy] = farmProj(f, q.x, q.y), k = q.s;
-      rg.beginFill(0x6f7676); rg.drawEllipse(sx + 2 * k, sy + 1 * k, 10 * k, 5 * k); rg.endFill();
-      rg.beginFill(0xa9afaf); rg.drawEllipse(sx, sy - 3 * k, 9 * k, 6.5 * k); rg.endFill();
-      rg.beginFill(0xc7cccc); rg.drawEllipse(sx - 2 * k, sy - 5 * k, 4 * k, 2.4 * k); rg.endFill();
-    }
-  }
-  // the Blender bed sits on top of the drawn brown ground and wheat
+  // The field is just the Blender bed: one baked sprite per rotation, no drawn soil, fence,
+  // tufts, stones or wheat. 16-farm-model.js keeps only the wheat bed and drops everything else.
   function buildFarmModel(f) {
     const fm = window.FARM_MODEL, rot = f.rot ? 1 : 0;
     const lay = fm.layouts[rot], X0 = f.c * CELL, Y0 = f.r * CELL;
@@ -184,14 +84,7 @@
     if (f.groundTex) { f.groundTex.destroy(true); f.groundTex = null; }
     f.stalkC = null; f.stalkSprites = null;
     const fm = window.FARM_MODEL, rot = f.rot ? 1 : 0;
-    makeFarmTextures();
-    buildFarmGround(f);
-    if (fm && fm.ready && fm.textures[rot] && fm.layouts[rot]) {
-      buildFarmModel(f);              // the Blender bed sits on the brown ground
-      buildFarmStanding(f, false);    // wheat and stones on top; the model brings its own border
-    } else {
-      buildFarmStanding(f);
-    }
+    if (fm && fm.ready && fm.textures[rot] && fm.layouts[rot]) buildFarmModel(f);   // the bed is the whole field
   }
   function destroyFarmVisual(f) {
     if (!f) return;
@@ -200,7 +93,7 @@
     f.stalkC = null; f.stalkSprites = null;
     if (typeof destroyFarmUI === 'function') destroyFarmUI(f);
   }
-  function updateFarm(time) {
+  function updateFarm() {
     const list = placing ? [...farms, placing] : farms;
     const movingF = movingFarm ? movingFarm.farm : null;
     for (const f of list) {
@@ -208,13 +101,6 @@
       const vis = farmVisible(f);
       f.stand.visible = f.flat.visible = vis;
       f.stand.alpha = f.flat.alpha = (f === placing || f === movingF) ? .82 : 1;
-      if (!vis || (fc & 1)) continue;                // wind sways at 30 updates a second
-      const hf = f.hf == null ? 1 : f.hf, tint = f.tint == null ? 0xffffff : f.tint;
-      const vl = cpx - cw / 2 / zoom - 20 / zoom, vr = cpx + cw / 2 / zoom + 20 / zoom, vt = cpy - ch / 2 / zoom - 20 / zoom, vb = cpy + ch / 2 / zoom + 60;
-      for (const p of f.stalkSprites || []) {
-        const on = p.u > vl && p.u < vr && p.v > vt && p.v < vb; p.spr.visible = on; if (!on) continue;
-        p.spr.scale.set(p.h / 40 * STEM_S * (.7 + .3 * hf), p.h / 40 * STEM_S * hf); p.spr.tint = tint; p.spr.skew.x = -(p.lean * hf + wave(p.x, p.y, time) * (2.2 + 3 * hf) + Math.sin(time * .6 + p.ph) * .35) / (p.h * hf * STEM_S);
-      }
     }
   }
 
@@ -229,11 +115,11 @@
     }
   };
 
-  // bring in the Blender field model in the background; if it fails the drawn farm stays
+  // bring in the Blender field model in the background; it is the only farm art
   if (!window.FARM_MODEL) {
     const src = (document.currentScript && document.currentScript.src) || location.href;
-    import(new URL('16-farm-model.js?v=2', src).href)
-      .catch(err => console.warn('Farm model could not be loaded; using the drawn farm art.', err));
+    import(new URL('16-farm-model.js?v=3', src).href)
+      .catch(err => console.warn('Farm model could not be loaded.', err));
   }
 
 

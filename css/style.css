@@ -327,30 +327,27 @@ canvas.rot.flip { transform: rotate(-90deg) translateX(-100%); }
 
 #tradebtn {
   position: absolute;
-  right: calc(112px + env(safe-area-inset-right));
-  bottom: calc(16px + env(safe-area-inset-bottom));
+  right: calc(16px + env(safe-area-inset-right));
+  bottom: calc(110px + env(safe-area-inset-bottom));
   pointer-events: auto;
-  min-width: 124px; height: 84px;
-  padding: 0 20px 0 14px;
-  display: flex; align-items: center; justify-content: center; gap: 9px;
-  border: 1px solid var(--line-mid); border-radius: 25px;
+  width: 62px; height: 62px;
+  padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line-mid); border-radius: 20px;
   background:
     radial-gradient(120% 120% at 30% 0%, rgba(255, 230, 166, .16), rgba(255, 230, 166, 0) 62%),
     linear-gradient(180deg, rgba(58, 46, 30, .96), rgba(24, 19, 13, .97));
   box-shadow:
     0 1px 0 rgba(255,241,204,.16) inset,
-    0 5px 0 rgba(8, 6, 3, .55),
-    0 16px 26px -12px rgba(0,0,0,.8);
+    0 4px 0 rgba(8, 6, 3, .55),
+    0 14px 24px -12px rgba(0,0,0,.8);
   color: var(--ink);
-  font: 700 14px/1 var(--font-ui);
-  letter-spacing: .01em;
   cursor: pointer; -webkit-tap-highlight-color: transparent;
   transition: transform .14s ease, border-color .2s ease, background .2s ease, box-shadow .2s ease;
 }
-#tradebtn .ico { width: 32px; height: 32px; flex: none; filter: drop-shadow(0 2px 2px rgba(0,0,0,.5)); }
-#tradebtn .btn-label { font-family: var(--font-display); font-size: 16px; letter-spacing: .02em; }
+#tradebtn .ico { width: 34px; height: 34px; flex: none; filter: drop-shadow(0 2px 2px rgba(0,0,0,.5)); }
 #tradebtn:hover { border-color: var(--line-strong); background: linear-gradient(180deg, rgba(72, 57, 37, .97), rgba(32, 25, 16, .97)); }
-#tradebtn:active, #tradebtn.open { transform: translateY(4px); box-shadow: 0 1px 0 rgba(8,6,3,.55); }
+#tradebtn:active, #tradebtn.open { transform: translateY(3px); box-shadow: 0 1px 0 rgba(8,6,3,.55); }
 #tradebtn.hot {
   border-color: #ffd98a;
   box-shadow: 0 0 0 1px rgba(255, 210, 110, .45), 0 0 24px rgba(255, 200, 80, .28), 0 5px 0 rgba(8, 6, 3, .55), 0 16px 26px -12px rgba(0,0,0,.8);
@@ -393,10 +390,10 @@ canvas.rot.flip { transform: rotate(-90deg) translateX(-100%); }
   display: none;
   position: absolute;
   right: calc(14px + env(safe-area-inset-right));
-  bottom: calc(116px + env(safe-area-inset-bottom));
+  bottom: calc(186px + env(safe-area-inset-bottom));
   width: 366px;
   max-width: calc(100% - 28px);
-  max-height: calc(100% - 128px - env(safe-area-inset-bottom));
+  max-height: calc(100% - 198px - env(safe-area-inset-bottom));
   overflow-y: auto; overscroll-behavior: contain;
   padding: 18px;
   pointer-events: auto;
@@ -459,6 +456,40 @@ canvas.rot.flip { transform: rotate(-90deg) translateX(-100%); }
 #farmUpBuy:active:not(:disabled) { transform: translateY(1px); }
 #farmUpBuy:disabled { opacity: .48; cursor: default; filter: grayscale(.3); }
 
+/* build panel tabs */
+.bp-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid rgba(240, 196, 107, .18);
+  padding-bottom: 8px;
+}
+.bp-tab {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--muted);
+  font: 700 12px/1 var(--font-ui);
+  cursor: pointer;
+  transition: background .18s ease, color .18s ease, border-color .18s ease;
+}
+@media (hover: hover) {
+  .bp-tab:hover:not(.active) { background: rgba(255, 241, 204, .06); color: var(--ink-soft); }
+}
+.bp-tab.active {
+  background: linear-gradient(180deg, rgba(255, 232, 175, .12), rgba(255, 232, 175, .04));
+  border-color: rgba(240, 196, 107, .3);
+  color: var(--gold);
+  box-shadow: inset 0 1px 0 rgba(255, 241, 204, .1);
+}
+.bp-tab:active { transform: scale(.98); }
+.bp-panel[hidden] { display: none; }
+
+/* weapon-specific button styles */
+#bowBuy, #crossbowBuy { font-size: 12.5px; }
+
 /* ---------- move bar / info ---------- */
 #info {
   display: none;
@@ -520,10 +551,10 @@ canvas.rot.flip { transform: rotate(-90deg) translateX(-100%); }
   display: none;
   position: absolute;
   right: calc(14px + env(safe-area-inset-right));
-  bottom: calc(116px + env(safe-area-inset-bottom));
+  bottom: calc(186px + env(safe-area-inset-bottom));
   width: 378px;
   max-width: calc(100% - 28px);
-  max-height: calc(100% - 128px - env(safe-area-inset-bottom));
+  max-height: calc(100% - 198px - env(safe-area-inset-bottom));
   overflow-y: auto; overscroll-behavior: contain;
   padding: 0;
   pointer-events: auto;
@@ -662,10 +693,10 @@ canvas.rot.flip { transform: rotate(-90deg) translateX(-100%); }
   display: none;
   position: absolute;
   right: calc(14px + env(safe-area-inset-right));
-  bottom: calc(116px + env(safe-area-inset-bottom));
+  bottom: calc(186px + env(safe-area-inset-bottom));
   width: 378px;
   max-width: calc(100% - 28px);
-  max-height: calc(100% - 128px - env(safe-area-inset-bottom));
+  max-height: calc(100% - 198px - env(safe-area-inset-bottom));
   overflow-y: auto; overscroll-behavior: contain;
   contain: layout paint style; will-change: transform;
   padding: 18px;
@@ -813,14 +844,14 @@ canvas.rot.flip { transform: rotate(-90deg) translateX(-100%); }
 
   #buildbtn { width: 76px; height: 76px; border-radius: 23px; right: calc(12px + env(safe-area-inset-right)); bottom: calc(12px + env(safe-area-inset-bottom)); }
   #buildbtn .btn-art { width: 34px; height: 34px; }
-  #tradebtn { right: calc(98px + env(safe-area-inset-right)); bottom: calc(12px + env(safe-area-inset-bottom)); min-width: 108px; height: 76px; border-radius: 23px; }
-  #tradebtn .ico { width: 28px; height: 28px; }
+  #tradebtn { width: 54px; height: 54px; right: calc(12px + env(safe-area-inset-right)); bottom: calc(96px + env(safe-area-inset-bottom)); border-radius: 18px; }
+  #tradebtn .ico { width: 30px; height: 30px; }
 
   #tradepanel, #homepanel, #buildpanel {
     right: calc(10px + env(safe-area-inset-right));
-    bottom: calc(102px + env(safe-area-inset-bottom));
+    bottom: calc(162px + env(safe-area-inset-bottom));
     width: min(378px, calc(100% - 20px));
-    max-height: calc(100% - 114px - env(safe-area-inset-bottom));
+    max-height: calc(100% - 174px - env(safe-area-inset-bottom));
   }
   #hint { left: calc(14px + env(safe-area-inset-left)); bottom: calc(102px + env(safe-area-inset-bottom)); max-width: min(62vw, 320px); font-size: 10.5px; padding: 8px 12px; }
 }
@@ -842,7 +873,8 @@ canvas.rot.flip { transform: rotate(-90deg) translateX(-100%); }
   #villagechip .vc-copy small { display: none; }
   #buildbtn { width: 68px; height: 68px; border-radius: 20px; bottom: calc(10px + env(safe-area-inset-bottom)); }
   #buildbtn .btn-art { width: 30px; height: 30px; }
-  #tradebtn { height: 68px; min-width: 106px; border-radius: 20px; bottom: calc(10px + env(safe-area-inset-bottom)); right: calc(88px + env(safe-area-inset-right)); }
+  #tradebtn { width: 50px; height: 50px; border-radius: 17px; bottom: calc(86px + env(safe-area-inset-bottom)); right: calc(12px + env(safe-area-inset-right)); }
+  #tradebtn .ico { width: 28px; height: 28px; }
   #topright { top: calc(8px + env(safe-area-inset-top)); }
   .pill, #goldbar { height: 40px; }
   .pill { padding: 4px 13px 4px 4px; }
@@ -852,8 +884,8 @@ canvas.rot.flip { transform: rotate(-90deg) translateX(-100%); }
   #goldbar { min-width: 92px; }
 
   #tradepanel, #homepanel, #buildpanel {
-    bottom: calc(92px + env(safe-area-inset-bottom));
-    max-height: calc(100% - 100px - env(safe-area-inset-bottom));
+    bottom: calc(146px + env(safe-area-inset-bottom));
+    max-height: calc(100% - 154px - env(safe-area-inset-bottom));
     padding: 14px;
   }
   #tradepanel { padding: 0; }

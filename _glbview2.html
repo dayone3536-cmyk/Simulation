@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>html,body{margin:0;background:#9ecb78}canvas{display:block}</style></head>
+<body>
+<script type="module">
+import * as THREE from 'https://esm.sh/three@0.170.0';
+import { GLTFLoader } from 'https://esm.sh/three@0.170.0/examples/jsm/loaders/GLTFLoader.js';
+const q = new URLSearchParams(location.search);
+const mode = q.get('m') || 'group';
+const W = 1000, H = 900;
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setSize(W, H); document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x9ecb78);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x6b8f4a, 2.2));
+const sun = new THREE.DirectionalLight(0xfff1cc, 2.4); sun.position.set(180, 300, 120); scene.add(sun);
+const fill = new THREE.DirectionalLight(0xc6dcff, .8); fill.position.set(-160, 140, -140); scene.add(fill);
+scene.add(new THREE.AmbientLight(0xffffff, .55));
+const gltf = await new GLTFLoader().loadAsync('assets/farm.glb');
+gltf.scene.updateMatrixWorld(true);
+const meshes = []; gltf.scene.traverse(o => { if (o.isMesh) { const p = new THREE.Vector3(); o.getWorldPosition(p); meshes.push({ o, p, col: o.material && o.material.color ? o.material.color : null, name: o.name }); } });
+const parent = meshes.map((_, i) => i);
+const find = i => parent[i] === i ? i : (parent[i] = find(parent[i]));
+const join = (a, b) => { a = find(a); b = find(b); if (a !== b) parent[b] = a; };
+for (let i = 0; i < meshes.length; i++) for (let j = i + 1; j < meshes.length; j++)
+  if (Math.hypot(meshes[i].p.x - meshes[j].p.x, meshes[i].p.z - meshes[j].p.z) < 25) join(i, j);
+const groups = new Map();
+meshes.forEach((m, i) => { const r = find(i); if (!groups.has(r)) groups.set(r, []); groups.get(r).push(m); });
+let best = null;
+for (const g of groups.values()) if (!best || g.length > best.length) best = g;
+const info = [];
+info.push('groups=' + groups.size + ' best=' + best.length);
+for (const g of groups.values()) {
+  const box = new THREE.Box3(); g.forEach(m => box.expandByObject(m.o));
+  info.push('n=' + g.length + ' cols=' + [...new Set(g.map(m => m.col ? m.col.getHexString() : '?'))].join('/'));
+}
+const root = new THREE.Group();
+if (mode === 'group') { best.forEach(m => root.add(m.o.clone())); }
+else if (mode === 'cones') { meshes.filter(m => m.col && m.col.r > .5 && m.col.g > .3 && m.col.b < .3).forEach(m => root.add(m.o.clone())); }
+else if (mode === 'noplane') { best.filter(m => !/Plane/.test(m.name)).forEach(m => root.add(m.o.clone())); }
+else { gltf.scene.children.slice().forEach(c => root.add(c)); }
+scene.add(root);
+const box = new THREE.Box3().setFromObject(root);
+const ctr = box.getCenter(new THREE.Vector3()), sz = box.getSize(new THREE.Vector3());
+const cam = new THREE.PerspectiveCamera(38, W / H, .1, 10000);
+const dir = new THREE.Vector3(Math.cos(.55) * Math.cos(Math.PI / 4), Math.sin(.55), Math.cos(.55) * Math.sin(Math.PI / 4));
+cam.position.copy(ctr).addScaledVector(dir, Math.max(sz.x, sz.y, sz.z) * 1.7);
+cam.lookAt(ctr);
+renderer.render(scene, cam);
+document.title = info.join(' | ');
+console.log(info.join('\n'));
+</script>
+</body></html>

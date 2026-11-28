@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>html,body{margin:0;background:#8fc36a}canvas{display:block}</style></head>
+<body>
+<script type="module">
+import * as THREE from 'https://esm.sh/three@0.170.0';
+import { GLTFLoader } from 'https://esm.sh/three@0.170.0/examples/jsm/loaders/GLTFLoader.js';
+const W = 1400, H = 1000;
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setSize(W, H); document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x8fc36a);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x6b8f4a, 2.2));
+const sun = new THREE.DirectionalLight(0xfff1cc, 2.2); sun.position.set(180, 300, 120); scene.add(sun);
+const fill = new THREE.DirectionalLight(0xc6dcff, .8); fill.position.set(-160, 140, -140); scene.add(fill);
+scene.add(new THREE.AmbientLight(0xffffff, .5));
+const gltf = await new GLTFLoader().loadAsync('assets/farm.glb');
+gltf.scene.updateMatrixWorld(true);
+// print groups by proximity
+const meshes = []; gltf.scene.traverse(o => { if (o.isMesh) { const p = new THREE.Vector3(); o.getWorldPosition(p); meshes.push({ o, p, c: o.material && o.material.color ? o.material.color.getHexString() : '?' }); } });
+const parent = meshes.map((_, i) => i);
+const find = i => parent[i] === i ? i : (parent[i] = find(parent[i]));
+const join = (a, b) => { a = find(a); b = find(b); if (a !== b) parent[b] = a; };
+for (let i = 0; i < meshes.length; i++) for (let j = i + 1; j < meshes.length; j++)
+  if (Math.hypot(meshes[i].p.x - meshes[j].p.x, meshes[i].p.z - meshes[j].p.z) < 25) join(i, j);
+const groups = new Map();
+meshes.forEach((m, i) => { const r = find(i); if (!groups.has(r)) groups.set(r, []); groups.get(r).push(m); });
+console.log('GROUPCOUNT', groups.size);
+for (const [k, g] of groups) {
+  const box = new THREE.Box3(); g.forEach(m => box.expandByObject(m.o));
+  console.log('GROUP', k, 'n', g.length, 'colors', [...new Set(g.map(m => m.c))].join(','), 'box', JSON.stringify(box.min), JSON.stringify(box.max));
+}
+scene.add(gltf.scene);
+const box = new THREE.Box3().setFromObject(gltf.scene);
+const ctr = box.getCenter(new THREE.Vector3()), sz = box.getSize(new THREE.Vector3());
+const cam = new THREE.PerspectiveCamera(40, W / H, .1, 5000);
+const dir = new THREE.Vector3(Math.cos(.5) * Math.cos(Math.PI / 4), Math.sin(.5), Math.cos(.5) * Math.sin(Math.PI / 4));
+cam.position.copy(ctr).addScaledVector(dir, Math.max(sz.x, sz.y, sz.z) * 1.9);
+cam.lookAt(ctr);
+renderer.render(scene, cam);
+document.title = 'done';
+window.__done = true;
+</script>
+</body></html>

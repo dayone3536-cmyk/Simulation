@@ -1,8 +1,9 @@
 // ---------- the wheat-farm model: assets/farm.glb is a small Blender diorama, so it is
 // rendered once from the game's isometric angle and used as the farm's field art ----------
 // The GLB is loaded in the browser with three.js (from the same CDN family as Pixi).
-// The file holds three copies of the bed; we keep one, recolor its base plate to brown
-// soil, center it on the 5x2 field, then bake two sprites (rot 0 / rot 1).
+// The file holds three copies of the bed plus green/blue ground planes. We keep only the
+// copy with the most yellow wheat, drop the green grass base, repaint the blue soil rows
+// brown, stretch that single bed over the 5x2 field, and bake two sprites (rot 0 / rot 1).
 import * as THREE from 'https://esm.sh/three@0.170.0';
 import { GLTFLoader } from 'https://esm.sh/three@0.170.0/examples/jsm/loaders/GLTFLoader.js';
 
@@ -13,15 +14,17 @@ const ELEV = 30 * Math.PI / 180;
 const CAM_DIR = new THREE.Vector3(Math.cos(ELEV) * Math.cos(Math.PI / 4), Math.sin(ELEV), Math.cos(ELEV) * Math.sin(Math.PI / 4));
 const CAM_UP = new THREE.Vector3(-Math.sin(ELEV) * Math.SQRT1_2, Math.cos(ELEV), -Math.sin(ELEV) * Math.SQRT1_2);
 
-function isGreenGround(mesh) {
-  const c = mesh.material && mesh.material.color;
-  return !!c && c.r < .15 && c.g > .5 && c.b < .15;
-}
+const colorOf = mesh => mesh.material && mesh.material.color;
+const isGreenGround = mesh => { const c = colorOf(mesh); return !!c && c.r < .15 && c.g > .5 && c.b < .15; };
+const isBlueStrip = mesh => { const c = colorOf(mesh); return !!c && c.r < .25 && c.g < .25 && c.b > .6; };
+const isWheat = mesh => { const c = colorOf(mesh); return !!c && c.r > .5 && c.g > .3 && c.b < .3; };
+const keepPart = mesh => !isGreenGround(mesh);   // drop the green grass base; the bed, soil and wheat stay
+const SOIL_BROWN = 0x6b4226;                     // the file's blue strips are soil rows, so paint them brown
 
 function groupMeshes(root) {          // split the file into its three bed copies
   const meshes = [];
   root.updateMatrixWorld(true);
-  root.traverse(o => { if (o.isMesh) { const p = new THREE.Vector3(); o.getWorldPosition(p); meshes.push({ o, p }); } });
+  root.traverse(o => { if (o.isMesh && keepPart(o)) { const p = new THREE.Vector3(); o.getWorldPosition(p); meshes.push({ o, p }); } });
   const parent = meshes.map((_, i) => i);
   const find = i => parent[i] === i ? i : (parent[i] = find(parent[i]));
   const join = (a, b) => { a = find(a); b = find(b); if (a !== b) parent[b] = a; };
@@ -29,18 +32,20 @@ function groupMeshes(root) {          // split the file into its three bed copie
     if (Math.hypot(meshes[i].p.x - meshes[j].p.x, meshes[i].p.z - meshes[j].p.z) < 25) join(i, j);
   const groups = new Map();
   meshes.forEach((m, i) => { const r = find(i); if (!groups.has(r)) groups.set(r, []); groups.get(r).push(m); });
-  let best = null;
-  for (const g of groups.values()) if (!best || g.length > best.length) best = g;
+  let best = null, bestWheat = -1, bestCount = -1;
+  for (const g of groups.values()) {
+    const wheat = g.reduce((n, m) => n + (isWheat(m.o) ? 1 : 0), 0);   // the copy with the yellow wheat bed wins
+    if (wheat > bestWheat || (wheat === bestWheat && g.length > bestCount)) { best = g; bestWheat = wheat; bestCount = g.length; }
+  }
   return best || [];
 }
 
 function bakeBed(root, keep) {         // flatten the chosen copy into one small model
   const model = new THREE.Group();
+  const soil = new THREE.MeshStandardMaterial({ color: SOIL_BROWN, roughness: .95, metalness: 0 });
   for (const { o } of keep) {
     o.updateWorldMatrix(true, false);
-    const mat = o.material.clone();
-    if (isGreenGround(o)) mat.color.set(0x6f4a28);   // the diorama's grass base becomes the farm's brown ground
-    const m = new THREE.Mesh(o.geometry, mat);
+    const m = new THREE.Mesh(o.geometry, isBlueStrip(o) ? soil : o.material);   // no blue paint in the field
     m.applyMatrix4(o.matrixWorld);
     model.add(m);
   }
@@ -55,12 +60,12 @@ function bakeBed(root, keep) {         // flatten the chosen copy into one small
 
 function buildAssembly(bed, rot, FW, FH) {
   const g = new THREE.Group();
-  const bw = rot ? FH : FW;            // one bed, centered on the field
-  const bd = rot ? FW : FH;
-  const s = Math.min(bw / bed.size.x, bd / bed.size.z);
+  // one bed per farm, stretched to cover the whole field footprint
+  const fw = rot ? FH : FW, fh = rot ? FW : FH;
+  const sx = fw / bed.size.x, sz = fh / bed.size.z, sy = (sx + sz) / 2;
   const b = bed.norm.clone(true);
-  b.scale.set(s, s, s);
-  b.position.set(bw / 2, 0, bd / 2);
+  b.scale.set(sx, sy, sz);
+  b.position.set(fw / 2, 0, fh / 2);
   g.add(b);
   return g;
 }

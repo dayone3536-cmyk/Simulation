@@ -83,12 +83,51 @@
     );
   }
 
+  function iconBow() {
+    return iconWrap(
+      // bow stave - curved
+      `<path d="M14 48 C14 38 18 30 28 26 C38 22 44 26 44 30 C44 38 40 46 32 50 C24 46 20 38 20 30 C20 22 24 18 32 18 C40 18 46 22 46 30 C46 38 42 46 32 50 C22 46 14 38 14 30" fill="none" stroke="${PAL.timber.base}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>` +
+      // highlight on the bow
+      `<path d="M14 48 C14 38 18 30 28 26 C38 22 44 26 44 30 C44 38 40 46 32 50 C24 46 20 38 20 30 C20 22 24 18 32 18 C40 18 46 22 46 30 C46 38 42 46 32 50 C22 46 14 38 14 30" fill="none" stroke="${PAL.timber.hi}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity=".6"/>` +
+      // bowstring
+      `<path d="M14 48 C14 38 18 30 28 26 C38 22 44 26 44 30" fill="none" stroke="${PAL.cloth.base}" stroke-width="1.8" stroke-linecap="round" opacity=".8"/>` +
+      // grip
+      `<path d="M28 38 L36 38" stroke="${PAL.timber.sh}" stroke-width="4" stroke-linecap="round"/>`
+    );
+  }
+
+  function iconCrossbow() {
+    return iconWrap(
+      // stock (wooden body)
+      `<path d="M10 38 L50 38" stroke="${PAL.timber.base}" stroke-width="10" stroke-linecap="round"/>` +
+      `<path d="M10 38 L50 38" stroke="${PAL.timber.hi}" stroke-width="2.5" stroke-linecap="round" opacity=".5"/>` +
+      // foregrip
+      `<path d="M18 38 L18 24" stroke="${PAL.timber.base}" stroke-width="6" stroke-linecap="round"/>` +
+      `<path d="M18 38 L18 24" stroke="${PAL.timber.hi}" stroke-width="1.5" stroke-linecap="round" opacity=".5"/>` +
+      // trigger guard
+      `<path d="M34 38 Q34 44 38 44 Q42 44 42 38" fill="none" stroke="${PAL.timber.sh}" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>` +
+      // bow limbs (prod)
+      `<path d="M8 24 Q4 16 8 8 Q12 16 8 24 Z" fill="${PAL.timber.base}" stroke="${PAL.ink}" stroke-width="1.8"/>` +
+      `<path d="M28 24 Q32 16 28 8 Q24 16 28 24 Z" fill="${PAL.timber.base}" stroke="${PAL.ink}" stroke-width="1.8"/>` +
+      `<path d="M8 24 Q4 16 8 8" fill="none" stroke="${PAL.timber.hi}" stroke-width="1.2" stroke-linecap="round" opacity=".5"/>` +
+      `<path d="M28 24 Q32 16 28 8" fill="none" stroke="${PAL.timber.hi}" stroke-width="1.2" stroke-linecap="round" opacity=".5"/>` +
+      // string
+      `<path d="M8 8 L8 24 L28 24 L28 8" fill="none" stroke="${PAL.cloth.base}" stroke-width="1.5" stroke-linecap="round" opacity=".8"/>` +
+      // stirrup
+      `<path d="M6 24 L10 24 L10 32 L6 32 L6 24" fill="none" stroke="${PAL.ink}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>` +
+      // bolt groove
+      `<path d="M10 34 L46 34" stroke="${PAL.timber.sh}" stroke-width="2" stroke-linecap="round" stroke-dasharray="4 3" opacity=".6"/>`
+    );
+  }
+
   const ICONS = {
     coin: iconCoin,
     wheat: iconWheat,
     villager: iconVillager,
     check: iconCheck,
-    cross: iconCross
+    cross: iconCross,
+    bow: iconBow,
+    crossbow: iconCrossbow
   };
 
   // ---------- isometric building kit (dimetric 2:1, one light, one outline) ----------

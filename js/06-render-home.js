@@ -2,17 +2,34 @@
   // ---------- render ----------
   let started = false;
 
-  // Painted grass lawn: one warm base slab per 8x8 chunk, a few soft organic
-  // patches, sparse blades and pebbles — lively but never busy. Deterministic hash
-  // so it looks identical on every visit, no per-frame cost.
+  // Lush, living grass: organic color variation, blade clusters, wildflowers,
+  // subtle ground texture, and zero checkerboard. Deterministic hash = same grass every visit.
   function buildGround() {
-    const cols = WORLD_W / CELL, rows = WORLD_H / CELL, CK = 8;     // tiles grouped 8x8 so off-screen groups cost nothing
-    const BASE = 0x6fa43e, PATCH = 0x82b35a, PATCH_D = 0x5b8732, BLADE = 0x3e6f24, PEBBLE = 0x7e7b5e;
-    const hash = (a, b) => {                        // same grass every visit: no Math.random, no per-frame work
+    const cols = WORLD_W / CELL, rows = WORLD_H / CELL, CK = 8;
+    // Rich, varied grass palette - no flat single color
+    const BASE_DARK  = 0x3d6b22;   // deep shadowed grass
+    const BASE_MID   = 0x5c9434;   // healthy mid grass
+    const BASE_LIGHT = 0x7ac943;   // sunlit grass tips
+    const BLADE_DARK = 0x2e5a18;
+    const BLADE_MID  = 0x4a872a;
+    const BLADE_LIGHT= 0x6fd63a;
+    const FLOWER_WHITE = 0xfefcf3;
+    const FLOWER_YELLOW = 0xffeb3b;
+    const FLOWER_PINK   = 0xff8fab;
+    const FLOWER_PURPLE = 0xb388ff;
+    const PEBBLE       = 0x8b856d;
+    const DIRT_DARK    = 0x4a3728;
+    const DIRT_LIGHT   = 0x7d5a3a;
+
+    const hash = (a, b) => {
       let h = (a * 374761393 + b * 668265263) | 0;
       h = (h ^ (h >>> 13)) * 1274126177 | 0;
       return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
     };
+
+    // Seeded noise for organic color variation across the world
+    const noise2D = (x, y) => hash(x * 73856093 + y * 19349663, 9176093);
+
     for (let r0 = 0; r0 < rows; r0 += CK) for (let c0 = 0; c0 < cols; c0 += CK) {
       const box = new PX.Container(), g = new PX.Graphics(); box.addChild(g);
       const c1 = Math.min(cols, c0 + CK), r1 = Math.min(rows, r0 + CK);
@@ -27,40 +44,101 @@
         x0 = Math.min(x0, P[i]); x1 = Math.max(x1, P[i]);
         y0 = Math.min(y0, P[i + 1]); y1 = Math.max(y1, P[i + 1]);
       }
-      g.beginFill(BASE); g.drawPolygon(P); g.endFill();       // one solid warm slab, so the chunk has no internal seams
-      // a few soft organic patches so the lawn reads as one field, not a flat color
-      for (let i = 0; i < 4; i++) {
-        const pc = c0 + .5 + hash(c0 + 37 * i, r0 + 7) * (c1 - c0 - 1);
-        const pr = r0 + .5 + hash(c0 + 3, r0 + 31 * i) * (r1 - r0 - 1);
-        const px = projX(pc * CELL, pr * CELL), py = projY(pc * CELL, pr * CELL);
-        const dark = (i % 2 === 1);
-        const rx = (1.0 + hash(pc + 5, pr + i) * 1.6) * CELL;
-        g.beginFill(dark ? PATCH_D : PATCH, dark ? .22 : .30);
-        g.drawEllipse(px, py, rx, rx * .5);
+
+      // ---- 1. Organic base: per-tile color variation creates living meadow ----
+      for (let r = r0; r < r1; r++) for (let c = c0; c < c1; c++) {
+        const n = noise2D(c, r);
+        // 3-band grass color: dark -> mid -> light based on noise
+        let baseColor, baseAlpha = 1;
+        if (n < 0.33)      { baseColor = BASE_DARK;  baseAlpha = 0.95 + n * 0.1; }
+        else if (n < 0.66) { baseColor = BASE_MID;   baseAlpha = 1.0; }
+        else               { baseColor = BASE_LIGHT; baseAlpha = 0.9 + (n - 0.66) * 0.3; }
+
+        // occasional bare dirt patches for realism
+        if (n > 0.96) { baseColor = DIRT_DARK + Math.floor((n - 0.96) * 25 * 0x10000); baseAlpha = 0.7; }
+
+        const tilePts = ringPts(c, r, 1);
+        g.beginFill(baseColor, baseAlpha);
+        g.drawPolygon(tilePts);
         g.endFill();
       }
-      g.beginFill(PEBBLE, .32);
-      for (let i = 0; i < 2; i++) {
+
+      // ---- 2. Micro-detail: subtle ground texture (tiny speckles) ----
+      g.beginFill(PEBBLE, 0.12);
+      for (let i = 0; i < 4; i++) {
         const pc = c0 + Math.floor(hash(c0 + 19 * i, r0 + 7) * (c1 - c0));
         const pr = r0 + Math.floor(hash(c0 + 3, r0 + 31 * i) * (r1 - r0));
-        const px = projX((pc + .2 + .6 * hash(pc, i + 5)) * CELL, (pr + .2 + .6 * hash(pr, i + 9)) * CELL);
-        const py = projY((pc + .2 + .6 * hash(pc, i + 5)) * CELL, (pr + .2 + .6 * hash(pr, i + 9)) * CELL);
-        const s = .7 + .5 * hash(pc + 11, pr + 17);
-        g.drawEllipse(px, py, 2.0 * s, 1.1 * s);
+        const px = projX((pc + .15 + .7 * hash(pc, i + 5)) * CELL, (pr + .15 + .7 * hash(pr, i + 9)) * CELL);
+        const py = projY((pc + .15 + .7 * hash(pc, i + 5)) * CELL, (pr + .15 + .7 * hash(pr, i + 9)) * CELL);
+        const s = .5 + .4 * hash(pc + 11, pr + 17);
+        g.drawEllipse(px, py, 1.4 * s, 0.8 * s);
       }
       g.endFill();
-      const n = Math.max(4, Math.round((c1 - c0) * (r1 - r0) / 10));   // sparse blades, never a carpet
-      g.lineStyle({ width: 1.2, color: BLADE, alpha: .5, cap: 'round' });
-      for (let i = 0; i < n; i++) {
+
+      // ---- 3. Blade clusters: groups of 3-5 blades, not individual scattered lines ----
+      const clusterCount = Math.max(6, Math.round((c1 - c0) * (r1 - r0) / 5));
+      for (let i = 0; i < clusterCount; i++) {
         const c = c0 + Math.floor(hash(c0 * 131 + i, r0 * 197 + 11) * (c1 - c0));
         const r = r0 + Math.floor(hash(c0 * 313 + i * 17, r0 * 271 + 7) * (r1 - r0));
-        const fx = c + .15 + .7 * hash(c * 911 + i, r * 53 + 5), fy = r + .15 + .7 * hash(c * 71 + r, i + 23);
-        const px = projX(fx * CELL, fy * CELL), py = projY(fx * CELL, fy * CELL), s = .8 + .5 * hash(c + 13, r + 29);
-        g.moveTo(px - 2.4 * s, py + .6); g.lineTo(px - 3.8 * s, py - 4.0 * s);
-        g.moveTo(px, py + .8); g.lineTo(px + .2 * s, py - 5.0 * s);
-        g.moveTo(px + 2.4 * s, py + .6); g.lineTo(px + 3.6 * s, py - 3.6 * s);
+        const n = noise2D(c, r);
+        // Blade color varies with ground color
+        const bladeColor = n < 0.5 ? BLADE_DARK : (n < 0.8 ? BLADE_MID : BLADE_LIGHT);
+        const bladeAlpha = 0.45 + n * 0.35;
+
+        const fx = c + .15 + .7 * hash(c * 911 + i, r * 53 + 5);
+        const fy = r + .15 + .7 * hash(c * 71 + r, i + 23);
+        const px = projX(fx * CELL, fy * CELL);
+        const py = projY(fx * CELL, fy * CELL);
+        const s = .6 + .6 * hash(c + 13, r + 29);
+        const angle = hash(c * 17, r * 23) * 6.28;
+
+        g.lineStyle({ width: 1.1 * s, color: bladeColor, alpha: bladeAlpha, cap: 'round' });
+
+        // 3-5 blades per cluster, fanned out
+        const blades = 3 + Math.floor(hash(c * 11, r * 13) * 3);
+        for (let b = 0; b < blades; b++) {
+          const ba = angle + (b - (blades - 1) / 2) * 0.35;
+          const len = 3.5 * s + hash(c * 7 + b, r * 5 + b) * 2.5 * s;
+          const bx = px + Math.cos(ba) * 0.5;
+          const by = py + Math.sin(ba) * 0.5;
+          g.moveTo(bx, by);
+          g.lineTo(bx + Math.cos(ba) * len, by + Math.sin(ba) * len - 1.5 * s);
+        }
       }
-      x0 -= 2; y0 -= 8; x1 += 2; y1 += 2;              // room for the little blades just past the chunk edge
+
+      // ---- 4. Wildflower patches: rare, clustered, delightful ----
+      const flowerChance = 0.008; // ~1 per 125 tiles
+      const flowerClusters = Math.max(1, Math.round((c1 - c0) * (r1 - r0) * flowerChance));
+      const flowers = [FLOWER_WHITE, FLOWER_YELLOW, FLOWER_PINK, FLOWER_PURPLE];
+      for (let i = 0; i < flowerClusters; i++) {
+        const c = c0 + Math.floor(hash(c0 * 223 + i * 7, r0 * 367 + i * 11) * (c1 - c0));
+        const r = r0 + Math.floor(hash(c0 * 401 + i * 13, r0 * 503 + i * 17) * (r1 - r0));
+        // Only place on grass (not dirt)
+        if (noise2D(c, r) > 0.95) continue;
+
+        const fx = c + .25 + .5 * hash(c * 11, r * 13);
+        const fy = r + .25 + .5 * hash(c * 17, r * 19);
+        const px = projX(fx * CELL, fy * CELL);
+        const py = projY(fx * CELL, fy * CELL);
+        const s = .7 + .4 * hash(c + 29, r + 31);
+
+        // Tiny flower: 3-4 petals
+        const fc = flowers[Math.floor(hash(c, r) * flowers.length)];
+        const petals = 3 + Math.floor(hash(c * 5, r * 7) * 2);
+        for (let p = 0; p < petals; p++) {
+          const pa = (p / petals) * 6.28;
+          const pr = 1.8 * s;
+          g.beginFill(fc, 0.95);
+          g.drawEllipse(px + Math.cos(pa) * pr * 0.4, py + Math.sin(pa) * pr * 0.4, pr, pr * 0.55);
+          g.endFill();
+        }
+        // Center dot
+        g.beginFill(fc === FLOWER_YELLOW ? 0xff6b00 : 0x2d4a18, 0.9);
+        g.drawCircle(px, py, 1.1 * s);
+        g.endFill();
+      }
+
+      x0 -= 4; y0 -= 12; x1 += 4; y1 += 12; // room for blades/flowers past chunk edge
       groundL.addChild(box); groundChunks.push({ box, x0, y0, x1, y1 });
     }
   }
